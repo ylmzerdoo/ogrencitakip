@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erdoğan Yılmaz Fen Dijital - Modern Eğitim Paneli</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- SheetJS (Excel Okuma İçin) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        
+        /* Uzay / Fen Bilimleri Temalı Hareketli Arka Plan */
+        body { 
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%); 
+            color: #f8fafc; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Arka Planda Yüzen Uzay Parçacıkları / Yıldız Efekti */
+        body::before {
+            content: "🚀 🪐 🔬 🧬 ⚛️ 🔭 🌍 🛰️";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            font-size: 24px;
+            opacity: 0.07;
+            z-index: 0;
+            pointer-events: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 120px;
+            padding: 50px;
+            justify-content: space-around;
+        }
+
+        /* Hareket Eden Roket Animasyonu */
+        @keyframes floatRocket {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(3deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        .floating-rocket {
+            animation: floatRocket 4s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        /* Giriş Ekranı (Modern Glassmorphism) */
+        .auth-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 20px; 
+            z-index: 1;
+        }
+        .auth-card { 
+            background: rgba(255, 255, 255, 0.05); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px; 
+            border-radius: 24px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
+            width: 100%; 
+            max-width: 440px; 
+        }
+        .auth-tabs { display: flex; margin-bottom: 25px; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 5px; border: 1px solid rgba(255,255,255,0.05); }
+        .auth-tab { flex: 1; padding: 12px; text-align: center; border: none; background: transparent; font-weight: 600; cursor: pointer; border-radius: 8px; color: #94a3b8; transition: all 0.3s ease; }
+        .auth-tab.active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; box-shadow: 0 4px 15px rgba(37,99,235,0.4); }
+        .auth-form { display: flex; flex-direction: column; gap: 15px; }
+        .auth-input { width: 100%; padding: 14px 18px; border: 1px solid rgba(255,255,255,0.15); background: rgba(15, 23, 42, 0.6); color: white; border-radius: 12px; font-size: 14px; outline: none; transition: all 0.3s; }
+        .auth-input:focus { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.3); }
+        .auth-input option { background: #0f172a; color: white; }
+        .auth-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(37,99,235,0.4); }
+        .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,0.6); }
+
+        /* Modern Header */
+        .teacher-header { 
+            background: rgba(15, 23, 42, 0.8); 
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px 40px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            z-index: 10;
+        }
+        .header-brand { display: flex; align-items: center; gap: 12px; }
+        .brand-icon { font-size: 32px; }
+        .header-brand h1 { font-size: 20px; font-weight: 700; color: #f8fafc; letter-spacing: 0.5px; }
+        .logout-btn { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(239,68,68,0.3); }
+        .logout-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(239,68,68,0.5); }
+
+        .dashboard-content { max-width: 1200px; margin: 30px auto; width: 100%; padding: 0 20px; flex: 1; z-index: 1; position: relative; }
+        
+        /* Modern Hızlı Eylem Barı */
+        .teacher-action-bar { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; }
+        
+        /* Sınıf Kartları Grid (Parlayan Efektli) */
+        .grade-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+        .grade-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 30px 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; cursor: pointer; transition: all 0.3s ease; border-top: 4px solid #3b82f6; position: relative; overflow: hidden; }
+        .grade-card:hover { transform: translateY(-6px); box-shadow: 0 15px 35px rgba(59,130,246,0.3); border-color: rgba(59,130,246,0.5); background: rgba(255, 255, 255, 0.08); }
+        .grade-card h3 { font-size: 20px; margin-bottom: 8px; color: #f8fafc; font-weight: 700; }
+        .grade-card p { color: #94a3b8; font-size: 14px; margin-bottom: 15px; }
+        .card-action { color: #60a5fa; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 5px; }
+
+        /* Modern Modal Tasarımı */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
+        .modal-box { background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); padding: 35px; border-radius: 24px; width: 100%; max-width: 480px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #f8fafc; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px; }
+
+        /* Modern Tablolar */
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); }
+        .data-table th, .data-table td { padding: 14px 18px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 14px; color: #e2e8f0; }
+        .data-table th { background: rgba(15, 23, 42, 0.9); font-weight: 600; color: #94a3b8; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+        .data-table tr:hover { background: rgba(255, 255, 255, 0.04); }
+
+        /* Şube Sekmeleri */
+        .branch-tabs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .branch-tab-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 22px; border-radius: 16px; text-align: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.2); transition: all 0.3s ease; }
+        .branch-tab-card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-3px); }
+        .branch-tab-card.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.15); box-shadow: 0 10px 25px rgba(59,130,246,0.3); }
+        .tab-icon { font-size: 28px; margin-bottom: 8px; }
+        .branch-tab-card h3 { color: #f8fafc; font-size: 16px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <!-- GİRİŞ EKRANI -->
+    <div id="auth-screen" class="auth-container">
+        <div class="auth-card">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <span class="floating-rocket" style="font-size: 48px; margin-bottom: 10px;">🚀</span>
+                <h2 style="font-size: 24px; font-weight: 800; color: #f8fafc; letter-spacing: 0.5px;">Fen Bilimleri Dijital</h2>
+                <p style="color: #94a3b8; font-size: 13px; margin-top: 5px;">Erdoğan Yılmaz Eğitim Portalı</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button id="btn-student-tab" class="auth-tab active" onclick="switchAuthTab('student')">👨‍🎓 Öğrenci Girişi</button>
+                <button id="btn-teacher-tab" class="auth-tab" onclick="switchAuthTab('teacher')">👩‍🏫 Öğretmen Girişi</button>
+            </div>
+
+            <!-- Öğrenci Giriş Formu -->
+            <div id="student-auth-form" class="auth-form">
+                <label style="font-size: 13px; font-weight: 600; color: #cbd5e1;">Sınıf Düzeyi:</label>
+                <select id="student-grade" class="auth-input">
+                    <option value="">Sınıf Seçin</option>
+                    <option value="5">5. Sınıf</option>
+                    <option value="6">6. Sınıf</option>
+                    <option value="7">7. Sınıf</option>
+                    <option value="8">8. Sınıf</option>
+                </select>
+
+                <label style="font-size: 13px; font-weight: 600; color: #cbd5e1;">Şube:</label>
+                <select id="student-branch" class="auth-input">
+                    <option value="">Önce sınıf seçin</option>
+                </select>
+
+                <label style="font-size: 13px; font-weight: 600; color: #cbd5e1;">Okul Numarası:</label>
+                <input type="number" id="student-number" placeholder="Örn: 235" class="auth-input">
+
+                <label style="font-size: 13px; font-weight: 600; color: #cbd5e1;">Ad Soyad:</label>
+                <input type="text" id="student-name" placeholder="Örn: VELİ" class="auth-input">
+
+                <button onclick="studentLogin()" class="auth-btn" style="margin-top: 10px;">✨ Sonuçlarımı Görüntüle</button>
+            </div>
+
+            <!-- Öğretmen Giriş Formu -->
+            <div id="teacher-auth-form" class="auth-form" style="display: none;">
+                <label style="font-size: 13px; font-weight: 600; color: #cbd5e1;">Yönetici E-posta:</label>
+                <input type="email" id="teacher-email" placeholder="E-posta adresi" class="auth-input">
+                
+                <label style="font-size: 13px; font-weight: 600; color: #cbd5e1;">Şifre:</label>
+                <input type="password" id="teacher-password" placeholder="Şifre" class="auth-input">
+                
+                <button onclick="teacherLogin()" class="auth-btn" style="margin-top: 10px;">🔐 Paneli Aç</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ÖĞRETMEN ANA PANELİ -->
+    <div id="teacher-panel" style="display: none; min-height: 100vh; flex-direction: column;">
+        <header class="teacher-header">
+            <div class="header-brand">
+                <span class="floating-rocket" style="font-size: 28px;">🚀</span>
+                <h1>Erdoğan Yılmaz Fen Dijital - Öğretmen Paneli</h1>
+            </div>
+            <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
+        </header>
+
+        <section class="dashboard-content">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h2 style="font-size: 24px; font-weight: 800; color: #f8fafc;">Sınıf Düzeyleri</h2>
+                    <p style="color: #94a3b8; font-size: 14px;">Yönetmek istediğiniz sınıf düzeyini seçin veya hızlı yönetim barını kullanın.</p>
+                </div>
+            </div>
+
+            <!-- Hızlı Yönetim Barı ve Silme Butonu -->
+            <div class="teacher-action-bar">
+                <button onclick="globalAddUnit()" class="bar-btn" style="flex: 1; min-width: 150px; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(59,130,246,0.3); transition: all 0.3s;">➕ Ünite Ekle</button>
+                <button onclick="globalAddSection()" class="bar-btn" style="flex: 1; min-width: 150px; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(16,185,129,0.3); transition: all 0.3s;">📂 Bölüm / Konu Ekle</button>
+                <button onclick="globalAddActivity()" class="bar-btn" style="flex: 1; min-width: 150px; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(139,92,246,0.3); transition: all 0.3s;">🧪 Etkinlik & Ölçek Ekle</button>
+                <button onclick="globalDeleteManagement()" class="bar-btn" style="flex: 1; min-width: 150px; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(239,68,68,0.3); transition: all 0.3s;">🗑️ Sil (Ünite/Bölüm/Ölçek)</button>
+            </div>
+
+            <!-- Sınıf Düzeyi Kartları -->
+            <div class="grade-cards-grid">
+                <div class="grade-card" onclick="openGradeManagement('5')" style="border-top-color: #10b981;">
+                    <div style="font-size: 36px; margin-bottom: 12px;">🌱</div>
+                    <h3>5. Sınıflar</h3>
+                    <p>Şube ve Öğrenci İşlemleri</p>
+                    <span class="card-action">Yönet &rarr;</span>
+                </div>
+                <div class="grade-card" onclick="openGradeManagement('6')" style="border-top-color: #f59e0b;">
+                    <div style="font-size: 36px; margin-bottom: 12px;">🌍</div>
+                    <h3>6. Sınıflar</h3>
+                    <p>Şube ve Öğrenci İşlemleri</p>
+                    <span class="card-action">Yönet &rarr;</span>
+                </div>
+                <div class="grade-card" onclick="openGradeManagement('7')" style="border-top-color: #3b82f6;">
+                    <div style="font-size: 36px; margin-bottom: 12px;">⚛️</div>
+                    <h3>7. Sınıflar</h3>
+                    <p>Şube ve Öğrenci İşlemleri</p>
+                    <span class="card-action">Yönet &rarr;</span>
+                </div>
+                <div class="grade-card" onclick="openGradeManagement('8')" style="border-top-color: #8b5cf6;">
+                    <div style="font-size: 36px; margin-bottom: 12px;">🚀</div>
+                    <h3>8. Sınıflar</h3>
+                    <p>Şube ve Öğrenci İşlemleri</p>
+                    <span class="card-action">Yönet &rarr;</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- SINIF DETAY / ŞUBE YÖNETİM PANELİ -->
+    <div id="grade-detail-panel" style="display: none; min-height: 100vh; flex-direction: column;"></div>
+
+    <!-- ÖĞRENCİ PANELİ -->
+    <div id="student-panel" style="display: none; min-height: 100vh; flex-direction: column;"></div>
+
+    <!-- GENEL MODAL (AÇILIR PENCERE) -->
+    <div id="app-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modal-title" class="modal-title">Başlık</div>
+            <div id="modal-body"></div>
+            <div class="modal-footer">
+                <button onclick="closeModal()" style="padding: 10px 20px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">İptal</button>
+                <button id="modal-confirm-btn" style="padding: 10px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.4); transition: all 0.2s;">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DOSYASI -->
+    <script src="script.js"></script>
+</body>
+</html>
