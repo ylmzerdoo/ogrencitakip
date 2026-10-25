@@ -7,7 +7,7 @@ body {
     min-height: 100vh; 
     display: flex; 
     flex-direction: column; 
-    overflow-x: hidden !important; /* Mobilde yatay kaymayı kesin olarak önler */
+    overflow-x: hidden !important; 
     width: 100vw;
     position: relative;
 }
@@ -108,12 +108,50 @@ body {
 .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #f8fafc; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px; }
 
-/* Mobilde taşmayı önleyen duyarlı tablo yapısı */
-.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 15px; }
-.data-table { width: 100% !important; border-collapse: collapse; margin-top: 15px; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); }
-.data-table th, .data-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13px; color: #e2e8f0; white-space: normal !important; word-break: break-word; }
-.data-table th { background: rgba(15, 23, 42, 0.9); font-weight: 600; color: #94a3b8; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
-.data-table tr:hover { background: rgba(255, 255, 255, 0.04); }
+/* TÜM TABLOLAR İÇİN MOBİL UYUMLULUK VE KELİME BÖLÜNMESİNİ ÖNLEME KURALLARI */
+.table-responsive { 
+    width: 100%; 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; 
+    margin-bottom: 15px; 
+}
+.data-table { 
+    width: 100% !important; 
+    border-collapse: collapse; 
+    margin-top: 15px; 
+    background: rgba(30, 41, 59, 0.7); 
+    backdrop-filter: blur(10px); 
+    border-radius: 16px; 
+    overflow: hidden; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+    border: 1px solid rgba(255,255,255,0.08); 
+    table-layout: auto !important; 
+}
+.data-table th, .data-table td { 
+    padding: 12px 14px; 
+    text-align: left; 
+    border-bottom: 1px solid rgba(255,255,255,0.08); 
+    font-size: 13px; 
+    color: #e2e8f0; 
+    word-break: normal; 
+}
+
+/* Not/puan ifadelerinin (Örn: 100 Puan) alt alta kaymasını kesin olarak engeller */
+.data-table th:nth-child(2), .data-table td:nth-child(2) { 
+    white-space: nowrap !important; 
+}
+
+.data-table th { 
+    background: rgba(15, 23, 42, 0.9); 
+    font-weight: 600; 
+    color: #94a3b8; 
+    text-transform: uppercase; 
+    font-size: 12px; 
+    letter-spacing: 0.5px; 
+}
+.data-table tr:hover { 
+    background: rgba(255, 255, 255, 0.04); 
+}
 
 .branch-tabs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
 .branch-tab-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 22px; border-radius: 16px; text-align: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.2); transition: all 0.3s ease; }

@@ -59,7 +59,7 @@ async function loadAllDataFromSupabase() {
             });
         }
 
-        // 3. Üniteler ve Bölümleri Çek
+        // 3. Üniteler و Bölümleri Çek
         const { data: unitRows, error: uErr } = await supabaseClient.from('units_sections').select('*');
         if (!uErr && unitRows) {
             let unitMap = {};
@@ -988,7 +988,6 @@ function loadSectionsForReport(unitName, grade, branchName) {
     renderReportData(grade, branchName);
 }
 
-// 📄 DİNAMİK VE BÖLÜME ÖZEL RAPOR OLUŞTURMA
 async function renderReportData(grade, branchName) {
     const unitName = document.getElementById('rep-unit-sel')?.value;
     const secName = document.getElementById('report-section-select')?.value;
@@ -1157,7 +1156,6 @@ function copyNarrativeReport() {
     });
 }
 
-// ÖĞRENCİ EKLEME
 function addStudentModal(grade, branchName) {
     const content = `
         <label style="color:#cbd5e1;">Okul No:</label><input type="number" id="s-no" class="auth-input" style="margin-bottom:10px;">
@@ -1225,7 +1223,6 @@ async function deleteStudent(grade, branchName, index) {
     openBranchDetail(grade, branchName);
 }
 
-// ÖĞRENCİ GİRİŞİ
 async function studentLogin() {
     const grade = document.getElementById('student-grade').value;
     const branch = document.getElementById('student-branch').value;
@@ -1285,7 +1282,6 @@ async function studentLogin() {
     openStudentPanel(grade, branch, foundStudent);
 }
 
-// 👨‍🎓 ÖĞRENCİ PANELİ (Sıralı Listeleme Mantığı Eklenmiş Hali)
 function openStudentPanel(grade, branch, student) {
     const studentPanel = document.getElementById('student-panel');
     if (!studentPanel) return;
@@ -1295,7 +1291,6 @@ function openStudentPanel(grade, branch, student) {
     let totalQuizScore = 0;
     let quizCount = 0;
     if (student.quiz) {
-        // Quizleri kronolojik/alfabetik sıraya dizer (1., 2., 3. ...)
         const sortedQuizKeys = Object.keys(student.quiz).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }));
 
         sortedQuizKeys.forEach(qKey => {
@@ -1312,7 +1307,6 @@ function openStudentPanel(grade, branch, student) {
     let totalScaleScore = 0;
     let scaleCount = 0;
     if (student.scale) {
-        // Ölçekleri sıraya dizer
         const sortedScaleKeys = Object.keys(student.scale).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }));
 
         sortedScaleKeys.forEach(actName => {
@@ -1325,7 +1319,6 @@ function openStudentPanel(grade, branch, student) {
         });
     }
 
-    // ŞUBE GENEL ORTALAMALARINI HESAPLAMA
     const branchStudents = fenData[grade]?.branches[branch] || [];
     
     let branchTotalQuiz = 0;
