@@ -1287,8 +1287,32 @@ function openStudentReportModal(grade, branchName, schoolNo, unitName, secName) 
     const student = students.find(s => parseInt(s.no) === parseInt(schoolNo));
     if (!student) return;
 
-    const key = `${unitName}_${secName}`;
-    const qScore = student.quiz?.[key] !== undefined && student.quiz?.[key] !== '' ? student.quiz[key] : 'Not Girilmedi';
+    const branchStudents = fenData[grade]?.branches[branchName] || [];
+
+    let studentQuizHtml = '';
+    if (student.quiz && Object.keys(student.quiz).length > 0) {
+        const sortedQuizKeys = Object.keys(student.quiz).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }));
+        sortedQuizKeys.forEach(qKey => {
+            let score = student.quiz[qKey];
+            if (score !== '' && score !== undefined) {
+                let quizTotal = 0;
+                let quizCount = 0;
+                branchStudents.forEach(bs => {
+                    if (bs.quiz && bs.quiz[qKey] !== undefined && bs.quiz[qKey] !== '' && !isNaN(bs.quiz[qKey])) {
+                        quizTotal += parseFloat(bs.quiz[qKey]);
+                        quizCount++;
+                    }
+                });
+                let quizClassAvg = quizCount > 0 ? (quizTotal / quizCount).toFixed(1) + ' Puan' : 'Hesaplanmadı';
+
+                studentQuizHtml += `<tr>
+                    <td style="border:1px solid #94a3b8; padding:6px;">${qKey.replace('_', ' / ')}</td>
+                    <td style="border:1px solid #94a3b8; padding:6px;"><b>${score} Puan</b></td>
+                    <td style="border:1px solid #94a3b8; padding:6px; color:#555;">Sınıf Ort: ${quizClassAvg}</td>
+                </tr>`;
+            }
+        });
+    }
 
     let studentScaleHtml = '';
     if (student.scale) {
@@ -1310,7 +1334,10 @@ function openStudentReportModal(grade, branchName, schoolNo, unitName, secName) 
         Object.keys(activityGroups).forEach(baseName => {
             let scores = activityGroups[baseName];
             let avg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-            studentScaleHtml += `<tr><td>${baseName}</td><td><b>${avg}%</b></td></tr>`;
+            studentScaleHtml += `<tr>
+                <td style="border:1px solid #94a3b8; padding:6px;">${baseName}</td>
+                <td style="border:1px solid #94a3b8; padding:6px;"><b>${avg}%</b></td>
+            </tr>`;
         });
     }
 
@@ -1326,14 +1353,25 @@ function openStudentReportModal(grade, branchName, schoolNo, unitName, secName) 
                     <p><b>Öğrenci Adı Soyadı:</b> ${student.name}</p>
                     <p><b>Okul Numarası:</b> ${student.no}</p>
                     <p><b>Sınıf ve Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                    <p><b>Ünite ve Bölüm:</b> ${unitName} / ${secName}</p>
+                    <p><b>Artı / Eksi Durumu:</b> <span style="color:#d97706; font-weight:700;">+${student.plus} / -${student.minus}</span></p>
                 </div>
-                <div style="display:flex; justify-content:space-between; background:#e2e8f0; padding:10px 12px; border-radius:6px; margin-bottom:12px; border:1px solid #cbd5e1;">
-                    <span><b>Bölüm Quiz Notu:</b> <b style="color:#2563eb; font-size:15px;">${qScore} Puan</b></span>
-                    <span><b>Artı / Eksi Durumu:</b> <b style="color:#d97706;">+${student.plus} / -${student.minus}</b></span>
+
+                <div style="margin-top:10px; margin-bottom:15px;">
+                    <b style="color:black !important; font-size:12px;">📝 Quiz Sonuçları:</b>
+                    <table class="data-table" style="width:100%; border-collapse:collapse; font-size:11px; margin-top:5px;">
+                        <thead>
+                            <tr style="background:#e2e8f0; color:black;">
+                                <th style="border:1px solid #94a3b8; padding:6px; text-align:left;">Ünite / Bölüm</th>
+                                <th style="border:1px solid #94a3b8; padding:6px; text-align:left;">Quiz Notu</th>
+                                <th style="border:1px solid #94a3b8; padding:6px; text-align:left;">Sınıf Ortalaması</th>
+                            </tr>
+                        </thead>
+                        <tbody>${studentQuizHtml || '<tr><td colspan="3" style="color:black; text-align:center; border:1px solid #94a3b8; padding:6px;">Quiz sonucu bulunmuyor.</td></tr>'}</tbody>
+                    </table>
                 </div>
+
                 <div style="margin-top:10px;">
-                    <b style="color:black !important; font-size:12px;">Etkinlik ve Ölçek Başarı Sonuçları (Ortalama):</b>
+                    <b style="color:black !important; font-size:12px;">🧪 Etkinlik ve Ölçek Başarı Sonuçları (Ortalama):</b>
                     <table class="data-table" style="width:100%; border-collapse:collapse; font-size:11px; margin-top:5px;">
                         <thead>
                             <tr style="background:#e2e8f0; color:black;">
