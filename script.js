@@ -14,7 +14,7 @@ let fenData = {
     '8': { units: [], activities: [], branches: {} }
 };
 
-// Supabase'den tüm verileri çekme
+// Supabase'den tüm verileri ve rapor şablonlarını çekme
 async function loadAllDataFromSupabase() {
     if (!supabaseClient) return;
     try {
@@ -299,6 +299,75 @@ function updateModalUnits(grade) {
     (fenData[grade]?.units || []).forEach(u => {
         unitSelect.innerHTML += `<option value="${u.name}">${u.name}</option>`;
     });
+}
+
+// 📄 BÖLÜME ÖZEL RAPOR ŞABLONU EKLEME (YENİ ÖZELLİK)
+function globalAddReportTemplate() {
+    const content = `
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
+        <select id="rep-modal-grade" class="auth-input" style="margin-bottom:12px;" onchange="updateRepModalUnits(this.value)">
+            <option value="5">5. Sınıf</option><option value="6">6. Sınıf</option><option value="7" selected>7. Sınıf</option><option value="8">8. Sınıf</option>
+        </select>
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Ünite Seçin:</label>
+        <select id="rep-modal-unit" class="auth-input" style="margin-bottom:12px;" onchange="updateRepModalSections(this.value)"><option value="">Önce sınıf seçin</option></select>
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Bölüm Seçin:</label>
+        <select id="rep-modal-section" class="auth-input" style="margin-bottom:12px;"><option value="">Önce ünite seçin</option></select>
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Resmi Rapor Metni (Word'den kopyalayıp yapıştırın):</label>
+        <textarea id="rep-modal-text" class="auth-input" style="height:150px; font-size:12px; font-family:monospace;" placeholder="TÜRKİYE YÜZYILI MAARİF MODELİ..."></textarea>
+    `;
+
+    openModal("Bölüme Özel Resmi Rapor Şablonu Ekle", content, async () => {
+        const grade = document.getElementById('rep-modal-grade').value;
+        const unitName = document.getElementById('rep-modal-unit').value;
+        const secName = document.getElementById('rep-modal-section').value;
+        const reportText = document.getElementById('rep-modal-text').value.trim();
+
+        if (!unitName || !secName || !reportText) {
+            alert('Lütfen sınıf, ünite, bölüm seçin ve rapor metnini yazın!');
+            return;
+        }
+
+        if (supabaseClient) {
+            const { error } = await supabaseClient.from('report_templates').insert([{
+                grade: grade,
+                unit_name: unitName,
+                section_name: secName,
+                report_text: reportText
+            }]);
+
+            if (error) {
+                alert('Rapor kaydedilirken hata: ' + error.message);
+                return;
+            }
+        }
+
+        alert('Rapor şablonu buluta başarıyla kaydedildi!');
+        closeModal();
+    });
+
+    updateRepModalUnits('7');
+}
+
+function updateRepModalUnits(grade) {
+    const unitSel = document.getElementById('rep-modal-unit');
+    if (!unitSel) return;
+    unitSel.innerHTML = '<option value="">-- Ünite Seçin --</option>';
+    (fenData[grade]?.units || []).forEach(u => {
+        unitSel.innerHTML += `<option value="${u.name}">${u.name}</option>`;
+    });
+}
+
+function updateRepModalSections(unitName) {
+    const grade = document.getElementById('rep-modal-grade').value;
+    const secSel = document.getElementById('rep-modal-section');
+    if (!secSel) return;
+    secSel.innerHTML = '<option value="">-- Bölüm Seçin --</option>';
+    const unit = fenData[grade]?.units.find(u => u.name === unitName);
+    if (unit && unit.sections) {
+        unit.sections.forEach(s => {
+            secSel.innerHTML += `<option value="${s}">${s}</option>`;
+        });
+    }
 }
 
 // 1. EXCEL'DEKİ TÜM SEKMELERİ VE ALT ALTA ÇOKLU ÖLÇEKLERİ OKUMA
@@ -619,7 +688,7 @@ function openBranchDetail(grade, branchName) {
     if (!detailPanel) return;
     detailPanel.innerHTML = `
         <header class="teacher-header">
-            <div class="header-brand"><span class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
+            <div class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
             <button onclick="openGradeManagement('${grade}')" class="logout-btn" style="background-color: #718093;">← Şubelere Dön</button>
         </header>
         <section class="dashboard-content">
@@ -784,7 +853,6 @@ function loadActivitiesForSelection(grade, branchName) {
     renderActivityTable(grade, branchName);
 }
 
-// 2. ÖLÇEK TÜRÜNE GÖRE DİNAMİK TABLO OLUŞTURMA
 function renderActivityTable(grade, branchName) {
     const actName = document.getElementById('activity-name-select')?.value;
     const container = document.getElementById('activity-table-container');
@@ -914,8 +982,8 @@ function loadSectionsForReport(unitName, grade, branchName) {
     renderReportData(grade, branchName);
 }
 
-// BÜTÜN SINIF VE ŞUBELER İÇİN DİNAMİK RESMİ MAARİF MODELİ DÜZ YAZI RAPORU
-function renderReportData(grade, branchName) {
+// 📄 DİNAMİK VE BÖLÜME ÖZEL RAPOR OLUŞTURMA (VERİTABANINDAN ÇEKER)
+async function renderReportData(grade, branchName) {
     const unitName = document.getElementById('rep-unit-sel')?.value;
     const secName = document.getElementById('report-section-select')?.value;
     const container = document.getElementById('report-result-container');
@@ -924,6 +992,22 @@ function renderReportData(grade, branchName) {
     if (!unitName || !secName) {
         container.innerHTML = '<p style="color:#94a3b8;">Rapor oluşturmak için lütfen ünite ve bölüm seçin.</p>';
         return;
+    }
+
+    // Supabase'den bu ünite ve bölüme ait özel rapor şablonunu çek
+    let customReportText = "";
+    if (supabaseClient) {
+        const { data: repData, error } = await supabaseClient
+            .from('report_templates')
+            .select('report_text')
+            .eq('grade', grade)
+            .eq('unit_name', unitName)
+            .eq('section_name', secName)
+            .single();
+
+        if (repData && repData.report_text) {
+            customReportText = repData.report_text;
+        }
     }
 
     const students = fenData[grade]?.branches[branchName] || [];
@@ -995,7 +1079,8 @@ function renderReportData(grade, branchName) {
     const classScaleAverage = scaleStudentCount > 0 ? Math.round(totalScaleAvgSum / scaleStudentCount) : 'Hesaplanmadı';
     const getPercent = (part, total) => total > 0 ? Math.round((part / total) * 100) : 0;
 
-    const narrativeText = `TÜRKİYE YÜZYILI MAARİF MODELİ
+    // Eğer veritabanında özel şablon yoksa varsayılan şablonu oluştur
+    const baseReport = customReportText ? customReportText : `TÜRKİYE YÜZYILI MAARİF MODELİ
 ${grade}. SINIF FEN BİLİMLERİ DERSİ
 ÜNİTE DEĞERLENDİRME VE BAŞARI RAPORU
 
@@ -1005,35 +1090,31 @@ Bölüm / Konu: ${secName}
 Toplam Öğrenci Mevcudu: ${students.length}
 
 ÜNİTEYE İLİŞKİN GENEL DEĞERLENDİRME
-Bu ünitede öğrencilerin bilimsel bilgiye ulaşmaları, bu bilgileri sorgulamaları, değerlendirmeleri ve bilimsel modeller aracılığıyla açıklamaları amaçlanmıştır. Öğretim süreci boyunca öğrencilerin araştırma yapma, bilimsel gözlem gerçekleştirme, veri toplama, bilimsel model oluşturma, çıkarım yapma ve elde edilen bilgileri günlük yaşamla ilişkilendirme becerilerini geliştirmelerine yönelik uygulamalara yer verilmiştir. Süreç boyunca bireysel farklılıklar dikkate alınarak öğrencilerin aktif katılımını destekleyen öğrenme ortamları oluşturulmuştur.
+Bu ünitede öğrencilerin bilimsel bilgiye ulaşmaları, bu bilgileri sorgulamaları ve değerlendirmeleri amaçlanmıştır.`;
 
-ÖĞRENME ÇIKTILARI VE SÜREÇ BİLEŞENLERİNİN DEĞERLENDİRİLMESİ
-${grade}. Sınıf ${branchName} şubesinde yürütülen "${unitName}" ünitesinin "${secName}" bölümüne ilişkin süreç ve sonuç değerlendirmeleri tamamlanmıştır. Sınıf genelinde yapılan ölçme ve değerlendirme çalışmaları sonucunda;
+    const narrativeText = `${baseReport}
+
+--------------------------------------------------
+ŞUBE İSTATİSTİKSEL BAŞARI ANALİZİ (${grade}. Sınıf - ${branchName})
 - Sınıf Quiz Ortalama Puanı: ${classAverage} / 100
 - Etkinlik ve Uygulama Başarı Ortalaması: %${classScaleAverage}
 
-BAŞARI DAĞILIMI VE İSTATİSTİKSEL ANALİZ
-Öğrencilerin başarı durumları 70 ve üzeri (Başarılı), 45-69 arası (Orta / Geliştirilebilir) ve 45 altı (Destek İhtiyacı Olan) kriterlerine göre incelenmiştir:
-
-A) Quiz ve Yazılı Değerlendirme Sonuçları (Katılan Öğrenci: ${quizEvaluatedTotal}):
-- 70 ve Üstü (Başarılı) Alanlar: ${quizHigh} öğrenci (%${getPercent(quizHigh, quizEvaluatedTotal)})
+A) Quiz Değerlendirme Dağılımı (Katılan: ${quizEvaluatedTotal} Öğrenci):
+- 70 ve Üstü (Başarılı): ${quizHigh} öğrenci (%${getPercent(quizHigh, quizEvaluatedTotal)})
 - 45 - 69 Arası (Orta / Geliştirilebilir): ${quizMid} öğrenci (%${getPercent(quizMid, quizEvaluatedTotal)})
 - 45 Altı (Destek İhtiyacı Olan): ${quizLow} öğrenci (%${getPercent(quizLow, quizEvaluatedTotal)})
 
-B) Etkinlik ve Uygulama Ölçek Sonuçları (Değerlendirilen Öğrenci: ${scaleEvaluatedTotal}):
-- %70 ve Üstü Başarı Gösterenler: ${scaleHigh} öğrenci (%${getPercent(scaleHigh, scaleEvaluatedTotal)})
-- %45 - %69 Arası Başarı Gösterenler: ${scaleMid} öğrenci (%${getPercent(scaleMid, scaleEvaluatedTotal)})
-- %45 Altı Başarı Gösterenler: ${scaleLow} öğrenci (%${getPercent(scaleLow, scaleEvaluatedTotal)})
-
-GELİŞİM ALANLARI VE STRATEJİK YAKLAŞIMLAR
-Süreç boyunca öğrencilerin büyük çoğunluğunun bilimsel araştırma basamaklarını uygulama, bilgi okuryazarlığı ve bilimsel model oluşturma konularında önemli gelişim gösterdiği gözlenmiştir. 45 puan altında kalan öğrenciler için ek pekiştirme ve modelleme etkinliklerinin düzenlenmesi planlanmıştır. Türkiye Yüzyılı Maarif Modeli doğrultusunda bilimsel çıkarım yapma, iş birliği ve etkili iletişim değerleri süreç bütünleşik olarak yansıtılmıştır.`;
+B) Etkinlik Ölçek Dağılımı (Değerlendirilen: ${scaleEvaluatedTotal} Öğrenci):
+- %70 ve Üstü Başarı: ${scaleHigh} öğrenci (%${getPercent(scaleHigh, scaleEvaluatedTotal)})
+- %45 - %69 Arası Başarı: ${scaleMid} öğrenci (%${getPercent(scaleMid, scaleEvaluatedTotal)})
+- %45 Altı Başarı: ${scaleLow} öğrenci (%${getPercent(scaleLow, scaleEvaluatedTotal)})`;
 
     container.innerHTML = `
         <div style="background:rgba(15,23,42,0.85); padding:20px; border-radius:14px; margin-bottom:20px; border:1px solid rgba(255,255,255,0.1); box-shadow:0 10px 25px rgba(0,0,0,0.3);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.08); flex-wrap:wrap; gap:15px;">
                 <div>
-                    <h4 style="color:#f8fafc; margin-bottom:4px;">📋 Resmi Maarif Modeli Düz Yazı Raporu (${grade}. Sınıf - ${branchName})</h4>
-                    <p style="color:#94a3b8; font-size:13px; margin:0;">Tüm sınıf, şube ve bölümler için otomatik üretilen resmi rapor metni</p>
+                    <h4 style="color:#f8fafc; margin-bottom:4px;">📋 Resmi Maarif Modeli Raporu (${grade}. Sınıf - ${branchName})</h4>
+                    <p style="color:#94a3b8; font-size:13px; margin:0;">Bölüme özel şablon ve canlı şube verileriyle otomatik birleştirildi</p>
                 </div>
                 <button onclick="copyNarrativeReport()" class="action-btn student-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">📋 Raporu Metin Olarak Kopyala</button>
             </div>
@@ -1198,7 +1279,7 @@ async function studentLogin() {
     openStudentPanel(grade, branch, foundStudent);
 }
 
-// ÖĞRENCİ PANELİ
+// 👨‍🎓 ÖĞRENCİ PANELİ (ŞUBE GENEL ORTALAMALARINI GÖSTERECEK ŞEKİLDE GÜNCELLENDİ)
 function openStudentPanel(grade, branch, student) {
     const studentPanel = document.getElementById('student-panel');
     if (!studentPanel) return;
@@ -1217,7 +1298,6 @@ function openStudentPanel(grade, branch, student) {
             }
         });
     }
-    const studentQuizAvg = quizCount > 0 ? (totalQuizScore / quizCount).toFixed(1) : 'Henüz Not Yok';
 
     let scaleRows = '';
     let totalScaleScore = 0;
@@ -1232,7 +1312,37 @@ function openStudentPanel(grade, branch, student) {
             }
         });
     }
-    const studentScaleAvg = scaleCount > 0 ? Math.round(totalScaleScore / scaleCount) + '%' : 'Henüz Değerlendirme Yok';
+
+    // ŞUBE GENEL ORTALAMALARINI HESAPLAMA
+    const branchStudents = fenData[grade]?.branches[branch] || [];
+    
+    let branchTotalQuiz = 0;
+    let branchQuizEvaluatedCount = 0;
+    branchStudents.forEach(bs => {
+        if (bs.quiz) {
+            Object.values(bs.quiz).forEach(qVal => {
+                if (qVal !== '' && qVal !== undefined && !isNaN(qVal)) {
+                    branchTotalQuiz += parseFloat(qVal);
+                    branchQuizEvaluatedCount++;
+                }
+            });
+        }
+    });
+    const branchQuizAvgDisplay = branchQuizEvaluatedCount > 0 ? (branchTotalQuiz / branchQuizEvaluatedCount).toFixed(1) + ' Puan' : 'Hesaplanmadı';
+
+    let branchTotalScale = 0;
+    let branchScaleEvaluatedCount = 0;
+    branchStudents.forEach(bs => {
+        if (bs.scale) {
+            Object.values(bs.scale).forEach(actObj => {
+                if (actObj && actObj['totalScore'] !== undefined) {
+                    branchTotalScale += actObj['totalScore'];
+                    branchScaleEvaluatedCount++;
+                }
+            });
+        }
+    });
+    const branchScaleAvgDisplay = branchScaleEvaluatedCount > 0 ? Math.round(branchTotalScale / branchScaleEvaluatedCount) + '%' : 'Hesaplanmadı';
 
     studentPanel.innerHTML = `
         <header class="teacher-header">
@@ -1250,8 +1360,8 @@ function openStudentPanel(grade, branch, student) {
             <div style="background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); padding: 24px; border-radius: 20px; margin-bottom: 30px; display: flex; gap: 30px; flex-wrap: wrap; box-shadow: 0 15px 35px rgba(0,0,0,0.4); position:relative; z-index:1;">
                 <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">OKUL NO</span><span style="color:#f8fafc; font-size:18px; font-weight:700;">${student.no}</span></div>
                 <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">SINIF / ŞUBE</span><span style="color:#f8fafc; font-size:18px; font-weight:700;">${grade}. Sınıf - ${branch}</span></div>
-                <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">QUIZ ORTALAMASI</span><span style="color:#60a5fa; font-size:20px; font-weight:800;">${studentQuizAvg}</span></div>
-                <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">ÖLÇEK ORTALAMASI</span><span style="color:#34d399; font-size:20px; font-weight:800;">${studentScaleAvg}</span></div>
+                <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">SINIF QUIZ ORT.</span><span style="color:#60a5fa; font-size:20px; font-weight:800;">${branchQuizAvgDisplay}</span></div>
+                <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">SINIF ÖLÇEK ORT.</span><span style="color:#34d399; font-size:20px; font-weight:800;">${branchScaleAvgDisplay}</span></div>
                 <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">ARTI / EKSİ</span><span style="color:#fbbf24; font-size:18px; font-weight:700;">+${student.plus} / -${student.minus}</span></div>
             </div>
 
