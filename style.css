@@ -1,6 +1,5 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
 
-/* Uzay / Fen Bilimleri Temalı Hareketli Arka Plan */
 body { 
     background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%); 
     color: #f8fafc; 
@@ -12,7 +11,6 @@ body {
     position: relative;
 }
 
-/* Tüm Sayfayı Kaplayan Arka Plan Konteynerı */
 .space-bg {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -21,7 +19,6 @@ body {
     overflow: hidden;
 }
 
-/* Büyük, Belirgin ve Ölçeklenebilir Semboller */
 .floating-symbol {
     position: absolute;
     font-size: clamp(45px, 7vw, 90px); 
@@ -30,7 +27,6 @@ body {
     transition: transform 7s ease-in-out, left 7s ease-in-out, top 7s ease-in-out;
 }
 
-/* Kart üzerindeki küçük roket animasyonu */
 @keyframes floatRocket {
     0% { transform: translateY(0px) rotate(0deg); }
     50% { transform: translateY(-15px) rotate(3deg); }
@@ -41,7 +37,6 @@ body {
     display: inline-block;
 }
 
-/* Giriş Ekranı (Modern Glassmorphism) */
 .auth-container { 
     display: flex; 
     justify-content: center; 
@@ -73,7 +68,6 @@ body {
 .auth-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(37,99,235,0.4); }
 .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,0.6); }
 
-/* Modern Header */
 .teacher-header { 
     background: rgba(15, 23, 42, 0.8); 
     backdrop-filter: blur(12px);
@@ -94,8 +88,6 @@ body {
 .dashboard-content { max-width: 1200px; margin: 30px auto; width: 100%; padding: 0 15px; flex: 1; z-index: 1; position: relative; box-sizing: border-box; }
 .dashboard-content > div { max-width: 100% !important; box-sizing: border-box; }
 
-.teacher-action-bar { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; }
-
 .grade-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
 .grade-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 30px 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; cursor: pointer; transition: all 0.3s ease; border-top: 4px solid #3b82f6; position: relative; overflow: hidden; }
 .grade-card:hover { transform: translateY(-6px); box-shadow: 0 15px 35px rgba(59,130,246,0.3); border-color: rgba(59,130,246,0.5); background: rgba(255, 255, 255, 0.08); }
@@ -103,12 +95,11 @@ body {
 .grade-card p { color: #94a3b8; font-size: 14px; margin-bottom: 15px; }
 .card-action { color: #60a5fa; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 5px; }
 
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
-.modal-box { background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); padding: 35px; border-radius: 24px; width: 100%; max-width: 480px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; overflow-y: auto; }
+.modal-box { background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); padding: 35px; border-radius: 24px; width: 100%; max-width: 640px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
 .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #f8fafc; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px; }
 
-/* TÜM TABLOLAR İÇİN MOBİL UYUMLULUK VE KELİME BÖLÜNMESİNİ ÖNLEME KURALLARI */
 .table-responsive { 
     width: 100%; 
     overflow-x: auto; 
@@ -136,7 +127,6 @@ body {
     word-break: normal; 
 }
 
-/* Not/puan ifadelerinin (Örn: 100 Puan) alt alta kaymasını kesin olarak engeller */
 .data-table th:nth-child(2), .data-table td:nth-child(2) { 
     white-space: nowrap !important; 
 }
@@ -158,3 +148,83 @@ body {
 .branch-tab-card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-3px); }
 .branch-tab-card.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.15); box-shadow: 0 10px 25px rgba(59,130,246,0.3); }
 .branch-tab-card h3 { color: #f8fafc; font-size: 16px; font-weight: 600; }
+
+@media print {
+    @page { size: A4 portrait; margin: 8mm; }
+    
+    body { 
+        background: white !important; 
+        color: black !important; 
+        font-size: 11px !important; 
+        display: block !important; 
+        height: auto !important; 
+        min-height: auto !important; 
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #auth-screen, #teacher-panel, #grade-detail-panel, #student-panel, 
+    .space-bg, .teacher-header, .branch-tabs-grid, button, .logout-btn, 
+    .modal-footer, #app-modal > .modal-box > .modal-footer, .dashboard-content { 
+        display: none !important; 
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #app-modal { 
+        position: absolute !important; 
+        top: 0 !important; 
+        left: 0 !important; 
+        width: 100% !important; 
+        height: auto !important; 
+        background: white !important; 
+        display: block !important; 
+        padding: 0 !important; 
+        margin: 0 !important; 
+        overflow: visible !important; 
+        z-index: 9999 !important;
+    }
+
+    .modal-box { 
+        background: white !important; 
+        border: none !important; 
+        box-shadow: none !important; 
+        width: 100% !important; 
+        max-width: 100% !important; 
+        color: black !important; 
+        padding: 0 !important; 
+        margin: 0 !important; 
+        max-height: none !important; 
+        overflow: visible !important; 
+    }
+
+    .modal-box * { color: black !important; }
+
+    .data-table { 
+        background: white !important; 
+        color: black !important; 
+        border: 1px solid #999 !important; 
+        font-size: 11px !important; 
+        margin-top: 5px !important; 
+        margin-bottom: 5px !important; 
+    }
+    
+    .data-table th, .data-table td { 
+        color: black !important; 
+        padding: 5px 8px !important; 
+        border-bottom: 1px solid #999 !important; 
+    }
+    
+    div { margin-bottom: 4px !important; }
+    
+    textarea { 
+        border: none !important; 
+        background: transparent !important; 
+        resize: none !important; 
+        color: black !important; 
+        font-family: monospace !important; 
+        height: auto !important; 
+    }
+}
