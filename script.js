@@ -53,6 +53,12 @@ async function loadAllDataFromSupabase() {
                     scale: row.scale || {}
                 });
             });
+
+            Object.keys(fenData).forEach(g => {
+                Object.keys(fenData[g].branches).forEach(b => {
+                    fenData[g].branches[b].sort((a, b) => parseInt(a.no) - parseInt(b.no));
+                });
+            });
         }
 
         const { data: unitRows, error: uErr } = await supabaseClient.from('units_sections').select('*');
@@ -104,6 +110,10 @@ async function loadAllDataFromSupabase() {
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAllDataFromSupabase();
 
+    if (!history.state) {
+        history.replaceState({ type: 'auth' }, '', '');
+    }
+
     const gradeSelect = document.getElementById('student-grade');
     if (gradeSelect) {
         gradeSelect.addEventListener('change', function() {
@@ -119,6 +129,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         });
+    }
+});
+
+// Tarayıcı Geri / İleri tuş yönetimi (PopState)
+window.addEventListener('popstate', (event) => {
+    const state = event.state;
+    if (!state || state.type === 'auth') {
+        renderAuthScreenView();
+    } else if (state.type === 'teacher') {
+        renderTeacherPanelView();
+    } else if (state.type === 'grade-mgmt') {
+        renderGradeManagementView(state.grade);
+    } else if (state.type === 'branch-detail') {
+        renderBranchDetailView(state.grade, state.branchName);
+    } else if (state.type === 'student') {
+        renderStudentPanelView(state.grade, state.branch, state.student);
+    } else {
+        renderAuthScreenView();
     }
 });
 
@@ -143,7 +171,7 @@ function switchAuthTab(role) {
     }
 }
 
-async function teacherLogin() {
+async function teacherLogin(push = true) {
     const email = document.getElementById('teacher-email').value.trim();
     const password = document.getElementById('teacher-password').value.trim();
 
@@ -158,23 +186,50 @@ async function teacherLogin() {
             if (error) { console.log('Auth warning:', error.message); }
         }
         await loadAllDataFromSupabase();
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('teacher-panel').style.display = 'block';
+        if (push) {
+            history.pushState({ type: 'teacher' }, '', '');
+        }
+        renderTeacherPanelView();
     } catch (err) {
         console.error(err);
         await loadAllDataFromSupabase();
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('teacher-panel').style.display = 'block';
+        if (push) {
+            history.pushState({ type: 'teacher' }, '', '');
+        }
+        renderTeacherPanelView();
     }
 }
 
-async function logout() {
+function renderTeacherPanelView() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('grade-detail-panel').style.display = 'none';
+    document.getElementById('student-panel').style.display = 'none';
+    document.getElementById('teacher-panel').style.display = 'flex';
+    closeModal();
+}
+
+async function logout(push = true) {
     if (supabaseClient) await supabaseClient.auth.signOut();
     await loadAllDataFromSupabase();
+    if (push) {
+        history.pushState({ type: 'auth' }, '', '');
+    }
+    renderAuthScreenView();
+}
+
+function logoutStudent(push = true) {
+    if (push) {
+        history.pushState({ type: 'auth' }, '', '');
+    }
+    renderAuthScreenView();
+}
+
+function renderAuthScreenView() {
     document.getElementById('teacher-panel').style.display = 'none';
     document.getElementById('grade-detail-panel').style.display = 'none';
     document.getElementById('student-panel').style.display = 'none';
     document.getElementById('auth-screen').style.display = 'flex';
+    closeModal();
 }
 
 function openModal(title, htmlContent, onConfirm) {
@@ -629,11 +684,21 @@ function toggleDelFields() {
     }
 }
 
-function openGradeManagement(grade) {
+function openGradeManagement(grade, push = true) {
+    if (push) {
+        history.pushState({ type: 'grade-mgmt', grade }, '', '');
+    }
+    renderGradeManagementView(grade);
+}
+
+function renderGradeManagementView(grade) {
+    document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('teacher-panel').style.display = 'none';
+    document.getElementById('student-panel').style.display = 'none';
     const detailPanel = document.getElementById('grade-detail-panel');
     if (!detailPanel) return;
     detailPanel.style.display = 'block';
+    closeModal();
 
     let branchCards = '';
     const branches = fenData[grade]?.branches || {};
@@ -646,7 +711,7 @@ function openGradeManagement(grade) {
                     <p>${studentCount} Öğrenci Kayıtlı</p>
                     <span class="card-action">Şubeye Git &rarr;</span>
                 </div>
-                <button onclick="deleteBranch('${grade}', '${bName}')" style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; padding: 2px 6px; cursor: pointer;">Sil</button>
+                <button onclick="event.stopPropagation(); deleteBranch('${grade}', '${bName}')" style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; padding: 2px 6px; cursor: pointer;">Sil</button>
             </div>
         `;
     });
@@ -669,13 +734,25 @@ function openGradeManagement(grade) {
 }
 
 function backToTeacherPanel() {
-    document.getElementById('grade-detail-panel').style.display = 'none';
-    document.getElementById('teacher-panel').style.display = 'block';
+    history.back();
 }
 
-function openBranchDetail(grade, branchName) {
+function openBranchDetail(grade, branchName, push = true) {
+    if (push) {
+        history.pushState({ type: 'branch-detail', grade, branchName }, '', '');
+    }
+    renderBranchDetailView(grade, branchName);
+}
+
+function renderBranchDetailView(grade, branchName) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('teacher-panel').style.display = 'none';
+    document.getElementById('student-panel').style.display = 'none';
     const detailPanel = document.getElementById('grade-detail-panel');
     if (!detailPanel) return;
+    detailPanel.style.display = 'block';
+    closeModal();
+
     detailPanel.innerHTML = `
         <header class="teacher-header">
             <div class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
@@ -719,7 +796,10 @@ function switchBranchTab(cardElement, tabType, grade, branchName) {
         contentArea.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
                 <h3 style="color:#f8fafc;">Öğrenci Listesi ve Anlık Performans (${branchName})</h3>
-                <button onclick="addStudentModal('${grade}', '${branchName}')" class="action-btn student-btn" style="width:auto; padding:8px 16px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer;">+ Öğrenci Ekle</button>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="openBulkStudentModal('${grade}', '${branchName}')" class="action-btn" style="width:auto; padding:8px 16px; background:#059669; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;">📋 e-Okul Listesini Toplu Yapıştır</button>
+                    <button onclick="addStudentModal('${grade}', '${branchName}')" class="action-btn student-btn" style="width:auto; padding:8px 16px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer;">+ Öğrenci Ekle</button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="data-table">
@@ -760,6 +840,64 @@ function switchBranchTab(cardElement, tabType, grade, branchName) {
             <div id="report-result-container" style="margin-top:20px;"></div>
         `;
     }
+}
+
+function openBulkStudentModal(grade, branchName) {
+    const content = `
+        <p style="color:#cbd5e1; font-size:13px; margin-bottom:10px;">
+            ℹ️ e-Okul veya Excel'deki öğrenci listesini (Okul No ve Ad Soyad sütunlarını) kopyalayıp aşağıdaki kutuya doğrudan yapıştırın:
+        </p>
+        <textarea id="bulk-student-text" class="auth-input" style="height:200px; font-family:monospace; font-size:12px;" placeholder="2\tMUHAMMED HALİL İBRAHİM VARLI\n29\tİREM DİNÇ..."></textarea>
+    `;
+
+    openModal(`Toplu Öğrenci Aktar (${branchName})`, content, async () => {
+        const rawText = document.getElementById('bulk-student-text').value.trim();
+        if (!rawText) {
+            alert('Lütfen e-Okul listesini yapıştırın!');
+            return;
+        }
+
+        const lines = rawText.split('\n');
+        let addedCount = 0;
+
+        for (let line of lines) {
+            let parts = line.split('\t');
+            if (parts.length < 2) {
+                parts = line.trim().split(/\s{2,}/);
+            }
+
+            if (parts.length >= 2) {
+                let schoolNo = parseInt(parts[0].trim());
+                let studentName = parts[1].trim().toUpperCase();
+
+                if (!isNaN(schoolNo) && studentName) {
+                    if (supabaseClient) {
+                        await supabaseClient.from('students').insert([{
+                            grade: grade,
+                            branch: branchName,
+                            school_no: schoolNo,
+                            name: studentName,
+                            plus: 0,
+                            minus: 0,
+                            quiz: {},
+                            scale: {}
+                        }]);
+                    }
+                    addedCount++;
+                }
+            }
+        }
+
+        await loadAllDataFromSupabase();
+        
+        if (fenData[grade]?.branches[branchName]) {
+            fenData[grade].branches[branchName].sort((a, b) => parseInt(a.no) - parseInt(b.no));
+        }
+
+        alert(`Toplam ${addedCount} öğrenci başarıyla eklendi ve numaraya göre sıralandı!`);
+        closeModal();
+        openBranchDetail(grade, branchName, false);
+    });
 }
 
 function loadSectionsForQuiz(unitName, grade, branchName) {
@@ -1441,9 +1579,14 @@ function addStudentModal(grade, branchName) {
         }
 
         await loadAllDataFromSupabase();
-        alert('Öğrenci buluta başarıyla kaydedildi!');
+        
+        if (fenData[grade]?.branches[branchName]) {
+            fenData[grade].branches[branchName].sort((a, b) => parseInt(a.no) - parseInt(b.no));
+        }
+
+        alert('Öğrenci buluta başarıyla kaydedildi ve sıralandı!');
         closeModal();
-        openBranchDetail(grade, branchName);
+        openBranchDetail(grade, branchName, false);
     });
 }
 
@@ -1461,7 +1604,7 @@ async function updatePoint(grade, branchName, index, type, val) {
     }
 
     await loadAllDataFromSupabase();
-    openBranchDetail(grade, branchName);
+    openBranchDetail(grade, branchName, false);
 }
 
 async function deleteStudent(grade, branchName, index) {
@@ -1470,10 +1613,10 @@ async function deleteStudent(grade, branchName, index) {
         await supabaseClient.from('students').delete().eq('grade', grade).eq('branch', branchName).eq('school_no', student.no);
     }
     await loadAllDataFromSupabase();
-    openBranchDetail(grade, branchName);
+    openBranchDetail(grade, branchName, false);
 }
 
-async function studentLogin() {
+async function studentLogin(push = true) {
     const grade = document.getElementById('student-grade').value;
     const branch = document.getElementById('student-branch').value;
     const numberInput = document.getElementById('student-number').value.trim();
@@ -1528,14 +1671,20 @@ async function studentLogin() {
         return;
     }
 
-    document.getElementById('auth-screen').style.display = 'none';
-    openStudentPanel(grade, branch, foundStudent);
+    if (push) {
+        history.pushState({ type: 'student', grade, branch, student: foundStudent }, '', '');
+    }
+    renderStudentPanelView(grade, branch, foundStudent);
 }
 
-function openStudentPanel(grade, branch, student) {
+function renderStudentPanelView(grade, branch, student) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('teacher-panel').style.display = 'none';
+    document.getElementById('grade-detail-panel').style.display = 'none';
     const studentPanel = document.getElementById('student-panel');
     if (!studentPanel) return;
     studentPanel.style.display = 'block';
+    closeModal();
 
     const branchStudents = fenData[grade]?.branches[branch] || [];
 
@@ -1672,11 +1821,4 @@ function openStudentPanel(grade, branch, student) {
             </div>
         </section>
     `;
-}
-
-function logoutStudent() {
-    const studentPanel = document.getElementById('student-panel');
-    if (studentPanel) studentPanel.style.display = 'none';
-    const authScreen = document.getElementById('auth-screen');
-    if (authScreen) authScreen.style.display = 'flex';
 }
