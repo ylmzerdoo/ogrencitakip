@@ -715,7 +715,6 @@ function renderGradeManagementView(grade) {
         `;
     });
 
-    // "Sınıflara Dön" butonu header'dan kaldırıldı
     detailPanel.innerHTML = `
         <header class="teacher-header">
             <div class="header-brand"><span class="brand-icon">📚</span><h1>${grade}. SINIFLAR ŞUBE YÖNETİMİ</h1></div>
@@ -748,7 +747,6 @@ function renderBranchDetailView(grade, branchName) {
     detailPanel.style.display = 'block';
     closeModal();
 
-    // "Şubelere Dön" butonu header'dan kaldırıldı
     detailPanel.innerHTML = `
         <header class="teacher-header">
             <div class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
@@ -816,7 +814,7 @@ function switchBranchTab(cardElement, tabType, grade, branchName) {
     } else if (tabType === 'activities') {
         contentArea.innerHTML = `
             <h3 style="color:#f8fafc;">🧪 Etkinlik Ölçekleri</h3>
-            <p style="color: #94a3b8; margin-top: 5px;">Ünite, bölüm ve Excel'den gelen ölçekleri seçerek aktif işaretleme yapın.</p>
+            <p style="color: #94a3b8; margin-top: 5px;">Ünite, bölüm ve ölçek seçin. İstediğiniz öğrencinin <b>⚡ Hızlı Puan</b> kutusuna hedef yüzdeliği (örn: 65 veya 85) yazarak o ölçeğin otomatik dolmasını sağlayın!</p>
             <div style="display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap;">
                 <select id="act-unit-sel" class="auth-input" style="flex:1; min-width:180px;" onchange="loadSectionsForActivity(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
                 <select id="activity-section-select" class="auth-input" style="flex:1; min-width:180px;" onchange="loadActivitiesForSelection('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
@@ -997,13 +995,22 @@ function renderActivityTable(grade, branchName) {
     const scaleType = actObj?.scale_type || '1-4'; 
     const students = fenData[grade]?.branches[branchName] || [];
 
-    let headerTh = '<th>No</th><th>Ad Soyad</th>';
+    let headerTh = '<th>No</th><th>Ad Soyad</th><th>⚡ Hızlı Puan (0-100)</th>';
     criteria.forEach((c) => { headerTh += `<th>${c}</th>`; });
     headerTh += '<th>Başarı (%)</th>';
 
     let rows = '';
     students.forEach((s, sIdx) => {
         let cols = `<td>${s.no}</td><td>${s.name}</td>`;
+        
+        // Hızlı Puan Giriş Kutusu (İstediğin gibi 65, 85 vb. doğrudan puan yazılabilir)
+        cols += `<td>
+            <div style="display:flex; gap:4px; align-items:center;">
+                <input type="number" id="quick-input-${sIdx}" class="auth-input" style="padding:4px; width:65px; font-size:12px; text-align:center;" min="0" max="100" placeholder="Örn:65">
+                <button onclick="applyTargetPercentage(${sIdx}, ${criteria.length}, '${scaleType}')" style="background:#0284c7; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:600;" title="Puanı Ölçeğe Uygula">Uygula</button>
+            </div>
+        </td>`;
+
         let totalScore = 0;
         let maxScore = criteria.length * (scaleType === '1-4' ? 4 : 1);
 
@@ -1046,7 +1053,7 @@ function renderActivityTable(grade, branchName) {
     container.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
             <div style="font-size:12px; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
-                ℹ️ <b>Ölçek Türü:</b> ${scaleType === '1-4' ? '1-4 Puan Skalası' : (scaleType === 'var-yok' ? 'Var / Yok Sistemi' : 'Evet / Hayır Sistemi')}
+                ℹ️ <b>Akıllı Otomasyon:</b> Öğrencinin yanındaki kutuya hedef puanını (örn: <b>65</b> veya <b>85</b>) yazıp <b>Uygula</b> butonuna bastığında, sistem seçili ölçek kriterlerini o puana en yakın şekilde otomatik olarak dağıtır!
             </div>
             <button onclick="openActivityPrintModal('${grade}', '${branchName}', '${unitName || ''}', '${secName || ''}', '${actName}')" class="action-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Etkinlik Ölçeğini Yazdır / PDF İndir</button>
         </div>
@@ -1058,6 +1065,50 @@ function renderActivityTable(grade, branchName) {
         </div>
         <button onclick="saveScaleScores('${grade}', '${branchName}', '${actName}', '${scaleType}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Ölçek Puanlarını Kaydet</button>
     `;
+}
+
+// Girilen Hedef Yüzde Puanına Göre Ölçek Kriterlerini Otomatik Dağıtan Akıllı Fonksiyon
+function applyTargetPercentage(sIdx, criteriaCount, scaleType) {
+    const inputEl = document.getElementById(`quick-input-${sIdx}`);
+    if (!inputEl) return;
+    const targetVal = parseFloat(inputEl.value);
+    if (isNaN(targetVal) || targetVal < 0 || targetVal > 100) {
+        alert('Lütfen 0 ile 100 arasında geçerli bir puan girin!');
+        return;
+    }
+
+    if (scaleType === '1-4') {
+        let maxTotal = criteriaCount * 4;
+        let targetScore = Math.round((targetVal / 100) * maxTotal);
+        if (targetScore < criteriaCount) targetScore = criteriaCount;
+        if (targetScore > maxTotal) targetScore = maxTotal;
+
+        let baseVal = Math.floor(targetScore / criteriaCount);
+        let remainder = targetScore % criteriaCount;
+
+        for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
+            let val = baseVal + (cIdx < remainder ? 1 : 0);
+            if (val < 1) val = 1;
+            if (val > 4) val = 4;
+
+            const selectEl = document.getElementById(`scale-${sIdx}-${cIdx}`);
+            if (selectEl) {
+                selectEl.value = val;
+            }
+        }
+    } else {
+        // Var-Yok / Evet-Hayır için (1 veya 0)
+        let targetScore = Math.round((targetVal / 100) * criteriaCount);
+        for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
+            let val = cIdx < targetScore ? 1 : 0;
+            const selectEl = document.getElementById(`scale-${sIdx}-${cIdx}`);
+            if (selectEl) {
+                selectEl.value = val;
+            }
+        }
+    }
+
+    calculateLiveScore(sIdx, criteriaCount, scaleType);
 }
 
 function openActivityPrintModal(grade, branchName, unitName, secName, actName) {
@@ -1809,7 +1860,7 @@ function renderStudentPanelView(grade, branch, student) {
             <div class="table-responsive">
                 <table class="data-table">
                     <thead><tr><th>Etkinlik Adı</th><th>Başarı Puanım (Ort.)</th><th>Sınıf Ort.</th></tr></thead>
-                    <tbody>${scaleRows || '<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:20px;">Henüz değerlendirilmiş etkinlik ölçeğiniz bulunmuyor. 🧬</td></tr>'}</tbody>
+                    <tbody>${scaleRows || '<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:20px;">Henüz değerlendirilmiş etkinlik ölçeğiniz bulunguyor. 🧬</td></tr>'}</tbody>
                 </table>
             </div>
         </section>
