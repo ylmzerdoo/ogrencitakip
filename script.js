@@ -132,7 +132,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Tarayıcı Geri / İleri tuş yönetimi (PopState)
 window.addEventListener('popstate', (event) => {
     const state = event.state;
     if (!state || state.type === 'auth') {
@@ -275,7 +274,7 @@ function addNewBranchModal(grade) {
 
         await loadAllDataFromSupabase();
         closeModal();
-        openGradeManagement(grade);
+        openGradeManagement(grade, false);
     });
 }
 
@@ -286,7 +285,7 @@ async function deleteBranch(grade, bName) {
             await supabaseClient.from('students').delete().eq('grade', grade).eq('branch', bName);
         }
         await loadAllDataFromSupabase();
-        openGradeManagement(grade);
+        openGradeManagement(grade, false);
     }
 }
 
@@ -716,10 +715,10 @@ function renderGradeManagementView(grade) {
         `;
     });
 
+    // "Sınıflara Dön" butonu header'dan kaldırıldı
     detailPanel.innerHTML = `
         <header class="teacher-header">
             <div class="header-brand"><span class="brand-icon">📚</span><h1>${grade}. SINIFLAR ŞUBE YÖNETİMİ</h1></div>
-            <button onclick="backToTeacherPanel()" class="logout-btn" style="background-color: #718093;">← Sınıflara Dön</button>
         </header>
         <section class="dashboard-content">
             <div style="margin-bottom: 25px;">
@@ -731,10 +730,6 @@ function renderGradeManagementView(grade) {
             </div>
         </section>
     `;
-}
-
-function backToTeacherPanel() {
-    history.back();
 }
 
 function openBranchDetail(grade, branchName, push = true) {
@@ -753,10 +748,10 @@ function renderBranchDetailView(grade, branchName) {
     detailPanel.style.display = 'block';
     closeModal();
 
+    // "Şubelere Dön" butonu header'dan kaldırıldı
     detailPanel.innerHTML = `
         <header class="teacher-header">
             <div class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
-            <button onclick="openGradeManagement('${grade}')" class="logout-btn" style="background-color: #718093;">← Şubelere Dön</button>
         </header>
         <section class="dashboard-content">
             <div class="branch-tabs-grid">
@@ -1389,7 +1384,6 @@ function openClassFullReportModal(grade, branchName, unitName, secName) {
                 <p><b>Toplam Mevcut:</b> ${students.length} | <b>Sınıf Quiz Ort.:</b> ${classAverage} | <b>Sınıf Ölçek Ort.:</b> ${classScaleAverage}</p>
             </div>
 
-            <!-- 1. ÖNCE ÖĞRENCİ LİSTESİ VE TABLO -->
             <h4 style="color:black !important; font-size:13px; margin-bottom:5px; font-weight:700;">👥 Öğrenci Listesi ve Sonuç Özetleri</h4>
             <div class="table-responsive" style="margin-bottom:15px;">
                 <table class="data-table" style="width:100%; border-collapse:collapse; font-size:11px;">
@@ -1405,7 +1399,6 @@ function openClassFullReportModal(grade, branchName, unitName, secName) {
                 </table>
             </div>
 
-            <!-- 2. SONRA RAPOR METNİNİN KENDİSİ -->
             <div style="margin-top:15px;">
                 <h4 style="color:black !important; font-size:13px; margin-bottom:5px; font-weight:700;">📄 Resmi Sınıf Rapor Metni</h4>
                 <div style="width:100%; background:#f8fafc; color:black !important; border:1px solid #94a3b8; border-radius:6px; padding:10px; font-family:monospace; font-size:11px; white-space: pre-wrap; line-height:1.4;">${narrativeText}</div>
