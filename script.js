@@ -94,9 +94,9 @@ async function loadAllDataFromSupabase() {
                 if (!g) return;
                 if (!fenData[g].activities) fenData[g].activities = [];
                 fenData[g].activities.push({
-                    name: row.activity_name,
-                    unit: row.unit_name,
-                    section: row.section_name,
+                    name: row.activity_name ? row.activity_name.trim() : '',
+                    unit: row.unit_name ? row.unit_name.trim() : '',
+                    section: row.section_name ? row.section_name.trim() : '',
                     criteria: row.criteria || [],
                     scale_type: row.scale_type || '1-4'
                 });
@@ -109,10 +109,6 @@ async function loadAllDataFromSupabase() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAllDataFromSupabase();
-
-    if (!history.state) {
-        history.replaceState({ type: 'auth' }, '', '');
-    }
 
     const gradeSelect = document.getElementById('student-grade');
     if (gradeSelect) {
@@ -130,6 +126,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+
+    const savedState = localStorage.getItem('fen_app_state');
+    if (savedState) {
+        try {
+            const state = JSON.parse(savedState);
+            if (state.type === 'teacher') {
+                renderTeacherPanelView(false);
+            } else if (state.type === 'grade-mgmt') {
+                renderGradeManagementView(state.grade, false);
+            } else if (state.type === 'branch-detail') {
+                renderBranchDetailView(state.grade, state.branchName, false);
+            } else if (state.type === 'student') {
+                renderStudentPanelView(state.grade, state.branch, state.student, false);
+            } else {
+                renderAuthScreenView();
+            }
+        } catch (e) {
+            renderAuthScreenView();
+        }
+    } else {
+        renderAuthScreenView();
+    }
 });
 
 window.addEventListener('popstate', (event) => {
@@ -137,13 +155,13 @@ window.addEventListener('popstate', (event) => {
     if (!state || state.type === 'auth') {
         renderAuthScreenView();
     } else if (state.type === 'teacher') {
-        renderTeacherPanelView();
+        renderTeacherPanelView(false);
     } else if (state.type === 'grade-mgmt') {
-        renderGradeManagementView(state.grade);
+        renderGradeManagementView(state.grade, false);
     } else if (state.type === 'branch-detail') {
-        renderBranchDetailView(state.grade, state.branchName);
+        renderBranchDetailView(state.grade, state.branchName, false);
     } else if (state.type === 'student') {
-        renderStudentPanelView(state.grade, state.branch, state.student);
+        renderStudentPanelView(state.grade, state.branch, state.student, false);
     } else {
         renderAuthScreenView();
     }
@@ -155,17 +173,17 @@ function switchAuthTab(role) {
     const studentForm = document.getElementById('student-auth-form');
     const teacherForm = document.getElementById('teacher-auth-form');
 
-    if (!studentBtn || !teacherBtn) return;
+    if (!studentBtn || !teacherBtn || !studentForm || !teacherForm) return;
 
     if (role === 'student') {
         studentBtn.classList.add('active');
         teacherBtn.classList.remove('active');
-        studentForm.style.display = 'flex';
+        studentForm.style.display = 'block';
         teacherForm.style.display = 'none';
     } else {
         teacherBtn.classList.add('active');
         studentBtn.classList.remove('active');
-        teacherForm.style.display = 'flex';
+        teacherForm.style.display = 'block';
         studentForm.style.display = 'none';
     }
 }
@@ -185,21 +203,19 @@ async function teacherLogin(push = true) {
             if (error) { console.log('Auth warning:', error.message); }
         }
         await loadAllDataFromSupabase();
-        if (push) {
-            history.pushState({ type: 'teacher' }, '', '');
-        }
-        renderTeacherPanelView();
+        renderTeacherPanelView(push);
     } catch (err) {
         console.error(err);
         await loadAllDataFromSupabase();
-        if (push) {
-            history.pushState({ type: 'teacher' }, '', '');
-        }
-        renderTeacherPanelView();
+        renderTeacherPanelView(push);
     }
 }
 
-function renderTeacherPanelView() {
+function renderTeacherPanelView(push = true) {
+    localStorage.setItem('fen_app_state', JSON.stringify({ type: 'teacher' }));
+    if (push) {
+        history.pushState({ type: 'teacher' }, '', '');
+    }
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('grade-detail-panel').style.display = 'none';
     document.getElementById('student-panel').style.display = 'none';
@@ -207,23 +223,22 @@ function renderTeacherPanelView() {
     closeModal();
 }
 
-async function logout(push = true) {
+async function logout() {
     if (supabaseClient) await supabaseClient.auth.signOut();
+    localStorage.removeItem('fen_app_state');
     await loadAllDataFromSupabase();
-    if (push) {
-        history.pushState({ type: 'auth' }, '', '');
-    }
+    history.pushState({ type: 'auth' }, '', '');
     renderAuthScreenView();
 }
 
-function logoutStudent(push = true) {
-    if (push) {
-        history.pushState({ type: 'auth' }, '', '');
-    }
+function logoutStudent() {
+    localStorage.removeItem('fen_app_state');
+    history.pushState({ type: 'auth' }, '', '');
     renderAuthScreenView();
 }
 
 function renderAuthScreenView() {
+    localStorage.setItem('fen_app_state', JSON.stringify({ type: 'auth' }));
     document.getElementById('teacher-panel').style.display = 'none';
     document.getElementById('grade-detail-panel').style.display = 'none';
     document.getElementById('student-panel').style.display = 'none';
@@ -684,19 +699,20 @@ function toggleDelFields() {
 }
 
 function openGradeManagement(grade, push = true) {
+    renderGradeManagementView(grade, push);
+}
+
+function renderGradeManagementView(grade, push = true) {
+    localStorage.setItem('fen_app_state', JSON.stringify({ type: 'grade-mgmt', grade }));
     if (push) {
         history.pushState({ type: 'grade-mgmt', grade }, '', '');
     }
-    renderGradeManagementView(grade);
-}
-
-function renderGradeManagementView(grade) {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('teacher-panel').style.display = 'none';
     document.getElementById('student-panel').style.display = 'none';
     const detailPanel = document.getElementById('grade-detail-panel');
     if (!detailPanel) return;
-    detailPanel.style.display = 'block';
+    detailPanel.style.display = 'flex';
     closeModal();
 
     let branchCards = '';
@@ -705,7 +721,7 @@ function renderGradeManagementView(grade) {
         const studentCount = branches[bName].length;
         branchCards += `
             <div class="grade-card" style="border-top-color: #3b82f6; position: relative;">
-                <div onclick="openBranchDetail('${grade}', '${bName}')" style="cursor: pointer;">
+                <div onclick="openGradeManagementBranchDetail('${grade}', '${bName}')" style="cursor: pointer;">
                     <h3>${bName} Şubesi</h3>
                     <p>${studentCount} Öğrenci Kayıtlı</p>
                     <span class="card-action">Şubeye Git &rarr;</span>
@@ -718,6 +734,9 @@ function renderGradeManagementView(grade) {
     detailPanel.innerHTML = `
         <header class="teacher-header">
             <div class="header-brand"><span class="brand-icon">📚</span><h1>${grade}. SINIFLAR ŞUBE YÖNETİMİ</h1></div>
+            <div>
+                <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
+            </div>
         </header>
         <section class="dashboard-content">
             <div style="margin-bottom: 25px;">
@@ -731,25 +750,33 @@ function renderGradeManagementView(grade) {
     `;
 }
 
+function openGradeManagementBranchDetail(grade, branchName, push = true) {
+    openBranchDetail(grade, branchName, push);
+}
+
 function openBranchDetail(grade, branchName, push = true) {
+    renderBranchDetailView(grade, branchName, push);
+}
+
+function renderBranchDetailView(grade, branchName, push = true) {
+    localStorage.setItem('fen_app_state', JSON.stringify({ type: 'branch-detail', grade, branchName }));
     if (push) {
         history.pushState({ type: 'branch-detail', grade, branchName }, '', '');
     }
-    renderBranchDetailView(grade, branchName);
-}
-
-function renderBranchDetailView(grade, branchName) {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('teacher-panel').style.display = 'none';
     document.getElementById('student-panel').style.display = 'none';
     const detailPanel = document.getElementById('grade-detail-panel');
     if (!detailPanel) return;
-    detailPanel.style.display = 'block';
+    detailPanel.style.display = 'flex';
     closeModal();
 
     detailPanel.innerHTML = `
         <header class="teacher-header">
             <div class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
+            <div>
+                <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
+            </div>
         </header>
         <section class="dashboard-content">
             <div class="branch-tabs-grid">
@@ -813,12 +840,13 @@ function switchBranchTab(cardElement, tabType, grade, branchName) {
         `;
     } else if (tabType === 'activities') {
         contentArea.innerHTML = `
-            <h3 style="color:#f8fafc;">🧪 Etkinlik Ölçekleri</h3>
-            <p style="color: #94a3b8; margin-top: 5px;">Ünite, bölüm ve ölçek seçin. İstediğiniz öğrencinin <b>⚡ Hızlı Puan</b> kutusuna hedef yüzdeliği (örn: 65 veya 85) yazarak o ölçeğin otomatik dolmasını sağlayın!</p>
-            <div style="display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap;">
-                <select id="act-unit-sel" class="auth-input" style="flex:1; min-width:180px;" onchange="loadSectionsForActivity(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
-                <select id="activity-section-select" class="auth-input" style="flex:1; min-width:180px;" onchange="loadActivitiesForSelection('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
-                <select id="activity-name-select" class="auth-input" style="flex:1; min-width:180px;" onchange="renderActivityTable('${grade}', '${branchName}')"><option value="">-- Ölçek Seçin --</option></select>
+            <h3 style="color:#f8fafc;">🧪 Etkinlik & Toplu Ölçek Puanlama</h3>
+            <p style="color: #94a3b8; margin-top: 5px;">Ünite, bölüm ve etkinlik seçin. Öğrencinin yanındaki kutuya puanı yazıp <b>Tümüne Uygula</b> diyerek tüm ölçekleri otomatik doldurun veya sağdan spesifik bir ölçek seçerek detaylı görün.</p>
+            <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
+                <select id="act-unit-sel" class="auth-input" style="flex:1; min-width:160px;" onchange="loadSectionsForActivity(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
+                <select id="activity-section-select" class="auth-input" style="flex:1; min-width:160px;" onchange="loadBaseActivitiesForSelection('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
+                <select id="activity-name-select" class="auth-input" style="flex:1; min-width:160px;" onchange="loadSubScalesForSelection('${grade}', '${branchName}')"><option value="">-- Etkinlik Seçin --</option></select>
+                <select id="sub-scale-select" class="auth-input" style="flex:1; min-width:180px;" onchange="renderGroupedActivityTable('${grade}', '${branchName}')"><option value="-- TÜM ÖLÇEKLER --">-- Tüm Ölçekler (Genel Görünüm) --</option></select>
             </div>
             <div id="activity-table-container" style="margin-top:20px;"></div>
         `;
@@ -961,101 +989,177 @@ function loadSectionsForActivity(unitName, grade, branchName) {
     secSel.innerHTML = '<option value="">-- Bölüm Seçin --</option>';
     const unit = fenData[grade]?.units.find(u => u.name === unitName);
     if (unit && unit.sections) unit.sections.forEach(s => secSel.innerHTML += `<option value="${s}">${s}</option>`);
-    loadActivitiesForSelection(grade, branchName);
+    loadBaseActivitiesForSelection(grade, branchName);
 }
 
-function loadActivitiesForSelection(grade, branchName) {
+function loadBaseActivitiesForSelection(grade, branchName) {
     const unitName = document.getElementById('act-unit-sel')?.value;
     const secName = document.getElementById('activity-section-select')?.value;
     const actSel = document.getElementById('activity-name-select');
     if (!actSel) return;
 
-    actSel.innerHTML = '<option value="">-- Ölçek Seçin --</option>';
+    actSel.innerHTML = '<option value="">-- Etkinlik Seçin --</option>';
     const acts = fenData[grade]?.activities || [];
+    
+    let baseActivityNames = new Set();
     acts.filter(a => a.unit === unitName && a.section === secName).forEach(a => {
-        actSel.innerHTML += `<option value="${a.name}">${a.name}</option>`;
+        let cleanName = a.name.trim();
+        let parts = cleanName.split(' - ');
+        if (parts.length >= 2) {
+            baseActivityNames.add(`${parts[0]} - ${parts[1]}`);
+        } else {
+            baseActivityNames.add(cleanName);
+        }
     });
-    renderActivityTable(grade, branchName);
+
+    baseActivityNames.forEach(bAct => {
+        actSel.innerHTML += `<option value="${bAct}">${bAct}</option>`;
+    });
+
+    loadSubScalesForSelection(grade, branchName);
 }
 
-function renderActivityTable(grade, branchName) {
+function loadSubScalesForSelection(grade, branchName) {
     const unitName = document.getElementById('act-unit-sel')?.value;
     const secName = document.getElementById('activity-section-select')?.value;
-    const actName = document.getElementById('activity-name-select')?.value;
-    const container = document.getElementById('activity-table-container');
-    if (!container) return;
+    const baseActName = document.getElementById('activity-name-select')?.value;
+    const subScaleSel = document.getElementById('sub-scale-select');
+    if (!subScaleSel) return;
 
-    if (!actName) {
-        container.innerHTML = '<p style="color:#94a3b8;">Lütfen bir etkinlik veya ölçek seçin.</p>';
+    subScaleSel.innerHTML = '<option value="-- TÜM ÖLÇEKLER --">-- Tüm Ölçekler (Genel Görünüm) --</option>';
+    if (!baseActName) {
+        renderGroupedActivityTable(grade, branchName);
         return;
     }
 
-    const actObj = fenData[grade].activities.find(a => a.name === actName);
-    const criteria = actObj?.criteria || ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'];
-    const scaleType = actObj?.scale_type || '1-4'; 
+    const allActs = fenData[grade].activities || [];
+    const subScales = allActs.filter(a => a.unit === unitName && a.section === secName && (a.name === baseActName || a.name.startsWith(baseActName + ' -')));
+
+    subScales.forEach(scale => {
+        let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
+        if (!shortName) shortName = scale.name;
+        subScaleSel.innerHTML += `<option value="${scale.name}">${shortName}</option>`;
+    });
+
+    renderGroupedActivityTable(grade, branchName);
+}
+
+function renderGroupedActivityTable(grade, branchName) {
+    const unitName = document.getElementById('act-unit-sel')?.value;
+    const secName = document.getElementById('activity-section-select')?.value;
+    const baseActName = document.getElementById('activity-name-select')?.value;
+    const selectedScaleName = document.getElementById('sub-scale-select')?.value;
+    const container = document.getElementById('activity-table-container');
+    if (!container) return;
+
+    if (!baseActName) {
+        container.innerHTML = '<p style="color:#94a3b8;">Lütfen bir etkinlik seçin.</p>';
+        return;
+    }
+
+    const allActs = fenData[grade].activities || [];
+    const subScales = allActs.filter(a => a.unit === unitName && a.section === secName && (a.name === baseActName || a.name.startsWith(baseActName + ' -')));
+
+    if (subScales.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8;">Bu etkinlik için kayıtlı ölçek bulunamadı.</p>';
+        return;
+    }
+
+    if (selectedScaleName && selectedScaleName !== '-- TÜM ÖLÇEKLER --') {
+        const scaleObj = subScales.find(a => a.name === selectedScaleName);
+        if (!scaleObj) return;
+
+        const criteria = scaleObj.criteria || ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'];
+        const scaleType = scaleObj.scale_type || '1-4';
+        const students = fenData[grade]?.branches[branchName] || [];
+
+        let headerTh = '<th>No</th><th>Ad Soyad</th>';
+        criteria.forEach(c => { headerTh += `<th>${c}</th>`; });
+        headerTh += '<th>Başarı (%)</th>';
+
+        let rows = '';
+        students.forEach((s) => {
+            let cols = `<td>${s.no}</td><td>${s.name}</td>`;
+            let storedScale = s.scale?.[selectedScaleName] || {};
+            let totalScore = 0;
+            let maxScore = criteria.length * (scaleType === '1-4' ? 4 : 1);
+
+            criteria.forEach((c, cIdx) => {
+                let val = storedScale[cIdx] !== undefined ? storedScale[cIdx] : (scaleType === '1-4' ? 4 : 1);
+                if (scaleType === '1-4') totalScore += parseInt(val) || 0;
+                else totalScore += val ? 1 : 0;
+
+                let textLabel = val;
+                if (scaleType === '1-4') {
+                    if (val == 4) textLabel = '4 - Çok İyi';
+                    else if (val == 3) textLabel = '3 - İyi';
+                    else if (val == 2) textLabel = '2 - Geliş.';
+                    else if (val == 1) textLabel = '1 - Yetersiz';
+                } else if (scaleType === 'var-yok') {
+                    textLabel = val == 1 ? 'Var' : 'Yok';
+                } else {
+                    textLabel = val == 1 ? 'Evet' : 'Hayır';
+                }
+
+                cols += `<td><span style="color:#38bdf8; font-weight:600; font-size:12px;">${textLabel}</span></td>`;
+            });
+
+            let percentage = storedScale['totalScore'] !== undefined ? storedScale['totalScore'] : (maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0);
+            cols += `<td><b style="color:#34d399;">%${percentage}</b></td>`;
+            rows += `<tr>${cols}</tr>`;
+        });
+
+        container.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+                <div style="font-size:12px; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
+                    ℹ️ <b>Detaylı Ölçek Görünümü:</b> Girdiğiniz etkinlik puanına göre otomatik puanlanmış kriterler listelenmektedir.
+                </div>
+                <button onclick="window.print()" class="action-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Ölçeği Yazdır / PDF İndir</button>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead><tr>${headerTh}</tr></thead>
+                    <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci bulunamadı.</td></tr>'}</tbody>
+                </table>
+            </div>
+        `;
+        return;
+    }
+
     const students = fenData[grade]?.branches[branchName] || [];
 
-    let headerTh = '<th>No</th><th>Ad Soyad</th><th>⚡ Hızlı Puan (0-100)</th>';
-    criteria.forEach((c) => { headerTh += `<th>${c}</th>`; });
-    headerTh += '<th>Başarı (%)</th>';
+    let headerTh = '<th>No</th><th>Ad Soyad</th><th>⚡ Toplu Etkinlik Puanı (0-100)</th>';
+    subScales.forEach(scale => {
+        let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
+        if (!shortName) shortName = scale.name;
+        headerTh += `<th>${shortName} (% Ort.)</th>`;
+    });
 
     let rows = '';
     students.forEach((s, sIdx) => {
         let cols = `<td>${s.no}</td><td>${s.name}</td>`;
         
-        // Hızlı Puan Giriş Kutusu (İstediğin gibi 65, 85 vb. doğrudan puan yazılabilir)
         cols += `<td>
-            <div style="display:flex; gap:4px; align-items:center;">
-                <input type="number" id="quick-input-${sIdx}" class="auth-input" style="padding:4px; width:65px; font-size:12px; text-align:center;" min="0" max="100" placeholder="Örn:65">
-                <button onclick="applyTargetPercentage(${sIdx}, ${criteria.length}, '${scaleType}')" style="background:#0284c7; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:600;" title="Puanı Ölçeğe Uygula">Uygula</button>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <input type="number" id="group-quick-input-${sIdx}" class="auth-input" style="padding:4px; width:70px; font-size:12px; text-align:center;" min="0" max="100" placeholder="Örn: 85">
+                <button onclick="applyScoreToAllSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\'")}', ${subScales.length})" style="background:#0284c7; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:600;" title="Tüm Ölçeklere Uygula">Tümüne Uygula</button>
             </div>
         </td>`;
 
-        let totalScore = 0;
-        let maxScore = criteria.length * (scaleType === '1-4' ? 4 : 1);
-
-        criteria.forEach((c, cIdx) => {
-            const currentVal = s.scale?.[actName]?.[cIdx] !== undefined ? s.scale[actName][cIdx] : (scaleType === '1-4' ? 4 : 1);
-            if (scaleType === '1-4') totalScore += parseInt(currentVal) || 0;
-            else totalScore += currentVal ? 1 : 0;
-
-            if (scaleType === '1-4') {
-                cols += `<td>
-                    <select id="scale-${sIdx}-${cIdx}" class="auth-input" style="padding:4px; width:95px; font-size:12px;" onchange="calculateLiveScore(${sIdx}, ${criteria.length}, '${scaleType}')">
-                        <option value="4" ${currentVal == 4 ? 'selected' : ''}>4 - Çok İyi</option>
-                        <option value="3" ${currentVal == 3 ? 'selected' : ''}>3 - İyi</option>
-                        <option value="2" ${currentVal == 2 ? 'selected' : ''}>2 - Geliş.</option>
-                        <option value="1" ${currentVal == 1 ? 'selected' : ''}>1 - Yetersiz</option>
-                    </select>
-                </td>`;
-            } else if (scaleType === 'var-yok') {
-                cols += `<td>
-                    <select id="scale-${sIdx}-${cIdx}" class="auth-input" style="padding:4px; width:80px; font-size:12px;" onchange="calculateLiveScore(${sIdx}, ${criteria.length}, '${scaleType}')">
-                        <option value="1" ${currentVal == 1 ? 'selected' : ''}>Var</option>
-                        <option value="0" ${currentVal == 0 ? 'selected' : ''}>Yok</option>
-                    </select>
-                </td>`;
-            } else { 
-                cols += `<td>
-                    <select id="scale-${sIdx}-${cIdx}" class="auth-input" style="padding:4px; width:90px; font-size:12px;" onchange="calculateLiveScore(${sIdx}, ${criteria.length}, '${scaleType}')">
-                        <option value="1" ${currentVal == 1 ? 'selected' : ''}>Evet</option>
-                        <option value="0" ${currentVal == 0 ? 'selected' : ''}>Hayır</option>
-                    </select>
-                </td>`;
-            }
+        subScales.forEach((scale, scaleIdx) => {
+            let scVal = s.scale?.[scale.name]?.['totalScore'] !== undefined ? s.scale[scale.name]['totalScore'] : '-';
+            cols += `<td><span id="scale-badge-${sIdx}-${scaleIdx}" style="color:#38bdf8; font-weight:600;">%${scVal}</span></td>`;
         });
 
-        let percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
-        cols += `<td><b id="score-display-${sIdx}" style="color:#60a5fa;">${percentage}%</b></td>`;
         rows += `<tr>${cols}</tr>`;
     });
 
     container.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
             <div style="font-size:12px; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
-                ℹ️ <b>Akıllı Otomasyon:</b> Öğrencinin yanındaki kutuya hedef puanını (örn: <b>65</b> veya <b>85</b>) yazıp <b>Uygula</b> butonuna bastığında, sistem seçili ölçek kriterlerini o puana en yakın şekilde otomatik olarak dağıtır!
+                ℹ️ <b>Toplu Otomasyon:</b> Ortak puanı yazıp <b>Tümüne Uygula</b> diyerek bu etkinliğe ait tüm ölçekleri otomatik doldurabilir veya sağdaki menüden tek bir ölçeğin detayına inebilirsin!
             </div>
-            <button onclick="openActivityPrintModal('${grade}', '${branchName}', '${unitName || ''}', '${secName || ''}', '${actName}')" class="action-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Etkinlik Ölçeğini Yazdır / PDF İndir</button>
+            <button onclick="openGroupActivityPrintModal('${grade}', '${branchName}', '${unitName || ''}', '${secName || ''}', '${baseActName.replace(/'/g, "\\'")}')" class="action-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Etkinlik Raporunu Yazdır / PDF İndir</button>
         </div>
         <div class="table-responsive">
             <table class="data-table">
@@ -1063,13 +1167,12 @@ function renderActivityTable(grade, branchName) {
                 <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci bulunamadı.</td></tr>'}</tbody>
             </table>
         </div>
-        <button onclick="saveScaleScores('${grade}', '${branchName}', '${actName}', '${scaleType}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Ölçek Puanlarını Kaydet</button>
+        <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\'")}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Tüm Ölçek Puanlarını Kaydet</button>
     `;
 }
 
-// Girilen Hedef Yüzde Puanına Göre Ölçek Kriterlerini Otomatik Dağıtan Akıllı Fonksiyon
-function applyTargetPercentage(sIdx, criteriaCount, scaleType) {
-    const inputEl = document.getElementById(`quick-input-${sIdx}`);
+function applyScoreToAllSubScales(sIdx, baseActName, subScalesCount) {
+    const inputEl = document.getElementById(`group-quick-input-${sIdx}`);
     if (!inputEl) return;
     const targetVal = parseFloat(inputEl.value);
     if (isNaN(targetVal) || targetVal < 0 || targetVal > 100) {
@@ -1077,71 +1180,83 @@ function applyTargetPercentage(sIdx, criteriaCount, scaleType) {
         return;
     }
 
-    if (scaleType === '1-4') {
-        let maxTotal = criteriaCount * 4;
-        let targetScore = Math.round((targetVal / 100) * maxTotal);
-        if (targetScore < criteriaCount) targetScore = criteriaCount;
-        if (targetScore > maxTotal) targetScore = maxTotal;
-
-        let baseVal = Math.floor(targetScore / criteriaCount);
-        let remainder = targetScore % criteriaCount;
-
-        for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
-            let val = baseVal + (cIdx < remainder ? 1 : 0);
-            if (val < 1) val = 1;
-            if (val > 4) val = 4;
-
-            const selectEl = document.getElementById(`scale-${sIdx}-${cIdx}`);
-            if (selectEl) {
-                selectEl.value = val;
-            }
+    for (let scaleIdx = 0; scaleIdx < subScalesCount; scaleIdx++) {
+        const badgeEl = document.getElementById(`scale-badge-${sIdx}-${scaleIdx}`);
+        if (badgeEl) {
+            badgeEl.innerText = `%${Math.round(targetVal)}`;
         }
-    } else {
-        // Var-Yok / Evet-Hayır için (1 veya 0)
-        let targetScore = Math.round((targetVal / 100) * criteriaCount);
-        for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
-            let val = cIdx < targetScore ? 1 : 0;
-            const selectEl = document.getElementById(`scale-${sIdx}-${cIdx}`);
-            if (selectEl) {
-                selectEl.value = val;
+    }
+}
+
+async function saveGroupScaleScores(grade, branchName, baseActName) {
+    const unitName = document.getElementById('act-unit-sel').value;
+    const secName = document.getElementById('activity-section-select').value;
+    const allActs = fenData[grade].activities || [];
+    const subScales = allActs.filter(a => a.unit === unitName && a.section === secName && (a.name === baseActName || a.name.startsWith(baseActName + ' -')));
+    const students = fenData[grade].branches[branchName];
+
+    for (let sIdx = 0; sIdx < students.length; sIdx++) {
+        const s = students[sIdx];
+        const inputEl = document.getElementById(`group-quick-input-${sIdx}`);
+        if (!inputEl || inputEl.value === '') continue;
+
+        let targetVal = parseFloat(inputEl.value);
+        if (isNaN(targetVal)) continue;
+
+        if (!s.scale) s.scale = {};
+
+        subScales.forEach(scale => {
+            if (!s.scale[scale.name]) s.scale[scale.name] = {};
+            const criteriaCount = scale.criteria?.length || 4;
+            
+            if (scale.scale_type === '1-4') {
+                let maxTotal = criteriaCount * 4;
+                let targetScore = Math.round((targetVal / 100) * maxTotal);
+                let baseVal = Math.floor(targetScore / criteriaCount);
+                let remainder = targetScore % criteriaCount;
+
+                for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
+                    let val = baseVal + (cIdx < remainder ? 1 : 0);
+                    if (val < 1) val = 1; if (val > 4) val = 4;
+                    s.scale[scale.name][cIdx] = val;
+                }
+            } else {
+                let targetScore = Math.round((targetVal / 100) * criteriaCount);
+                for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
+                    s.scale[scale.name][cIdx] = cIdx < targetScore ? 1 : 0;
+                }
             }
+            s.scale[scale.name]['totalScore'] = Math.round(targetVal);
+        });
+
+        if (supabaseClient) {
+            await supabaseClient.from('students').update({ scale: s.scale }).eq('grade', grade).eq('branch', branchName).eq('school_no', s.no);
         }
     }
 
-    calculateLiveScore(sIdx, criteriaCount, scaleType);
+    await loadAllDataFromSupabase();
+    alert('Etkinliğe ait tüm ölçek puanları başarıyla kaydedildi!');
 }
 
-function openActivityPrintModal(grade, branchName, unitName, secName, actName) {
-    const actObj = fenData[grade].activities.find(a => a.name === actName);
-    const criteria = actObj?.criteria || [];
+function openGroupActivityPrintModal(grade, branchName, unitName, secName, baseActName) {
+    const allActs = fenData[grade].activities || [];
+    const subScales = allActs.filter(a => a.unit === unitName && a.section === secName && (a.name === baseActName || a.name.startsWith(baseActName + ' -')));
     const students = fenData[grade]?.branches[branchName] || [];
 
     let headerTh = '<th style="border:1px solid #94a3b8; padding:6px; text-align:left;">No</th><th style="border:1px solid #94a3b8; padding:6px; text-align:left;">Ad Soyad</th>';
-    criteria.forEach((c) => { headerTh += `<th style="border:1px solid #94a3b8; padding:6px; text-align:left;">${c}</th>`; });
-    headerTh += '<th style="border:1px solid #94a3b8; padding:6px; text-align:left;">Başarı (%)</th>';
+    subScales.forEach(scale => {
+        let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
+        if (!shortName) shortName = scale.name;
+        headerTh += `<th style="border:1px solid #94a3b8; padding:6px; text-align:left;">${shortName}</th>`;
+    });
 
     let rows = '';
-    students.forEach((s, sIdx) => {
+    students.forEach((s) => {
         let cols = `<td style="border:1px solid #94a3b8; padding:6px;">${s.no}</td><td style="border:1px solid #94a3b8; padding:6px;">${s.name}</td>`;
-        let totalScore = 0;
-        let maxScore = criteria.length * 4;
-
-        criteria.forEach((c, cIdx) => {
-            const currentVal = s.scale?.[actName]?.[cIdx] !== undefined ? s.scale[actName][cIdx] : 4;
-            totalScore += parseInt(currentVal) || 0;
-            
-            let labelText = currentVal;
-            if (currentVal == 4) labelText = '4 - Çok İyi';
-            else if (currentVal == 3) labelText = '3 - İyi';
-            else if (currentVal == 2) labelText = '2 - Geliş.';
-            else if (currentVal == 1) labelText = '1 - Yet.';
-            else if (currentVal == 0) labelText = 'Yok / Hayır';
-
-            cols += `<td style="border:1px solid #94a3b8; padding:6px; font-size:10px;">${labelText}</td>`;
+        subScales.forEach(scale => {
+            let scVal = s.scale?.[scale.name]?.['totalScore'] !== undefined ? s.scale[scale.name]['totalScore'] : '-';
+            cols += `<td style="border:1px solid #94a3b8; padding:6px;"><b>%${scVal}</b></td>`;
         });
-
-        let percentage = s.scale?.[actName]?.['totalScore'] !== undefined ? s.scale[actName]['totalScore'] : (maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0);
-        cols += `<td style="border:1px solid #94a3b8; padding:6px;"><b>%${percentage}</b></td>`;
         rows += `<tr>${cols}</tr>`;
     });
 
@@ -1150,82 +1265,30 @@ function openActivityPrintModal(grade, branchName, unitName, secName, actName) {
             <div style="text-align:center; margin-bottom:15px; border-bottom:2px solid #333; padding-bottom:10px;">
                 <span style="font-size:28px;">🧪 ⚛️ 🔬</span>
                 <h3 style="color:black !important; font-size:16px; margin-top:5px; font-weight:700;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL</h3>
-                <p style="color:#333 !important; font-size:11px; font-weight:600;">TÜRKİYE YÜZYILI MAARİF MODELİ - RESMİ ETKİNLİK ÖLÇEĞİ DEĞERLENDİRME RAPORU</p>
+                <p style="color:#333 !important; font-size:11px; font-weight:600;">TÜRKİYE YÜZYILI MAARİF MODELİ - ETKİNLİK TOPLU ÖLÇEK RAPORU</p>
             </div>
             
             <div style="margin-bottom:15px; color:black !important; font-size:12px; line-height:1.5; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
                 <p><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
                 <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
-                <p><b>Etkinlik / Ölçek Adı:</b> ${actName}</p>
-                <p><b>Toplam Öğrenci Mevcudu:</b> ${students.length}</p>
+                <p><b>Etkinlik Adı:</b> ${baseActName}</p>
+                <p><b>Toplam Ölçek Sayısı:</b> ${subScales.length}</p>
             </div>
 
-            <h4 style="color:black !important; font-size:13px; margin-bottom:5px; font-weight:700;">📋 Öğrenci Kriter Değerlendirme Tablosu</h4>
             <div class="table-responsive" style="margin-bottom:15px;">
                 <table class="data-table" style="width:100%; border-collapse:collapse; font-size:10px;">
-                    <thead>
-                        <tr style="background:#e2e8f0; color:black;">
-                            ${headerTh}
-                        </tr>
-                    </thead>
+                    <thead><tr style="background:#e2e8f0; color:black;">${headerTh}</tr></thead>
                     <tbody>${rows || '<tr><td colspan="10" style="text-align:center; border:1px solid #94a3b8; padding:6px;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
                 </table>
             </div>
 
             <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;" class="modal-footer">
-                <button onclick="window.print()" style="background:#10b981; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Etkinlik Ölçeğini Yazdır / PDF İndir</button>
+                <button onclick="window.print()" style="background:#10b981; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Raporu Yazdır / PDF İndir</button>
             </div>
         </div>
     `;
 
-    openModal(`Etkinlik Ölçeği Raporu - ${actName} (${branchName})`, content, null);
-}
-
-function calculateLiveScore(sIdx, criteriaCount, scaleType) {
-    let totalScore = 0;
-    for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
-        const selectEl = document.getElementById(`scale-${sIdx}-${cIdx}`);
-        if (selectEl) {
-            totalScore += parseInt(selectEl.value) || 0;
-        }
-    }
-    let maxScore = criteriaCount * (scaleType === '1-4' ? 4 : 1);
-    let percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
-    
-    const displayEl = document.getElementById(`score-display-${sIdx}`);
-    if (displayEl) {
-        displayEl.innerText = `${percentage}%`;
-    }
-}
-
-async function saveScaleScores(grade, branchName, actName, scaleType) {
-    const actObj = fenData[grade].activities.find(a => a.name === actName);
-    const criteria = actObj?.criteria || [];
-    const students = fenData[grade].branches[branchName];
-
-    for (let sIdx = 0; sIdx < students.length; sIdx++) {
-        const s = students[sIdx];
-        if (!s.scale) s.scale = {};
-        if (!s.scale[actName]) s.scale[actName] = {};
-        
-        let totalScore = 0;
-        criteria.forEach((c, cIdx) => {
-            const selectEl = document.getElementById(`scale-${sIdx}-${cIdx}`);
-            const val = selectEl ? parseInt(selectEl.value) : (scaleType === '1-4' ? 4 : 1);
-            s.scale[actName][cIdx] = val;
-            totalScore += val;
-        });
-
-        let maxScore = criteria.length * (scaleType === '1-4' ? 4 : 1);
-        s.scale[actName]['totalScore'] = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
-
-        if (supabaseClient) {
-            await supabaseClient.from('students').update({ scale: s.scale }).eq('grade', grade).eq('branch', branchName).eq('school_no', s.no);
-        }
-    }
-
-    await loadAllDataFromSupabase();
-    alert('Ölçek puanları başarıyla kaydedildi!');
+    openModal(`Toplu Etkinlik Raporu - ${baseActName} (${branchName})`, content, null);
 }
 
 function loadSectionsForReport(unitName, grade, branchName) {
@@ -1277,7 +1340,7 @@ async function renderReportData(grade, branchName) {
     let quizLow = 0;  
     let quizEvaluatedTotal = 0;
 
-    students.forEach((s, idx) => {
+    students.forEach((s) => {
         const key = `${unitName}_${secName}`;
         const qScore = s.quiz?.[key] !== undefined && s.quiz?.[key] !== '' ? parseFloat(s.quiz[key]) : null;
         
@@ -1715,19 +1778,20 @@ async function studentLogin(push = true) {
         return;
     }
 
-    if (push) {
-        history.pushState({ type: 'student', grade, branch, student: foundStudent }, '', '');
-    }
-    renderStudentPanelView(grade, branch, foundStudent);
+    renderStudentPanelView(grade, branch, foundStudent, push);
 }
 
-function renderStudentPanelView(grade, branch, student) {
+function renderStudentPanelView(grade, branch, student, push = true) {
+    localStorage.setItem('fen_app_state', JSON.stringify({ type: 'student', grade, branch, student }));
+    if (push) {
+        history.pushState({ type: 'student', grade, branch, student }, '', '');
+    }
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('teacher-panel').style.display = 'none';
     document.getElementById('grade-detail-panel').style.display = 'none';
     const studentPanel = document.getElementById('student-panel');
     if (!studentPanel) return;
-    studentPanel.style.display = 'block';
+    studentPanel.style.display = 'flex';
     closeModal();
 
     const branchStudents = fenData[grade]?.branches[branch] || [];
@@ -1839,7 +1903,7 @@ function renderStudentPanelView(grade, branch, student) {
         <section class="dashboard-content" style="position:relative;">
             <div style="background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); padding: 24px; border-radius: 20px; margin-bottom: 25px; display: flex; gap: 40px; flex-wrap: wrap; box-shadow: 0 15px 35px rgba(0,0,0,0.4); position:relative; z-index:1;">
                 <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">OKUL NO</span><span style="color:#f8fafc; font-size:18px; font-weight:700;">${student.no}</span></div>
-                <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">SINIF / ŞUBE</span><span style="color:#f8fafc; font-size:18px; font-weight:700;">${grade}. Sınıf - ${branch}</span></div>
+                <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">SINIF / Şube</span><span style="color:#f8fafc; font-size:18px; font-weight:700;">${grade}. Sınıf - ${branch}</span></div>
                 <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">ARTI / EKSİ</span><span style="color:#fbbf24; font-size:18px; font-weight:700;">+${student.plus} / -${student.minus}</span></div>
             </div>
 
