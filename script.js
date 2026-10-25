@@ -301,7 +301,7 @@ function updateModalUnits(grade) {
     });
 }
 
-// 📄 BÖLÜME ÖZEL RAPOR ŞABLONU EKLEME (YENİ ÖZELLİK)
+// 📄 BÖLÜME ÖZEL RAPOR ŞABLONU EKLEME
 function globalAddReportTemplate() {
     const content = `
         <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
@@ -312,7 +312,7 @@ function globalAddReportTemplate() {
         <select id="rep-modal-unit" class="auth-input" style="margin-bottom:12px;" onchange="updateRepModalSections(this.value)"><option value="">Önce sınıf seçin</option></select>
         <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Bölüm Seçin:</label>
         <select id="rep-modal-section" class="auth-input" style="margin-bottom:12px;"><option value="">Önce ünite seçin</option></select>
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Resmi Rapor Metni (Word'den kopyalayıp yapıştırın):</label>
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Resmi Rapor Metni:</label>
         <textarea id="rep-modal-text" class="auth-input" style="height:150px; font-size:12px; font-family:monospace;" placeholder="TÜRKİYE YÜZYILI MAARİF MODELİ..."></textarea>
     `;
 
@@ -472,7 +472,7 @@ function globalAddActivity() {
                 }
 
                 await loadAllDataFromSupabase();
-                alert(`Toplam ${importedCount} farklı ölçek (türleriyle birlikte) başarıyla yüklendi!`);
+                alert(`Toplam ${importedCount} farklı ölçek başarıyla yüklendi!`);
                 closeModal();
             } catch (err) {
                 console.error(err);
@@ -727,14 +727,16 @@ function switchBranchTab(cardElement, tabType, grade, branchName) {
         });
 
         contentArea.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
                 <h3 style="color:#f8fafc;">Öğrenci Listesi ve Anlık Performans (${branchName})</h3>
                 <button onclick="addStudentModal('${grade}', '${branchName}')" class="action-btn student-btn" style="width:auto; padding:8px 16px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer;">+ Öğrenci Ekle</button>
             </div>
-            <table class="data-table">
-                <thead><tr><th>No</th><th>Ad Soyad</th><th>Artı Puan</th><th>Eksi Puan</th><th>İşlem</th></tr></thead>
-                <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead><tr><th>No</th><th>Ad Soyad</th><th>Artı Puan</th><th>Eksi Puan</th><th>İşlem</th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
+                </table>
+            </div>
         `;
     } else if (tabType === 'quizzes') {
         contentArea.innerHTML = `
@@ -751,9 +753,9 @@ function switchBranchTab(cardElement, tabType, grade, branchName) {
             <h3 style="color:#f8fafc;">🧪 Etkinlik Ölçekleri</h3>
             <p style="color: #94a3b8; margin-top: 5px;">Ünite, bölüm ve Excel'den gelen ölçekleri seçerek aktif işaretleme yapın.</p>
             <div style="display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap;">
-                <select id="act-unit-sel" class="auth-input" style="flex:1;" onchange="loadSectionsForActivity(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
-                <select id="activity-section-select" class="auth-input" style="flex:1;" onchange="loadActivitiesForSelection('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
-                <select id="activity-name-select" class="auth-input" style="flex:1;" onchange="renderActivityTable('${grade}', '${branchName}')"><option value="">-- Ölçek Seçin --</option></select>
+                <select id="act-unit-sel" class="auth-input" style="flex:1; min-width:180px;" onchange="loadSectionsForActivity(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
+                <select id="activity-section-select" class="auth-input" style="flex:1; min-width:180px;" onchange="loadActivitiesForSelection('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
+                <select id="activity-name-select" class="auth-input" style="flex:1; min-width:180px;" onchange="renderActivityTable('${grade}', '${branchName}')"><option value="">-- Ölçek Seçin --</option></select>
             </div>
             <div id="activity-table-container" style="margin-top:20px;"></div>
         `;
@@ -802,10 +804,12 @@ function renderQuizTable(grade, branchName) {
     });
 
     container.innerHTML = `
-        <table class="data-table">
-            <thead><tr><th>No</th><th>Ad Soyad</th><th>Quiz Notu</th></tr></thead>
-            <tbody>${rows || '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Öğrenci yok.</td></tr>'}</tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead><tr><th>No</th><th>Ad Soyad</th><th>Quiz Notu</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Öğrenci yok.</td></tr>'}</tbody>
+            </table>
+        </div>
         <button onclick="saveQuizScores('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Quiz Notlarını Kaydet</button>
     `;
 }
@@ -918,10 +922,12 @@ function renderActivityTable(grade, branchName) {
         <div style="font-size:12px; color:#cbd5e1; margin-bottom:10px; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
             ℹ️ <b>Ölçek Türü:</b> ${scaleType === '1-4' ? '1-4 Puan Skalası' : (scaleType === 'var-yok' ? 'Var / Yok Sistemi' : 'Evet / Hayır Sistemi')}
         </div>
-        <table class="data-table">
-            <thead><tr>${headerTh}</tr></thead>
-            <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci bulunamadı.</td></tr>'}</tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead><tr>${headerTh}</tr></thead>
+                <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci bulunamadı.</td></tr>'}</tbody>
+            </table>
+        </div>
         <button onclick="saveScaleScores('${grade}', '${branchName}', '${actName}', '${scaleType}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Ölçek Puanlarını Kaydet</button>
     `;
 }
@@ -982,7 +988,7 @@ function loadSectionsForReport(unitName, grade, branchName) {
     renderReportData(grade, branchName);
 }
 
-// 📄 DİNAMİK VE BÖLÜME ÖZEL RAPOR OLUŞTURMA (VERİTABANINDAN ÇEKER)
+// 📄 DİNAMİK VE BÖLÜME ÖZEL RAPOR OLUŞTURMA
 async function renderReportData(grade, branchName) {
     const unitName = document.getElementById('rep-unit-sel')?.value;
     const secName = document.getElementById('report-section-select')?.value;
@@ -994,7 +1000,6 @@ async function renderReportData(grade, branchName) {
         return;
     }
 
-    // Supabase'den bu ünite ve bölüme ait özel rapor şablonunu çek
     let customReportText = "";
     if (supabaseClient) {
         const { data: repData, error } = await supabaseClient
@@ -1079,7 +1084,6 @@ async function renderReportData(grade, branchName) {
     const classScaleAverage = scaleStudentCount > 0 ? Math.round(totalScaleAvgSum / scaleStudentCount) : 'Hesaplanmadı';
     const getPercent = (part, total) => total > 0 ? Math.round((part / total) * 100) : 0;
 
-    // Eğer veritabanında özel şablon yoksa varsayılan şablonu oluştur
     const baseReport = customReportText ? customReportText : `TÜRKİYE YÜZYILI MAARİF MODELİ
 ${grade}. SINIF FEN BİLİMLERİ DERSİ
 ÜNİTE DEĞERLENDİRME VE BAŞARI RAPORU
@@ -1132,10 +1136,12 @@ B) Etkinlik Ölçek Dağılımı (Değerlendirilen: ${scaleEvaluatedTotal} Öğr
         </div>
 
         <h4 style="margin-bottom:10px; color:#f8fafc;">Öğrenci Detay Listesi: ${unitName} / ${secName}</h4>
-        <table class="data-table">
-            <thead><tr><th>No</th><th>Ad Soyad</th><th>Quiz Notu</th><th>Etkinlik Sonucu (Başarı Ortalaması)</th><th>Artı/Eksi Puan</th></tr></thead>
-            <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead><tr><th>No</th><th>Ad Soyad</th><th>Quiz Notu</th><th>Etkinlik Sonucu</th><th>Artı/Eksi</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
+            </table>
+        </div>
     `;
 }
 
@@ -1145,7 +1151,7 @@ function copyNarrativeReport() {
     box.select();
     box.setSelectionRange(0, 99999);
     navigator.clipboard.writeText(box.value).then(() => {
-        alert('Resmi rapor başarıyla panoya kopyalandı! İstediğiniz Word belgesine yapıştırabilirsiniz.');
+        alert('Resmi rapor başarıyla panoya kopyalandı!');
     }).catch(err => {
         alert('Kopyalama başarısız oldu: ' + err);
     });
@@ -1279,7 +1285,7 @@ async function studentLogin() {
     openStudentPanel(grade, branch, foundStudent);
 }
 
-// 👨‍🎓 ÖĞRENCİ PANELİ (ŞUBE GENEL ORTALAMALARINI GÖSTERECEK ŞEKİLDE GÜNCELLENDİ)
+// 👨‍🎓 ÖĞRENCİ PANELİ (Sıralı Listeleme Mantığı Eklenmiş Hali)
 function openStudentPanel(grade, branch, student) {
     const studentPanel = document.getElementById('student-panel');
     if (!studentPanel) return;
@@ -1289,7 +1295,10 @@ function openStudentPanel(grade, branch, student) {
     let totalQuizScore = 0;
     let quizCount = 0;
     if (student.quiz) {
-        Object.keys(student.quiz).forEach(qKey => {
+        // Quizleri kronolojik/alfabetik sıraya dizer (1., 2., 3. ...)
+        const sortedQuizKeys = Object.keys(student.quiz).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }));
+
+        sortedQuizKeys.forEach(qKey => {
             let score = student.quiz[qKey];
             if (score !== '' && score !== undefined) {
                 totalQuizScore += parseFloat(score);
@@ -1303,7 +1312,10 @@ function openStudentPanel(grade, branch, student) {
     let totalScaleScore = 0;
     let scaleCount = 0;
     if (student.scale) {
-        Object.keys(student.scale).forEach(actName => {
+        // Ölçekleri sıraya dizer
+        const sortedScaleKeys = Object.keys(student.scale).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }));
+
+        sortedScaleKeys.forEach(actName => {
             let sc = student.scale[actName]['totalScore'];
             if (sc !== undefined) {
                 totalScaleScore += sc;
@@ -1366,7 +1378,7 @@ function openStudentPanel(grade, branch, student) {
             </div>
 
             <h3 style="margin-bottom:15px; color:#f8fafc; font-size:18px; display:flex; align-items:center; gap:8px; position:relative; z-index:1;">📝 Quiz Sonuçlarım</h3>
-            <div style="position:relative; z-index:1; margin-bottom:35px;">
+            <div class="table-responsive" style="position:relative; z-index:1; margin-bottom:35px;">
                 <table class="data-table">
                     <thead><tr><th>Ünite / Bölüm</th><th>Quiz Notu</th></tr></thead>
                     <tbody>${quizRows || '<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:20px;">Henüz girilmiş quiz sonucunuz bulunmuyor. 🚀</td></tr>'}</tbody>
@@ -1374,7 +1386,7 @@ function openStudentPanel(grade, branch, student) {
             </div>
 
             <h3 style="margin-bottom:15px; color:#f8fafc; font-size:18px; display:flex; align-items:center; gap:8px; position:relative; z-index:1;">🧪 Etkinlik Ölçek Sonuçlarım</h3>
-            <div style="position:relative; z-index:1;">
+            <div class="table-responsive" style="position:relative; z-index:1;">
                 <table class="data-table">
                     <thead><tr><th>Etkinlik / Ölçek Adı</th><th>Başarı Puanı</th></tr></thead>
                     <tbody>${scaleRows || '<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:20px;">Henüz değerlendirilmiş etkinlik ölçeğiniz bulunmuyor. 🧬</td></tr>'}</tbody>

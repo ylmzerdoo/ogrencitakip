@@ -21,7 +21,8 @@
             min-height: 100vh; 
             display: flex; 
             flex-direction: column; 
-            overflow-x: hidden;
+            overflow-x: hidden !important;
+            width: 100vw;
             position: relative;
         }
 
@@ -37,7 +38,7 @@
         /* Büyük, Belirgin ve Ölçeklenebilir Semboller */
         .floating-symbol {
             position: absolute;
-            font-size: clamp(45px, 7vw, 90px); /* Mobilde taşmayı önler, büyük ekranda büyür */
+            font-size: clamp(45px, 7vw, 90px); 
             opacity: 0.45; 
             user-select: none;
             transition: transform 7s ease-in-out, left 7s ease-in-out, top 7s ease-in-out;
@@ -104,7 +105,8 @@
         .logout-btn { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(239,68,68,0.3); }
         .logout-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(239,68,68,0.5); }
 
-        .dashboard-content { max-width: 1200px; margin: 30px auto; width: 100%; padding: 0 20px; flex: 1; z-index: 1; position: relative; }
+        .dashboard-content { max-width: 1200px; margin: 30px auto; width: 100%; padding: 0 15px; flex: 1; z-index: 1; position: relative; box-sizing: border-box; }
+        .dashboard-content > div { max-width: 100% !important; box-sizing: border-box; }
         
         .teacher-action-bar { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; }
         
@@ -120,10 +122,10 @@
         .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #f8fafc; }
         .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px; }
 
-        /* Tabloların mobilde taşmasını önleyen esnek kapsayıcı */
-        .table-responsive { width: 100%; overflow-x: auto; }
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); }
-        .data-table th, .data-table td { padding: 14px 18px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 14px; color: #e2e8f0; white-space: nowrap; }
+        /* Mobilde taşmayı önleyen duyarlı tablo yapısı */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 15px; }
+        .data-table { width: 100% !important; border-collapse: collapse; margin-top: 15px; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); }
+        .data-table th, .data-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13px; color: #e2e8f0; white-space: normal !important; word-break: break-word; }
         .data-table th { background: rgba(15, 23, 42, 0.9); font-weight: 600; color: #94a3b8; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
         .data-table tr:hover { background: rgba(255, 255, 255, 0.04); }
 
