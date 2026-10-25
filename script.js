@@ -24,7 +24,7 @@ async function loadAllDataFromSupabase() {
             fenData[g].branches = {};
         });
 
-        // 1. Şubeleri Çek (Öğrenci olmasa bile şubeler burada tanımlanır)
+        // 1. Şubeleri Çek
         const { data: branchRows, error: bErr } = await supabaseClient.from('branches').select('*');
         if (!bErr && branchRows) {
             branchRows.forEach(row => {
@@ -86,7 +86,7 @@ async function loadAllDataFromSupabase() {
             });
         }
 
-        // 4. Etkinlikleri Çek
+        // 4. Etkinlikleri ve Ölçek Türlerini Çek
         const { data: actRows, error: aErr } = await supabaseClient.from('activities').select('*');
         if (!aErr && actRows) {
             actRows.forEach(row => {
@@ -97,7 +97,8 @@ async function loadAllDataFromSupabase() {
                     name: row.activity_name,
                     unit: row.unit_name,
                     section: row.section_name,
-                    criteria: row.criteria || []
+                    criteria: row.criteria || [],
+                    scale_type: row.scale_type || '1-4'
                 });
             });
         }
@@ -202,7 +203,7 @@ function closeModal() {
     if (modal) modal.style.display = 'none';
 }
 
-// ŞUBE EKLEME (BULUTA KAYIT)
+// ŞUBE EKLEME
 function addNewBranchModal(grade) {
     const content = `<label style="color:#cbd5e1;">Şube Adı (Örn: A, B, F):</label><input type="text" id="modal-branch-name" class="auth-input" placeholder="A">`;
     openModal("Yeni Şube Ekle", content, async () => {
@@ -227,12 +228,11 @@ function addNewBranchModal(grade) {
     });
 }
 
-// ŞUBE SİLME (BULUTTAN SİL)
+// ŞUBE SİLME
 async function deleteBranch(grade, bName) {
     if (confirm(`${bName} şubesini silmek istiyor musunuz?`)) {
         if (supabaseClient) {
             await supabaseClient.from('branches').delete().eq('grade', grade).eq('branch_name', bName);
-            // İsteğe bağlı: o şubedeki öğrencileri de temizleyebilirsin
             await supabaseClient.from('students').delete().eq('grade', grade).eq('branch', bName);
         }
         await loadAllDataFromSupabase();
@@ -301,7 +301,7 @@ function updateModalUnits(grade) {
     });
 }
 
-// ETKİNLİK & ÖLÇEK EKLEME VE EXCEL OKUMA
+// 1. EXCEL'DEKİ TÜM SEKMELERİ VE ALT ALTA ÇOKLU ÖLÇEKLERİ OKUMA
 function globalAddActivity() {
     const content = `
         <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
@@ -318,7 +318,7 @@ function globalAddActivity() {
         <input type="file" id="modal-excel-file" class="auth-input" accept=".xlsx, .xls, .csv" style="margin-bottom:12px;">
     `;
 
-    openModal("Excel Tüm Sayfaları Oku ve Entegre Et", content, () => {
+    openModal("Excel Çoklu Ölçek ve Tür Entegrasyonu", content, () => {
         const grade = document.getElementById('modal-grade').value;
         const unit = document.getElementById('modal-unit').value;
         const section = document.getElementById('modal-section').value;
@@ -334,15 +334,37 @@ function globalAddActivity() {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
+                let importedCount = 0;
 
                 for (const sheetName of workbook.SheetNames) {
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
+                    let currentScaleTitle = sheetName.trim();
+                    let scaleType = '1-4'; 
                     let criteriaColumns = [];
+
                     for (let i = 0; i < jsonRows.length; i++) {
                         let row = jsonRows[i];
-                        if (row && row.some(cell => cell && (cell.toString().includes('Okul No') || cell.toString().includes('Adı Soyadı')))) {
+                        if (!row) continue;
+
+                        for (let cell of row) {
+                            if (cell && typeof cell === 'string') {
+                                if (cell.includes('RUBRİK') || cell.includes('1-4')) {
+                                    scaleType = '1-4';
+                                } else if (cell.includes('KONTROL') || cell.includes('VAR') || cell.includes('YOK')) {
+                                    scaleType = 'var-yok';
+                                } else if (cell.includes('FORMU') || cell.includes('EVET') || cell.includes('HAYIR')) {
+                                    scaleType = 'evet-hayir';
+                                }
+
+                                if (cell.includes('RUBRİK') || cell.includes('FORMU') || cell.includes('LİSTESİ') || cell.includes('ÖLÇEĞİ')) {
+                                    currentScaleTitle = `${sheetName.trim()} - ${cell.trim()}`;
+                                }
+                            }
+                        }
+
+                        if (row.some(cell => cell && (cell.toString().includes('Okul No') || cell.toString().includes('Adı Soyadı')))) {
                             criteriaColumns = row.filter(cell => 
                                 cell && 
                                 !cell.toString().includes('Okul No') && 
@@ -351,31 +373,41 @@ function globalAddActivity() {
                                 !cell.toString().includes('BAŞARI') &&
                                 !cell.toString().includes('Açıklama')
                             );
-                            break;
+
+                            if (criteriaColumns.length > 0 && supabaseClient) {
+                                await supabaseClient.from('activities').insert([{
+                                    grade: grade,
+                                    unit_name: unit,
+                                    section_name: section,
+                                    activity_name: currentScaleTitle,
+                                    criteria: criteriaColumns,
+                                    scale_type: scaleType
+                                }]);
+                                importedCount++;
+                                criteriaColumns = [];
+                            }
                         }
                     }
 
-                    if (criteriaColumns.length === 0) {
-                        criteriaColumns = ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'];
-                    }
-
-                    if (supabaseClient) {
+                    if (importedCount === 0 && jsonRows.length > 0) {
                         await supabaseClient.from('activities').insert([{
                             grade: grade,
                             unit_name: unit,
                             section_name: section,
-                            activity_name: sheetName,
-                            criteria: criteriaColumns
+                            activity_name: sheetName.trim(),
+                            criteria: ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'],
+                            scale_type: '1-4'
                         }]);
+                        importedCount++;
                     }
                 }
 
                 await loadAllDataFromSupabase();
-                alert(`Excel dosyasındaki tüm sayfalar buluta başarıyla kaydedildi!`);
+                alert(`Toplam ${importedCount} farklı ölçek (türleriyle birlikte) başarıyla yüklendi!`);
                 closeModal();
             } catch (err) {
                 console.error(err);
-                alert('Excel dosyası okunurken hata oluştu: ' + err.message);
+                alert('Hata: ' + err.message);
             }
         };
         reader.readAsArrayBuffer(fileInput);
@@ -407,7 +439,7 @@ function updateModalSectionsForActivity(unitName) {
     }
 }
 
-// SİLME İŞLEMLERİ (ÜNİTE / BÖLÜM / ETKİNLİK)
+// SİLME İŞLEMLERİ
 function globalDeleteManagement() {
     const content = `
         <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
@@ -752,6 +784,7 @@ function loadActivitiesForSelection(grade, branchName) {
     renderActivityTable(grade, branchName);
 }
 
+// 2. ÖLÇEK TÜRÜNE GÖRE DİNAMİK TABLO OLUŞTURMA (1-4, Var/Yok, Evet/Hayır)
 function renderActivityTable(grade, branchName) {
     const actName = document.getElementById('activity-name-select')?.value;
     const container = document.getElementById('activity-table-container');
@@ -764,37 +797,86 @@ function renderActivityTable(grade, branchName) {
 
     const actObj = fenData[grade].activities.find(a => a.name === actName);
     const criteria = actObj?.criteria || ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'];
+    const scaleType = actObj?.scale_type || '1-4'; 
     const students = fenData[grade]?.branches[branchName] || [];
 
     let headerTh = '<th>No</th><th>Ad Soyad</th>';
     criteria.forEach((c) => { headerTh += `<th>${c}</th>`; });
-    headerTh += '<th>Otomatik Puan (%)</th>';
+    headerTh += '<th>Başarı (%)</th>';
 
     let rows = '';
     students.forEach((s, sIdx) => {
         let cols = `<td>${s.no}</td><td>${s.name}</td>`;
-        let checkedCount = 0;
+        let totalScore = 0;
+        let maxScore = criteria.length * (scaleType === '1-4' ? 4 : 1);
+
         criteria.forEach((c, cIdx) => {
-            const isChecked = s.scale?.[actName]?.[cIdx] ? 'checked' : '';
-            if (isChecked) checkedCount++;
-            cols += `<td><input type="checkbox" id="scale-${sIdx}-${cIdx}" style="width:18px; height:18px; cursor:pointer;" ${isChecked}> Evet</td>`;
+            const currentVal = s.scale?.[actName]?.[cIdx] !== undefined ? s.scale[actName][cIdx] : (scaleType === '1-4' ? 4 : 1);
+            if (scaleType === '1-4') totalScore += parseInt(currentVal) || 0;
+            else totalScore += currentVal ? 1 : 0;
+
+            if (scaleType === '1-4') {
+                cols += `<td>
+                    <select id="scale-${sIdx}-${cIdx}" class="auth-input" style="padding:4px; width:95px; font-size:12px;" onchange="calculateLiveScore(${sIdx}, ${criteria.length}, '${scaleType}')">
+                        <option value="4" ${currentVal == 4 ? 'selected' : ''}>4 - Çok İyi</option>
+                        <option value="3" ${currentVal == 3 ? 'selected' : ''}>3 - İyi</option>
+                        <option value="2" ${currentVal == 2 ? 'selected' : ''}>2 - Geliş.</option>
+                        <option value="1" ${currentVal == 1 ? 'selected' : ''}>1 - Yetersiz</option>
+                    </select>
+                </td>`;
+            } else if (scaleType === 'var-yok') {
+                cols += `<td>
+                    <select id="scale-${sIdx}-${cIdx}" class="auth-input" style="padding:4px; width:80px; font-size:12px;" onchange="calculateLiveScore(${sIdx}, ${criteria.length}, '${scaleType}')">
+                        <option value="1" ${currentVal == 1 ? 'selected' : ''}>Var</option>
+                        <option value="0" ${currentVal == 0 ? 'selected' : ''}>Yok</option>
+                    </select>
+                </td>`;
+            } else { // evet-hayir
+                cols += `<td>
+                    <select id="scale-${sIdx}-${cIdx}" class="auth-input" style="padding:4px; width:90px; font-size:12px;" onchange="calculateLiveScore(${sIdx}, ${criteria.length}, '${scaleType}')">
+                        <option value="1" ${currentVal == 1 ? 'selected' : ''}>Evet</option>
+                        <option value="0" ${currentVal == 0 ? 'selected' : ''}>Hayır</option>
+                    </select>
+                </td>`;
+            }
         });
-        
-        let calculatedScore = Math.round((checkedCount / criteria.length) * 100);
-        cols += `<td><b id="score-display-${sIdx}" style="color:#60a5fa;">${calculatedScore} Puan</b></td>`;
+
+        let percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+        cols += `<td><b id="score-display-${sIdx}" style="color:#60a5fa;">${percentage}%</b></td>`;
         rows += `<tr>${cols}</tr>`;
     });
 
     container.innerHTML = `
+        <div style="font-size:12px; color:#cbd5e1; margin-bottom:10px; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
+            ℹ️ <b>Ölçek Türü:</b> ${scaleType === '1-4' ? '1-4 Puan Skalası' : (scaleType === 'var-yok' ? 'Var / Yok Sistemi' : 'Evet / Hayır Sistemi')}
+        </div>
         <table class="data-table">
             <thead><tr>${headerTh}</tr></thead>
-            <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci yok.</td></tr>'}</tbody>
+            <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci bulunamadı.</td></tr>'}</tbody>
         </table>
-        <button onclick="saveScaleScores('${grade}', '${branchName}', '${actName}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Ölçek Durumunu ve Puanları Kaydet</button>
+        <button onclick="saveScaleScores('${grade}', '${branchName}', '${actName}', '${scaleType}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Ölçek Puanlarını Kaydet</button>
     `;
 }
 
-async function saveScaleScores(grade, branchName, actName) {
+// CANLI PUAN HESAPLAMA
+function calculateLiveScore(sIdx, criteriaCount, scaleType) {
+    let totalScore = 0;
+    for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
+        const selectEl = document.getElementById(`scale-${sIdx}-${cIdx}`);
+        if (selectEl) {
+            totalScore += parseInt(selectEl.value) || 0;
+        }
+    }
+    let maxScore = criteriaCount * (scaleType === '1-4' ? 4 : 1);
+    let percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+    
+    const displayEl = document.getElementById(`score-display-${sIdx}`);
+    if (displayEl) {
+        displayEl.innerText = `${percentage}%`;
+    }
+}
+
+async function saveScaleScores(grade, branchName, actName, scaleType) {
     const actObj = fenData[grade].activities.find(a => a.name === actName);
     const criteria = actObj?.criteria || [];
     const students = fenData[grade].branches[branchName];
@@ -803,14 +885,17 @@ async function saveScaleScores(grade, branchName, actName) {
         const s = students[sIdx];
         if (!s.scale) s.scale = {};
         if (!s.scale[actName]) s.scale[actName] = {};
-        let checkedCount = 0;
+        
+        let totalScore = 0;
         criteria.forEach((c, cIdx) => {
-            const checkbox = document.getElementById(`scale-${sIdx}-${cIdx}`);
-            const isChecked = checkbox ? checkbox.checked : false;
-            s.scale[actName][cIdx] = isChecked;
-            if (isChecked) checkedCount++;
+            const selectEl = document.getElementById(`scale-${sIdx}-${cIdx}`);
+            const val = selectEl ? parseInt(selectEl.value) : (scaleType === '1-4' ? 4 : 1);
+            s.scale[actName][cIdx] = val;
+            totalScore += val;
         });
-        s.scale[actName]['totalScore'] = Math.round((checkedCount / criteria.length) * 100);
+
+        let maxScore = criteria.length * (scaleType === '1-4' ? 4 : 1);
+        s.scale[actName]['totalScore'] = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
         if (supabaseClient) {
             await supabaseClient.from('students').update({ scale: s.scale }).eq('grade', grade).eq('branch', branchName).eq('school_no', s.no);
@@ -818,7 +903,7 @@ async function saveScaleScores(grade, branchName, actName) {
     }
 
     await loadAllDataFromSupabase();
-    alert('Ölçek değerlendirmeleri buluta başarıyla kaydedildi!');
+    alert('Ölçek puanları başarıyla kaydedildi!');
 }
 
 function loadSectionsForReport(unitName, grade, branchName) {
@@ -861,13 +946,6 @@ function renderReportData(grade, branchName) {
                 let sc = s.scale[act.name]['totalScore'];
                 if (sc !== undefined) {
                     studentScaleScores.push(sc);
-                } else {
-                    let checked = 0;
-                    let totalC = act.criteria.length;
-                    act.criteria.forEach((c, cIdx) => {
-                        if (s.scale[act.name][cIdx]) checked++;
-                    });
-                    if (totalC > 0) studentScaleScores.push(Math.round((checked / totalC) * 100));
                 }
             }
         });
@@ -875,7 +953,7 @@ function renderReportData(grade, branchName) {
         let activitySummary = 'Değerlendirilmedi';
         if (studentScaleScores.length > 0) {
             let avgScore = Math.round(studentScaleScores.reduce((a, b) => a + b, 0) / studentScaleScores.length);
-            activitySummary = `${avgScore} Puan (Ortalama)`;
+            activitySummary = `${avgScore}% (Ortalama)`;
             totalScaleAvgSum += avgScore;
             scaleStudentCount++;
         }
@@ -895,12 +973,12 @@ function renderReportData(grade, branchName) {
     container.innerHTML = `
         <div style="background:rgba(15,23,42,0.8); padding:15px; border-radius:12px; margin-bottom:15px; display:flex; gap:20px; flex-wrap:wrap; border:1px solid rgba(255,255,255,0.1);">
             <div><b>Sınıf Quiz Ortalaması:</b> <span style="color:#60a5fa; font-size:18px;">${classAverage}</span></div>
-            <div><b>Sınıf Ölçek Puan Ortalaması:</b> <span style="color:#34d399; font-size:18px;">${classScaleAverage} ${classScaleAverage !== 'Hesaplanmadı' ? 'Puan' : ''}</span></div>
+            <div><b>Sınıf Ölçek Puan Ortalaması:</b> <span style="color:#34d399; font-size:18px;">${classScaleAverage} ${classScaleAverage !== 'Hesaplanmadı' ? '%' : ''}</span></div>
             <div><b>Toplam Öğrenci:</b> ${students.length}</div>
         </div>
         <h4 style="margin-bottom:10px; color:#f8fafc;">Rapor Detayı: ${unitName} / ${secName}</h4>
         <table class="data-table">
-            <thead><tr><th>No</th><th>Ad Soyad</th><th>Quiz Notu</th><th>Etkinlik Sonucu (Puan Ortalaması)</th><th>Artı/Eksi Puan</th></tr></thead>
+            <thead><tr><th>No</th><th>Ad Soyad</th><th>Quiz Notu</th><th>Etkinlik Sonucu (Başarı Ortalaması)</th><th>Artı/Eksi Puan</th></tr></thead>
             <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
         </table>
     `;
@@ -1064,11 +1142,11 @@ function openStudentPanel(grade, branch, student) {
             if (sc !== undefined) {
                 totalScaleScore += sc;
                 scaleCount++;
-                scaleRows += `<tr><td><span style="margin-right:8px;">🧬</span>${actName}</td><td><b style="color:#34d399; font-size:15px;">${sc} Puan</b></td></tr>`;
+                scaleRows += `<tr><td><span style="margin-right:8px;">🧬</span>${actName}</td><td><b style="color:#34d399; font-size:15px;">${sc}%</b></td></tr>`;
             }
         });
     }
-    const studentScaleAvg = scaleCount > 0 ? Math.round(totalScaleScore / scaleCount) : 'Henüz Değerlendirme Yok';
+    const studentScaleAvg = scaleCount > 0 ? Math.round(totalScaleScore / scaleCount) + '%' : 'Henüz Değerlendirme Yok';
 
     studentPanel.innerHTML = `
         <header class="teacher-header">
