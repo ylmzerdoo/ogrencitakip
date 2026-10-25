@@ -25,20 +25,22 @@
             position: relative;
         }
 
-        /* Arka Planda Yüzen Uzay Parçacıkları / Yıldız Efekti */
+        /* Arka Planda Yüzen Büyük Uzay ve Fen Sembolleri */
         body::before {
-            content: "🚀 🪐 🔬 🧬 ⚛️ 🔭 🌍 🛰️";
+            content: "🚀 🪐 🔬 🧬 ⚛️ 🔭 🌍 🛰️ 🧪 🔭 🧬 🚀 ⚛️ 🌍 🪐 🔬";
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            font-size: 24px;
-            opacity: 0.07;
+            font-size: 56px;
+            opacity: 0.08;
             z-index: 0;
             pointer-events: none;
             display: flex;
             flex-wrap: wrap;
-            gap: 120px;
-            padding: 50px;
+            gap: 80px;
+            padding: 40px;
             justify-content: space-around;
+            align-content: space-around;
+            overflow: hidden;
         }
 
         /* Hareket Eden Roket Animasyonu */
