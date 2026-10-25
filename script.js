@@ -619,7 +619,7 @@ function openBranchDetail(grade, branchName) {
     if (!detailPanel) return;
     detailPanel.innerHTML = `
         <header class="teacher-header">
-            <div class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
+            <div class="header-brand"><span class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
             <button onclick="openGradeManagement('${grade}')" class="logout-btn" style="background-color: #718093;">← Şubelere Dön</button>
         </header>
         <section class="dashboard-content">
@@ -691,7 +691,7 @@ function switchBranchTab(cardElement, tabType, grade, branchName) {
     } else if (tabType === 'reports') {
         contentArea.innerHTML = `
             <h3 style="color:#f8fafc;">📊 Şube Raporları ve Analiz</h3>
-            <p style="color: #94a3b8; margin-top: 5px;">İncelemek istediğiniz ünite ve bölümü seçerek sınıf ortalamalarını ve etkinlik sonuçlarını görüntüleyin.</p>
+            <p style="color: #94a3b8; margin-top: 5px;">İncelemek istediğiniz ünite ve bölümü seçerek resmi Maarif Modeli raporunu görüntüleyin.</p>
             <div style="display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap; max-width: 600px;">
                 <select id="rep-unit-sel" class="auth-input" style="flex:1;" onchange="loadSectionsForReport(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
                 <select id="report-section-select" class="auth-input" style="flex:1;" onchange="renderReportData('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
@@ -784,7 +784,7 @@ function loadActivitiesForSelection(grade, branchName) {
     renderActivityTable(grade, branchName);
 }
 
-// 2. ÖLÇEK TÜRÜNE GÖRE DİNAMİK TABLO OLUŞTURMA (1-4, Var/Yok, Evet/Hayır)
+// 2. ÖLÇEK TÜRÜNE GÖRE DİNAMİK TABLO OLUŞTURMA
 function renderActivityTable(grade, branchName) {
     const actName = document.getElementById('activity-name-select')?.value;
     const container = document.getElementById('activity-table-container');
@@ -831,7 +831,7 @@ function renderActivityTable(grade, branchName) {
                         <option value="0" ${currentVal == 0 ? 'selected' : ''}>Yok</option>
                     </select>
                 </td>`;
-            } else { // evet-hayir
+            } else { 
                 cols += `<td>
                     <select id="scale-${sIdx}-${cIdx}" class="auth-input" style="padding:4px; width:90px; font-size:12px;" onchange="calculateLiveScore(${sIdx}, ${criteria.length}, '${scaleType}')">
                         <option value="1" ${currentVal == 1 ? 'selected' : ''}>Evet</option>
@@ -858,7 +858,6 @@ function renderActivityTable(grade, branchName) {
     `;
 }
 
-// CANLI PUAN HESAPLAMA
 function calculateLiveScore(sIdx, criteriaCount, scaleType) {
     let totalScore = 0;
     for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
@@ -915,6 +914,7 @@ function loadSectionsForReport(unitName, grade, branchName) {
     renderReportData(grade, branchName);
 }
 
+// BÜTÜN SINIF VE ŞUBELER İÇİN DİNAMİK RESMİ MAARİF MODELİ DÜZ YAZI RAPORU
 function renderReportData(grade, branchName) {
     const unitName = document.getElementById('rep-unit-sel')?.value;
     const secName = document.getElementById('report-section-select')?.value;
@@ -935,10 +935,28 @@ function renderReportData(grade, branchName) {
     let totalScaleAvgSum = 0;
     let scaleStudentCount = 0;
 
+    let quizHigh = 0; 
+    let quizMid = 0;  
+    let quizLow = 0;  
+    let quizEvaluatedTotal = 0;
+
+    let scaleHigh = 0; 
+    let scaleMid = 0;  
+    let scaleLow = 0;  
+    let scaleEvaluatedTotal = 0;
+
     students.forEach(s => {
         const key = `${unitName}_${secName}`;
         const qScore = s.quiz?.[key] !== undefined && s.quiz?.[key] !== '' ? parseFloat(s.quiz[key]) : null;
-        if (qScore !== null) { totalQuiz += qScore; quizCount++; }
+        
+        if (qScore !== null) { 
+            totalQuiz += qScore; 
+            quizCount++;
+            quizEvaluatedTotal++;
+            if (qScore >= 70) quizHigh++;
+            else if (qScore >= 45) quizMid++;
+            else quizLow++;
+        }
 
         let studentScaleScores = [];
         activitiesInSec.forEach(act => {
@@ -951,11 +969,17 @@ function renderReportData(grade, branchName) {
         });
 
         let activitySummary = 'Değerlendirilmedi';
+        let avgScore = null;
         if (studentScaleScores.length > 0) {
-            let avgScore = Math.round(studentScaleScores.reduce((a, b) => a + b, 0) / studentScaleScores.length);
+            avgScore = Math.round(studentScaleScores.reduce((a, b) => a + b, 0) / studentScaleScores.length);
             activitySummary = `${avgScore}% (Ortalama)`;
             totalScaleAvgSum += avgScore;
             scaleStudentCount++;
+            scaleEvaluatedTotal++;
+
+            if (avgScore >= 70) scaleHigh++;
+            else if (avgScore >= 45) scaleMid++;
+            else scaleLow++;
         }
 
         rows += `<tr>
@@ -969,19 +993,81 @@ function renderReportData(grade, branchName) {
 
     const classAverage = quizCount > 0 ? (totalQuiz / quizCount).toFixed(1) : 'Hesaplanmadı';
     const classScaleAverage = scaleStudentCount > 0 ? Math.round(totalScaleAvgSum / scaleStudentCount) : 'Hesaplanmadı';
+    const getPercent = (part, total) => total > 0 ? Math.round((part / total) * 100) : 0;
+
+    const narrativeText = `TÜRKİYE YÜZYILI MAARİF MODELİ
+${grade}. SINIF FEN BİLİMLERİ DERSİ
+ÜNİTE DEĞERLENDİRME VE BAŞARI RAPORU
+
+Ünite Adı: ${unitName}
+Bölüm / Konu: ${secName}
+Şube: ${grade}/${branchName}
+Toplam Öğrenci Mevcudu: ${students.length}
+
+ÜNİTEYE İLİŞKİN GENEL DEĞERLENDİRME
+Bu ünitede öğrencilerin bilimsel bilgiye ulaşmaları, bu bilgileri sorgulamaları, değerlendirmeleri ve bilimsel modeller aracılığıyla açıklamaları amaçlanmıştır. Öğretim süreci boyunca öğrencilerin araştırma yapma, bilimsel gözlem gerçekleştirme, veri toplama, bilimsel model oluşturma, çıkarım yapma ve elde edilen bilgileri günlük yaşamla ilişkilendirme becerilerini geliştirmelerine yönelik uygulamalara yer verilmiştir. Süreç boyunca bireysel farklılıklar dikkate alınarak öğrencilerin aktif katılımını destekleyen öğrenme ortamları oluşturulmuştur.
+
+ÖĞRENME ÇIKTILARI VE SÜREÇ BİLEŞENLERİNİN DEĞERLENDİRİLMESİ
+${grade}. Sınıf ${branchName} şubesinde yürütülen "${unitName}" ünitesinin "${secName}" bölümüne ilişkin süreç ve sonuç değerlendirmeleri tamamlanmıştır. Sınıf genelinde yapılan ölçme ve değerlendirme çalışmaları sonucunda;
+- Sınıf Quiz Ortalama Puanı: ${classAverage} / 100
+- Etkinlik ve Uygulama Başarı Ortalaması: %${classScaleAverage}
+
+BAŞARI DAĞILIMI VE İSTATİSTİKSEL ANALİZ
+Öğrencilerin başarı durumları 70 ve üzeri (Başarılı), 45-69 arası (Orta / Geliştirilebilir) ve 45 altı (Destek İhtiyacı Olan) kriterlerine göre incelenmiştir:
+
+A) Quiz ve Yazılı Değerlendirme Sonuçları (Katılan Öğrenci: ${quizEvaluatedTotal}):
+- 70 ve Üstü (Başarılı) Alanlar: ${quizHigh} öğrenci (%${getPercent(quizHigh, quizEvaluatedTotal)})
+- 45 - 69 Arası (Orta / Geliştirilebilir): ${quizMid} öğrenci (%${getPercent(quizMid, quizEvaluatedTotal)})
+- 45 Altı (Destek İhtiyacı Olan): ${quizLow} öğrenci (%${getPercent(quizLow, quizEvaluatedTotal)})
+
+B) Etkinlik ve Uygulama Ölçek Sonuçları (Değerlendirilen Öğrenci: ${scaleEvaluatedTotal}):
+- %70 ve Üstü Başarı Gösterenler: ${scaleHigh} öğrenci (%${getPercent(scaleHigh, scaleEvaluatedTotal)})
+- %45 - %69 Arası Başarı Gösterenler: ${scaleMid} öğrenci (%${getPercent(scaleMid, scaleEvaluatedTotal)})
+- %45 Altı Başarı Gösterenler: ${scaleLow} öğrenci (%${getPercent(scaleLow, scaleEvaluatedTotal)})
+
+GELİŞİM ALANLARI VE STRATEJİK YAKLAŞIMLAR
+Süreç boyunca öğrencilerin büyük çoğunluğunun bilimsel araştırma basamaklarını uygulama, bilgi okuryazarlığı ve bilimsel model oluşturma konularında önemli gelişim gösterdiği gözlenmiştir. 45 puan altında kalan öğrenciler için ek pekiştirme ve modelleme etkinliklerinin düzenlenmesi planlanmıştır. Türkiye Yüzyılı Maarif Modeli doğrultusunda bilimsel çıkarım yapma, iş birliği ve etkili iletişim değerleri süreç bütünleşik olarak yansıtılmıştır.`;
 
     container.innerHTML = `
-        <div style="background:rgba(15,23,42,0.8); padding:15px; border-radius:12px; margin-bottom:15px; display:flex; gap:20px; flex-wrap:wrap; border:1px solid rgba(255,255,255,0.1);">
-            <div><b>Sınıf Quiz Ortalaması:</b> <span style="color:#60a5fa; font-size:18px;">${classAverage}</span></div>
-            <div><b>Sınıf Ölçek Puan Ortalaması:</b> <span style="color:#34d399; font-size:18px;">${classScaleAverage} ${classScaleAverage !== 'Hesaplanmadı' ? '%' : ''}</span></div>
-            <div><b>Toplam Öğrenci:</b> ${students.length}</div>
+        <div style="background:rgba(15,23,42,0.85); padding:20px; border-radius:14px; margin-bottom:20px; border:1px solid rgba(255,255,255,0.1); box-shadow:0 10px 25px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.08); flex-wrap:wrap; gap:15px;">
+                <div>
+                    <h4 style="color:#f8fafc; margin-bottom:4px;">📋 Resmi Maarif Modeli Düz Yazı Raporu (${grade}. Sınıf - ${branchName})</h4>
+                    <p style="color:#94a3b8; font-size:13px; margin:0;">Tüm sınıf, şube ve bölümler için otomatik üretilen resmi rapor metni</p>
+                </div>
+                <button onclick="copyNarrativeReport()" class="action-btn student-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">📋 Raporu Metin Olarak Kopyala</button>
+            </div>
+
+            <div style="display:flex; gap:25px; flex-wrap:wrap; margin-bottom:15px;">
+                <div><b>Toplam Sınıf Mevcudu:</b> <span style="color:#f8fafc; font-size:18px;">${students.length} Öğrenci</span></div>
+                <div><b>Sınıf Quiz Ortalaması:</b> <span style="color:#60a5fa; font-size:18px;">${classAverage} Puan</span></div>
+                <div><b>Sınıf Ölçek Ortalaması:</b> <span style="color:#34d399; font-size:18px;">${classScaleAverage} ${classScaleAverage !== 'Hesaplanmadı' ? '%' : ''}</span></div>
+            </div>
+
+            <div style="background:rgba(15,23,42,0.95); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.15);">
+                <h5 style="color:#f8fafc; margin-bottom:8px; font-size:14px;">📄 Oluşan Resmi Rapor (Word Belgesine Doğrudan Yapıştırabilirsiniz)</h5>
+                <textarea id="narrative-report-box" style="width:100%; height:240px; background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:6px; padding:10px; font-family:monospace; font-size:12px; resize:vertical;" readonly>${narrativeText}</textarea>
+            </div>
         </div>
-        <h4 style="margin-bottom:10px; color:#f8fafc;">Rapor Detayı: ${unitName} / ${secName}</h4>
+
+        <h4 style="margin-bottom:10px; color:#f8fafc;">Öğrenci Detay Listesi: ${unitName} / ${secName}</h4>
         <table class="data-table">
             <thead><tr><th>No</th><th>Ad Soyad</th><th>Quiz Notu</th><th>Etkinlik Sonucu (Başarı Ortalaması)</th><th>Artı/Eksi Puan</th></tr></thead>
             <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
         </table>
     `;
+}
+
+function copyNarrativeReport() {
+    const box = document.getElementById('narrative-report-box');
+    if (!box) return;
+    box.select();
+    box.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(box.value).then(() => {
+        alert('Resmi rapor başarıyla panoya kopyalandı! İstediğiniz Word belgesine yapıştırabilirsiniz.');
+    }).catch(err => {
+        alert('Kopyalama başarısız oldu: ' + err);
+    });
 }
 
 // ÖĞRENCİ EKLEME
