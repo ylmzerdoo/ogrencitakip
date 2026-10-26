@@ -127,7 +127,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    const savedState = localStorage.getItem('fen_app_state');
+    // sessionStorage kontrolü: Tarayıcı/sekme ilk defa açılıyorsa (veya kapatılıp açıldıysa) giriş ekranına atar.
+    // F5 ile sayfa yenilendiğinde ise kaldığı yerden devam eder.
+    const savedState = sessionStorage.getItem('fen_app_state');
     if (savedState) {
         try {
             const state = JSON.parse(savedState);
@@ -212,7 +214,7 @@ async function teacherLogin(push = true) {
 }
 
 function renderTeacherPanelView(push = true) {
-    localStorage.setItem('fen_app_state', JSON.stringify({ type: 'teacher' }));
+    sessionStorage.setItem('fen_app_state', JSON.stringify({ type: 'teacher' }));
     if (push) {
         history.pushState({ type: 'teacher' }, '', '');
     }
@@ -225,20 +227,20 @@ function renderTeacherPanelView(push = true) {
 
 async function logout() {
     if (supabaseClient) await supabaseClient.auth.signOut();
-    localStorage.removeItem('fen_app_state');
+    sessionStorage.removeItem('fen_app_state');
     await loadAllDataFromSupabase();
     history.pushState({ type: 'auth' }, '', '');
     renderAuthScreenView();
 }
 
 function logoutStudent() {
-    localStorage.removeItem('fen_app_state');
+    sessionStorage.removeItem('fen_app_state');
     history.pushState({ type: 'auth' }, '', '');
     renderAuthScreenView();
 }
 
 function renderAuthScreenView() {
-    localStorage.setItem('fen_app_state', JSON.stringify({ type: 'auth' }));
+    sessionStorage.setItem('fen_app_state', JSON.stringify({ type: 'auth' }));
     document.getElementById('teacher-panel').style.display = 'none';
     document.getElementById('grade-detail-panel').style.display = 'none';
     document.getElementById('student-panel').style.display = 'none';
@@ -768,7 +770,7 @@ function openGradeManagement(grade, push = true) {
 }
 
 function renderGradeManagementView(grade, push = true) {
-    localStorage.setItem('fen_app_state', JSON.stringify({ type: 'grade-mgmt', grade }));
+    sessionStorage.setItem('fen_app_state', JSON.stringify({ type: 'grade-mgmt', grade }));
     if (push) {
         history.pushState({ type: 'grade-mgmt', grade }, '', '');
     }
@@ -824,7 +826,7 @@ function openBranchDetail(grade, branchName, push = true) {
 }
 
 function renderBranchDetailView(grade, branchName, push = true) {
-    localStorage.setItem('fen_app_state', JSON.stringify({ type: 'branch-detail', grade, branchName }));
+    sessionStorage.setItem('fen_app_state', JSON.stringify({ type: 'branch-detail', grade, branchName }));
     if (push) {
         history.pushState({ type: 'branch-detail', grade, branchName }, '', '');
     }
@@ -838,7 +840,7 @@ function renderBranchDetailView(grade, branchName, push = true) {
 
     detailPanel.innerHTML = `
         <header class="teacher-header">
-            <div class="header-brand"><span class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
+            <div class="header-brand"><span class="brand-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
             <div>
                 <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
             </div>
@@ -1187,7 +1189,7 @@ function renderGroupedActivityTable(grade, branchName) {
                 <div style="font-size:12px; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
                     ℹ️ <b>Detaylı Ölçek Görünümü:</b> Girdiğiniz etkinlik puanına göre otomatik puanlanmış kriterler listelenmektedir.
                 </div>
-                <button onclick="openSingleScalePrintModal('${grade}', '${branchName}', '${unitName || ''}', '${secName || ''}', '${selectedScaleName.replace(/'/g, "\\тена")}')" class="action-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Ölçeği Yazdır / PDF İndir</button>
+                <button onclick="openSingleScalePrintModal('${grade}', '${branchName}', '${unitName || ''}', '${secName || ''}', '${selectedScaleName.replace(/'/g, "\\\\'")}')" class="action-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Ölçeği Yazdır / PDF İndir</button>
             </div>
             <div class="table-responsive">
                 <table class="data-table">
@@ -1215,7 +1217,7 @@ function renderGroupedActivityTable(grade, branchName) {
         cols += `<td>
             <div style="display:flex; gap:6px; align-items:center;">
                 <input type="number" id="group-quick-input-${sIdx}" class="auth-input" style="padding:4px; width:70px; font-size:12px; text-align:center;" min="0" max="100" placeholder="Örn: 85">
-                <button onclick="applyScoreToAllSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\'")}', ${subScales.length})" style="background:#0284c7; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:600;" title="Tüm Ölçeklere Uygula">Tümüne Uygula</button>
+                <button onclick="applyScoreToAllSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})" style="background:#0284c7; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:600;" title="Tüm Ölçeklere Uygula">Tümüne Uygula</button>
             </div>
         </td>`;
 
@@ -1233,7 +1235,7 @@ function renderGroupedActivityTable(grade, branchName) {
             <div style="font-size:12px; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
                 ℹ️ <b>Toplu Otomasyon:</b> Ortak puanı yazıp <b>Tümüne Uygula</b> diyerek bu etkinliğe ait tüm ölçekleri otomatik doldurabilir veya sağdaki menüden tek bir ölçeğin detayına inebilirsin!
             </div>
-            <button onclick="openGroupActivityPrintModal('${grade}', '${branchName}', '${unitName || ''}', '${secName || ''}', '${baseActName.replace(/'/g, "\\'")}')" class="action-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Etkinlik Raporunu Yazdır / PDF İndir</button>
+            <button onclick="openGroupActivityPrintModal('${grade}', '${branchName}', '${unitName || ''}', '${secName || ''}', '${baseActName.replace(/'/g, "\\\\'")}')" class="action-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Etkinlik Raporunu Yazdır / PDF İndir</button>
         </div>
         <div class="table-responsive">
             <table class="data-table">
@@ -1241,7 +1243,7 @@ function renderGroupedActivityTable(grade, branchName) {
                 <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci bulunamadı.</td></tr>'}</tbody>
             </table>
         </div>
-        <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\'")}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Tüm Ölçek Puanlarını Kaydet</button>
+        <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\\\'")}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Tüm Ölçek Puanlarını Kaydet</button>
     `;
 }
 
@@ -1940,7 +1942,7 @@ async function studentLogin(push = true) {
 }
 
 function renderStudentPanelView(grade, branch, student, push = true) {
-    localStorage.setItem('fen_app_state', JSON.stringify({ type: 'student', grade, branch, student }));
+    sessionStorage.setItem('fen_app_state', JSON.stringify({ type: 'student', grade, branch, student }));
     if (push) {
         history.pushState({ type: 'student', grade, branch, student }, '', '');
     }
