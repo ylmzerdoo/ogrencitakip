@@ -272,7 +272,8 @@ function closeModal() {
 function addNewBranchModal(grade) {
     const content = `<label style="color:#cbd5e1;">Şube Adı (Örn: A, B, F):</label><input type="text" id="modal-branch-name" class="auth-input" placeholder="A">`;
     openModal("Yeni Şube Ekle", content, async () => {
-        const bInput = document.getElementById('modal-branch-name').value.trim().toUpperCase();
+        const inputEl = document.getElementById('modal-branch-name');
+        const bInput = inputEl.value.trim().toUpperCase();
         if (!bInput) return;
         const bFullName = `${grade}/${bInput}`;
 
@@ -288,8 +289,8 @@ function addNewBranchModal(grade) {
         }
 
         await loadAllDataFromSupabase();
-        closeModal();
-        openGradeManagement(grade, false);
+        inputEl.value = '';
+        alert(`"${bFullName}" şubesi buluta eklendi!`);
     });
 }
 
@@ -315,15 +316,16 @@ function globalAddUnit() {
     `;
     openModal("Yeni Ünite Ekle", content, async () => {
         const grade = document.getElementById('modal-grade').value;
-        const unitName = document.getElementById('modal-text').value.trim();
+        const inputEl = document.getElementById('modal-text');
+        const unitName = inputEl.value.trim();
         if (!unitName) return;
 
         if (supabaseClient) {
             await supabaseClient.from('units_sections').insert([{ grade: grade, unit_name: unitName, section_name: 'Genel' }]);
         }
         await loadAllDataFromSupabase();
+        inputEl.value = '';
         alert(`"${unitName}" buluta eklendi!`);
-        closeModal();
     });
 }
 
@@ -341,15 +343,16 @@ function globalAddSection() {
     openModal("Yeni Bölüm Ekle", content, async () => {
         const grade = document.getElementById('modal-grade').value;
         const unitName = document.getElementById('modal-unit-select').value;
-        const section = document.getElementById('modal-section').value.trim();
+        const sectionInput = document.getElementById('modal-section');
+        const section = sectionInput.value.trim();
         if (!unitName || !section) { alert('Lütfen ünite seçin ve bölüm adı yazın.'); return; }
 
         if (supabaseClient) {
             await supabaseClient.from('units_sections').insert([{ grade: grade, unit_name: unitName, section_name: section }]);
         }
         await loadAllDataFromSupabase();
+        sectionInput.value = '';
         alert(`"${section}" bölümü buluta eklendi!`);
-        closeModal();
     });
     updateModalUnits('6');
 }
@@ -374,14 +377,15 @@ function globalAddReportTemplate() {
         <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Bölüm Seçin:</label>
         <select id="rep-modal-section" class="auth-input" style="margin-bottom:12px;"><option value="">Önce ünite seçin</option></select>
         <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Resmi Rapor Metni:</label>
-        <textarea id="rep-modal-text" class="auth-input" style="height:150px; font-size:12px; font-family:monospace;" placeholder="TÜRKİYE YÜZYILI MAARİF MODELİ..."></textarea>
+        <textarea id="rep-modal-text" class="auth-input" style="height:150px; font-size:12px; font-family:monospace;" placeholder="Rapor metnini buraya yazın..."></textarea>
     `;
 
     openModal("Bölüme Özel Resmi Rapor Şablonu Ekle", content, async () => {
         const grade = document.getElementById('rep-modal-grade').value;
         const unitName = document.getElementById('rep-modal-unit').value;
         const secName = document.getElementById('rep-modal-section').value;
-        const reportText = document.getElementById('rep-modal-text').value.trim();
+        const textInput = document.getElementById('rep-modal-text');
+        const reportText = textInput.value.trim();
 
         if (!unitName || !secName || !reportText) {
             alert('Lütfen sınıf, ünite, bölüm seçin ve rapor metnini yazın!');
@@ -402,8 +406,8 @@ function globalAddReportTemplate() {
             }
         }
 
+        textInput.value = '';
         alert('Rapor şablonu buluta başarıyla kaydedildi!');
-        closeModal();
     });
 
     updateRepModalUnits('7');
@@ -451,9 +455,10 @@ function globalAddActivity() {
         const grade = document.getElementById('modal-grade').value;
         const unit = document.getElementById('modal-unit').value;
         const section = document.getElementById('modal-section').value;
-        const fileInput = document.getElementById('modal-excel-file').files[0];
+        const fileInput = document.getElementById('modal-excel-file');
+        const file = fileInput.files[0];
 
-        if (!unit || !section || !fileInput) {
+        if (!unit || !section || !file) {
             alert('Lütfen ünite, bölüm seçin ve bir Excel dosyası yükleyin!');
             return;
         }
@@ -532,14 +537,14 @@ function globalAddActivity() {
                 }
 
                 await loadAllDataFromSupabase();
+                fileInput.value = '';
                 alert(`Toplam ${importedCount} farklı ölçek başarıyla yüklendi!`);
-                closeModal();
             } catch (err) {
                 console.error(err);
                 alert('Hata: ' + err.message);
             }
         };
-        reader.readAsArrayBuffer(fileInput);
+        reader.readAsArrayBuffer(file);
     });
 
     updateModalUnitsForActivity('6');
@@ -576,9 +581,10 @@ function globalDeleteManagement() {
         </select>
         <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Silinecek Öğe Türü:</label>
         <select id="del-type" class="auth-input" style="margin-bottom:12px;" onchange="toggleDelFields()">
-            <option value="unit">Ünite Sil</option>
+            <option value="unit">Ünite Sil (Tüm Bölüm ve Etkinlikleriyle)</option>
             <option value="section">Bölüm Sil</option>
             <option value="activity">Etkinlik / Ölçek Sil</option>
+            <option value="report">Resmi Rapor Şablonu Sil</option>
         </select>
 
         <div id="del-unit-container" style="margin-bottom:12px;">
@@ -588,29 +594,36 @@ function globalDeleteManagement() {
 
         <div id="del-section-container" style="margin-bottom:12px; display:none;">
             <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Bölüm Seçin:</label>
-            <select id="del-section-select" class="auth-input"><option value="">-- Bölüm Seçin --</option></select>
+            <select id="del-section-select" class="auth-input" onchange="updateDelActivitiesAndReports()"><option value="">-- Bölüm Seçin --</option></select>
         </div>
 
         <div id="del-activity-container" style="margin-bottom:12px; display:none;">
             <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Etkinlik / Ölçek Seçin:</label>
-            <select id="del-activity-select" class="auth-input"><option value="">-- Etkinlik Seçin --</option></select>
+            <select id="del-activity-select" class="auth-input"><option value="">-- Önce Bölüm Seçin --</option></select>
+        </div>
+
+        <div id="del-report-container" style="margin-bottom:12px; display:none;">
+            <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Silinecek Rapor (Bölüm):</label>
+            <select id="del-report-select" class="auth-input"><option value="">-- Önce Bölüm Seçin --</option></select>
         </div>
     `;
 
-    openModal("Ünite / Bölüm / Etkinlik Sil", content, async () => {
+    openModal("İçerik Silme Yönetimi", content, async () => {
         const grade = document.getElementById('del-grade').value;
         const type = document.getElementById('del-type').value;
 
         if (type === 'unit') {
             const unitName = document.getElementById('del-unit-select').value;
             if (!unitName) { alert('Lütfen silinecek üniteyi seçin.'); return; }
-            if (confirm(`"${unitName}" ünitesini silmek istiyor musunuz?`)) {
+            if (confirm(`"${unitName}" ünitesini, bu üniteye ait tüm bölümleri ve etkinlikleri silmek istiyor musunuz?`)) {
                 if (supabaseClient) {
                     await supabaseClient.from('units_sections').delete().eq('grade', grade).eq('unit_name', unitName);
+                    await supabaseClient.from('activities').delete().eq('grade', grade).eq('unit_name', unitName);
+                    await supabaseClient.from('report_templates').delete().eq('grade', grade).eq('unit_name', unitName);
                 }
                 await loadAllDataFromSupabase();
-                alert('Ünite buluttan silindi!');
-                closeModal();
+                updateDelUnits(grade);
+                alert('Ünite, bölümleri ve ilgili tüm etkinlik/raporlar buluttan silindi!');
             }
         } else if (type === 'section') {
             const unitName = document.getElementById('del-unit-select').value;
@@ -619,10 +632,12 @@ function globalDeleteManagement() {
             if (confirm(`"${secName}" bölümünü silmek istiyor musunuz?`)) {
                 if (supabaseClient) {
                     await supabaseClient.from('units_sections').delete().eq('grade', grade).eq('unit_name', unitName).eq('section_name', secName);
+                    await supabaseClient.from('activities').delete().eq('grade', grade).eq('unit_name', unitName).eq('section_name', secName);
+                    await supabaseClient.from('report_templates').delete().eq('grade', grade).eq('unit_name', unitName).eq('section_name', secName);
                 }
                 await loadAllDataFromSupabase();
-                alert('Bölüm buluttan silindi!');
-                closeModal();
+                updateDelSections(unitName);
+                alert('Bölüm ve bağlı içerikler buluttan silindi!');
             }
         } else if (type === 'activity') {
             const actName = document.getElementById('del-activity-select').value;
@@ -630,10 +645,24 @@ function globalDeleteManagement() {
             if (confirm(`"${actName}" etkinliğini silmek istiyor musunuz?`)) {
                 if (supabaseClient) {
                     await supabaseClient.from('activities').delete().eq('grade', grade).eq('activity_name', actName);
+                    await supabaseClient.from('activities').delete().eq('grade', grade).ilike('activity_name', actName + ' -%');
                 }
                 await loadAllDataFromSupabase();
+                updateDelActivitiesAndReports();
                 alert('Etkinlik buluttan silindi!');
-                closeModal();
+            }
+        } else if (type === 'report') {
+            const gradeVal = document.getElementById('del-grade').value;
+            const unitName = document.getElementById('del-unit-select').value;
+            const secName = document.getElementById('del-section-select').value;
+            if (!unitName || !secName) { alert('Lütfen ünite ve bölüm seçin.'); return; }
+            if (confirm(`Bu bölüme ait resmi rapor şablonunu silmek istiyor musunuz?`)) {
+                if (supabaseClient) {
+                    await supabaseClient.from('report_templates').delete().eq('grade', gradeVal).eq('unit_name', unitName).eq('section_name', secName);
+                }
+                await loadAllDataFromSupabase();
+                updateDelActivitiesAndReports();
+                alert('Rapor şablonu buluttan silindi!');
             }
         }
     });
@@ -650,7 +679,6 @@ function updateDelUnits(grade) {
         unitSel.innerHTML += `<option value="${u.name}">${u.name}</option>`;
     });
     updateDelSections('');
-    updateDelActivities(grade);
 }
 
 function updateDelSections(unitName) {
@@ -664,15 +692,41 @@ function updateDelSections(unitName) {
             secSel.innerHTML += `<option value="${s}">${s}</option>`;
         });
     }
+    updateDelActivitiesAndReports();
 }
 
-function updateDelActivities(grade) {
+function updateDelActivitiesAndReports() {
+    const grade = document.getElementById('del-grade').value;
+    const unitName = document.getElementById('del-unit-select')?.value;
+    const secName = document.getElementById('del-section-select')?.value;
+    
     const actSel = document.getElementById('del-activity-select');
-    if (!actSel) return;
-    actSel.innerHTML = '<option value="">-- Etkinlik Seçin --</option>';
-    (fenData[grade]?.activities || []).forEach(a => {
-        actSel.innerHTML += `<option value="${a.name}">${a.name} (${a.unit})</option>`;
-    });
+    if (actSel) {
+        actSel.innerHTML = '<option value="">-- Etkinlik Seçin --</option>';
+        if (unitName && secName) {
+            let baseActivityNames = new Set();
+            (fenData[grade]?.activities || []).filter(a => a.unit === unitName && a.section === secName).forEach(a => {
+                let cleanName = a.name.trim();
+                let parts = cleanName.split(' - ');
+                if (parts.length >= 2) {
+                    baseActivityNames.add(`${parts[0]} - ${parts[1]}`);
+                } else {
+                    baseActivityNames.add(cleanName);
+                }
+            });
+            baseActivityNames.forEach(bAct => {
+                actSel.innerHTML += `<option value="${bAct}">${bAct}</option>`;
+            });
+        }
+    }
+
+    const repSel = document.getElementById('del-report-select');
+    if (repSel) {
+        repSel.innerHTML = '<option value="">-- Rapor Şablonu Bulunuyor --</option>';
+        if (unitName && secName) {
+            repSel.innerHTML = `<option value="${unitName}|||${secName}">${unitName} / ${secName} (Raporu)</option>`;
+        }
+    }
 }
 
 function toggleDelFields() {
@@ -680,21 +734,32 @@ function toggleDelFields() {
     const unitCont = document.getElementById('del-unit-container');
     const secCont = document.getElementById('del-section-container');
     const actCont = document.getElementById('del-activity-container');
+    const repCont = document.getElementById('del-report-container');
 
-    if (!unitCont || !secCont || !actCont) return;
+    if (!unitCont || !secCont || !actCont || !repCont) return;
 
     if (type === 'unit') {
         unitCont.style.display = 'block';
         secCont.style.display = 'none';
         actCont.style.display = 'none';
+        repCont.style.display = 'none';
     } else if (type === 'section') {
         unitCont.style.display = 'block';
         secCont.style.display = 'block';
         actCont.style.display = 'none';
+        repCont.style.display = 'none';
     } else if (type === 'activity') {
-        unitCont.style.display = 'none';
-        secCont.style.display = 'none';
+        unitCont.style.display = 'block';
+        secCont.style.display = 'block';
         actCont.style.display = 'block';
+        repCont.style.display = 'none';
+        updateDelActivitiesAndReports();
+    } else if (type === 'report') {
+        unitCont.style.display = 'block';
+        secCont.style.display = 'block';
+        actCont.style.display = 'none';
+        repCont.style.display = 'block';
+        updateDelActivitiesAndReports();
     }
 }
 
@@ -773,7 +838,7 @@ function renderBranchDetailView(grade, branchName, push = true) {
 
     detailPanel.innerHTML = `
         <header class="teacher-header">
-            <div class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
+            <div class="header-brand"><span class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
             <div>
                 <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
             </div>
@@ -1080,32 +1145,40 @@ function renderGroupedActivityTable(grade, branchName) {
         let rows = '';
         students.forEach((s) => {
             let cols = `<td>${s.no}</td><td>${s.name}</td>`;
-            let storedScale = s.scale?.[selectedScaleName] || {};
-            let totalScore = 0;
-            let maxScore = criteria.length * (scaleType === '1-4' ? 4 : 1);
+            let storedScale = s.scale?.[selectedScaleName];
+            
+            if (!storedScale || storedScale['totalScore'] === undefined) {
+                criteria.forEach(() => {
+                    cols += `<td><span style="color:#94a3b8; font-size:12px;">-</span></td>`;
+                });
+                cols += `<td><b style="color:#94a3b8;">%-%</b></td>`;
+            } else {
+                let totalScore = 0;
+                let maxScore = criteria.length * (scaleType === '1-4' ? 4 : 1);
 
-            criteria.forEach((c, cIdx) => {
-                let val = storedScale[cIdx] !== undefined ? storedScale[cIdx] : (scaleType === '1-4' ? 4 : 1);
-                if (scaleType === '1-4') totalScore += parseInt(val) || 0;
-                else totalScore += val ? 1 : 0;
+                criteria.forEach((c, cIdx) => {
+                    let val = storedScale[cIdx] !== undefined ? storedScale[cIdx] : (scaleType === '1-4' ? 4 : 1);
+                    if (scaleType === '1-4') totalScore += parseInt(val) || 0;
+                    else totalScore += val ? 1 : 0;
 
-                let textLabel = val;
-                if (scaleType === '1-4') {
-                    if (val == 4) textLabel = '4 - Çok İyi';
-                    else if (val == 3) textLabel = '3 - İyi';
-                    else if (val == 2) textLabel = '2 - Geliş.';
-                    else if (val == 1) textLabel = '1 - Yetersiz';
-                } else if (scaleType === 'var-yok') {
-                    textLabel = val == 1 ? 'Var' : 'Yok';
-                } else {
-                    textLabel = val == 1 ? 'Evet' : 'Hayır';
-                }
+                    let textLabel = val;
+                    if (scaleType === '1-4') {
+                        if (val == 4) textLabel = '4 - Çok İyi';
+                        else if (val == 3) textLabel = '3 - İyi';
+                        else if (val == 2) textLabel = '2 - Geliş.';
+                        else if (val == 1) textLabel = '1 - Yetersiz';
+                    } else if (scaleType === 'var-yok') {
+                        textLabel = val == 1 ? 'Var' : 'Yok';
+                    } else {
+                        textLabel = val == 1 ? 'Evet' : 'Hayır';
+                    }
 
-                cols += `<td><span style="color:#38bdf8; font-weight:600; font-size:12px;">${textLabel}</span></td>`;
-            });
+                    cols += `<td><span style="color:#38bdf8; font-weight:600; font-size:12px;">${textLabel}</span></td>`;
+                });
 
-            let percentage = storedScale['totalScore'] !== undefined ? storedScale['totalScore'] : (maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0);
-            cols += `<td><b style="color:#34d399;">%${percentage}</b></td>`;
+                let percentage = storedScale['totalScore'];
+                cols += `<td><b style="color:#34d399;">%${percentage}</b></td>`;
+            }
             rows += `<tr>${cols}</tr>`;
         });
 
@@ -1114,7 +1187,7 @@ function renderGroupedActivityTable(grade, branchName) {
                 <div style="font-size:12px; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
                     ℹ️ <b>Detaylı Ölçek Görünümü:</b> Girdiğiniz etkinlik puanına göre otomatik puanlanmış kriterler listelenmektedir.
                 </div>
-                <button onclick="window.print()" class="action-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Ölçeği Yazdır / PDF İndir</button>
+                <button onclick="openSingleScalePrintModal('${grade}', '${branchName}', '${unitName || ''}', '${secName || ''}', '${selectedScaleName.replace(/'/g, "\\тена")}')" class="action-btn" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Ölçeği Yazdır / PDF İndir</button>
             </div>
             <div class="table-responsive">
                 <table class="data-table">
@@ -1147,8 +1220,9 @@ function renderGroupedActivityTable(grade, branchName) {
         </td>`;
 
         subScales.forEach((scale, scaleIdx) => {
-            let scVal = s.scale?.[scale.name]?.['totalScore'] !== undefined ? s.scale[scale.name]['totalScore'] : '-';
-            cols += `<td><span id="scale-badge-${sIdx}-${scaleIdx}" style="color:#38bdf8; font-weight:600;">%${scVal}</span></td>`;
+            let scVal = (s.scale?.[scale.name] && s.scale[scale.name]['totalScore'] !== undefined) ? s.scale[scale.name]['totalScore'] : '-';
+            let displayVal = scVal !== '-' ? `%${scVal}` : '%-%';
+            cols += `<td><span id="scale-badge-${sIdx}-${scaleIdx}" style="color:${scVal !== '-' ? '#38bdf8' : '#94a3b8'}; font-weight:600;">${displayVal}</span></td>`;
         });
 
         rows += `<tr>${cols}</tr>`;
@@ -1184,6 +1258,7 @@ function applyScoreToAllSubScales(sIdx, baseActName, subScalesCount) {
         const badgeEl = document.getElementById(`scale-badge-${sIdx}-${scaleIdx}`);
         if (badgeEl) {
             badgeEl.innerText = `%${Math.round(targetVal)}`;
+            badgeEl.style.color = '#38bdf8';
         }
     }
 }
@@ -1238,6 +1313,89 @@ async function saveGroupScaleScores(grade, branchName, baseActName) {
     alert('Etkinliğe ait tüm ölçek puanları başarıyla kaydedildi!');
 }
 
+function openSingleScalePrintModal(grade, branchName, unitName, secName, scaleName) {
+    const allActs = fenData[grade].activities || [];
+    const scaleObj = allActs.find(a => a.name === scaleName);
+    if (!scaleObj) return;
+
+    const criteria = scaleObj.criteria || ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'];
+    const scaleType = scaleObj.scale_type || '1-4';
+    const students = fenData[grade]?.branches[branchName] || [];
+
+    let headerTh = '<th style="border:1px solid #94a3b8; padding:6px; text-align:left;">No</th><th style="border:1px solid #94a3b8; padding:6px; text-align:left;">Ad Soyad</th>';
+    criteria.forEach(c => { headerTh += `<th style="border:1px solid #94a3b8; padding:6px; text-align:left;">${c}</th>`; });
+    headerTh += '<th style="border:1px solid #94a3b8; padding:6px; text-align:left;">Başarı (%)</th>';
+
+    let rows = '';
+    students.forEach((s) => {
+        let cols = `<td style="border:1px solid #94a3b8; padding:6px;">${s.no}</td><td style="border:1px solid #94a3b8; padding:6px;">${s.name}</td>`;
+        let storedScale = s.scale?.[scaleName];
+
+        if (!storedScale || storedScale['totalScore'] === undefined) {
+            criteria.forEach(() => {
+                cols += `<td style="border:1px solid #94a3b8; padding:6px; color:#888;">-</td>`;
+            });
+            cols += `<td style="border:1px solid #94a3b8; padding:6px;"><b>%-%</b></td>`;
+        } else {
+            let totalScore = 0;
+            let maxScore = criteria.length * (scaleType === '1-4' ? 4 : 1);
+
+            criteria.forEach((c, cIdx) => {
+                let val = storedScale[cIdx] !== undefined ? storedScale[cIdx] : (scaleType === '1-4' ? 4 : 1);
+                if (scaleType === '1-4') totalScore += parseInt(val) || 0;
+                else totalScore += val ? 1 : 0;
+
+                let textLabel = val;
+                if (scaleType === '1-4') {
+                    if (val == 4) textLabel = '4 - Çok İyi';
+                    else if (val == 3) textLabel = '3 - İyi';
+                    else if (val == 2) textLabel = '2 - Geliş.';
+                    else if (val == 1) textLabel = '1 - Yetersiz';
+                } else if (scaleType === 'var-yok') {
+                    textLabel = val == 1 ? 'Var' : 'Yok';
+                } else {
+                    textLabel = val == 1 ? 'Evet' : 'Hayır';
+                }
+
+                cols += `<td style="border:1px solid #94a3b8; padding:6px;">${textLabel}</td>`;
+            });
+
+            let percentage = storedScale['totalScore'];
+            cols += `<td style="border:1px solid #94a3b8; padding:6px;"><b>%${percentage}</b></td>`;
+        }
+        rows += `<tr>${cols}</tr>`;
+    });
+
+    const content = `
+        <div style="background: white !important; color: black !important; padding: 10px; font-family: 'Poppins', sans-serif;">
+            <div style="text-align:center; margin-bottom:15px; border-bottom:2px solid #333; padding-bottom:10px;">
+                <span style="font-size:28px;">🧪 ⚛️ 🔬</span>
+                <h3 style="color:black !important; font-size:16px; margin-top:5px; font-weight:700;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL</h3>
+                <p style="color:#333 !important; font-size:11px; font-weight:600;">TEKİL ÖLÇEK DEĞERLENDİRME RAPORU</p>
+            </div>
+            
+            <div style="margin-bottom:15px; color:black !important; font-size:12px; line-height:1.5; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                <p><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
+                <p><b>Ölçek / Etkinlik Adı:</b> ${scaleName}</p>
+            </div>
+
+            <div class="table-responsive" style="margin-bottom:15px;">
+                <table class="data-table" style="width:100%; border-collapse:collapse; font-size:10px;">
+                    <thead><tr style="background:#e2e8f0; color:black;">${headerTh}</tr></thead>
+                    <tbody>${rows || '<tr><td colspan="10" style="text-align:center; border:1px solid #94a3b8; padding:6px;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
+                </table>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;" class="modal-footer">
+                <button onclick="window.print()" style="background:#10b981; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:600; cursor:pointer;">🖨️ Ölçeği Yazdır / PDF İndir</button>
+            </div>
+        </div>
+    `;
+
+    openModal(`Tekil Ölçek Raporu - ${scaleName} (${branchName})`, content, null);
+}
+
 function openGroupActivityPrintModal(grade, branchName, unitName, secName, baseActName) {
     const allActs = fenData[grade].activities || [];
     const subScales = allActs.filter(a => a.unit === unitName && a.section === secName && (a.name === baseActName || a.name.startsWith(baseActName + ' -')));
@@ -1254,8 +1412,9 @@ function openGroupActivityPrintModal(grade, branchName, unitName, secName, baseA
     students.forEach((s) => {
         let cols = `<td style="border:1px solid #94a3b8; padding:6px;">${s.no}</td><td style="border:1px solid #94a3b8; padding:6px;">${s.name}</td>`;
         subScales.forEach(scale => {
-            let scVal = s.scale?.[scale.name]?.['totalScore'] !== undefined ? s.scale[scale.name]['totalScore'] : '-';
-            cols += `<td style="border:1px solid #94a3b8; padding:6px;"><b>%${scVal}</b></td>`;
+            let scVal = (s.scale?.[scale.name] && s.scale[scale.name]['totalScore'] !== undefined) ? s.scale[scale.name]['totalScore'] : '-';
+            let displayVal = scVal !== '-' ? `%${scVal}` : '%-%';
+            cols += `<td style="border:1px solid #94a3b8; padding:6px;"><b>${displayVal}</b></td>`;
         });
         rows += `<tr>${cols}</tr>`;
     });
@@ -1265,7 +1424,7 @@ function openGroupActivityPrintModal(grade, branchName, unitName, secName, baseA
             <div style="text-align:center; margin-bottom:15px; border-bottom:2px solid #333; padding-bottom:10px;">
                 <span style="font-size:28px;">🧪 ⚛️ 🔬</span>
                 <h3 style="color:black !important; font-size:16px; margin-top:5px; font-weight:700;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL</h3>
-                <p style="color:#333 !important; font-size:11px; font-weight:600;">TÜRKİYE YÜZYILI MAARİF MODELİ - ETKİNLİK TOPLU ÖLÇEK RAPORU</p>
+                <p style="color:#333 !important; font-size:11px; font-weight:600;">ETKİNLİK TOPLU ÖLÇEK RAPORU</p>
             </div>
             
             <div style="margin-bottom:15px; color:black !important; font-size:12px; line-height:1.5; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
@@ -1385,8 +1544,7 @@ async function renderReportData(grade, branchName) {
     const classScaleAverage = scaleStudentCount > 0 ? Math.round(totalScaleAvgSum / scaleStudentCount) : 'Hesaplanmadı';
     const getPercent = (part, total) => total > 0 ? Math.round((part / total) * 100) : 0;
 
-    const baseReport = customReportText ? customReportText : `TÜRKİYE YÜZYILI MAARİF MODELİ
-${grade}. SINIF FEN BİLİMLERİ DERSİ
+    const baseReport = customReportText ? customReportText : `${grade}. SINIF FEN BİLİMLERİ DERSİ
 ÜNİTE DEĞERLENDİRME VE SINIF KARNESİ RAPORU
 
 Ünite Adı: ${unitName}
@@ -1399,7 +1557,7 @@ Toplam Öğrenci Mevcudu: ${students.length}`;
 --------------------------------------------------
 ŞUBE İSTATİSTİKSEL BAŞARI ANALİZİ (${grade}. Sınıf - ${branchName})
 - Sınıf Quiz Ortalama Puanı: ${classAverage} / 100
-- Etkinlik ve Uygulama Başarı Ortalaması: %${classScaleAverage}
+- Etkinlik ve Uygulama Başarı Ortalaması: ${classScaleAverage !== 'Hesaplanmadı' ? '%' + classScaleAverage : 'Hesaplanmadı'}
 
 A) Quiz Değerlendirme Dağılımı (Katılan: ${quizEvaluatedTotal} Öğrenci):
 - 70 ve Üstü (Başarılı): ${quizHigh} öğrenci (%${getPercent(quizHigh, quizEvaluatedTotal)})
@@ -1422,7 +1580,7 @@ A) Quiz Değerlendirme Dağılımı (Katılan: ${quizEvaluatedTotal} Öğrenci):
             <div style="display:flex; gap:25px; flex-wrap:wrap; margin-bottom:15px;">
                 <div><b>Toplam Mevcut:</b> <span style="color:#f8fafc; font-size:18px;">${students.length}</span></div>
                 <div><b>Sınıf Quiz Ort.:</b> <span style="color:#60a5fa; font-size:18px;">${classAverage} Puan</span></div>
-                <div><b>Sınıf Ölçek Ort.:</b> <span style="color:#34d399; font-size:18px;">${classScaleAverage} ${classScaleAverage !== 'Hesaplanmadı' ? '%' : ''}</span></div>
+                <div><b>Sınıf Ölçek Ort.:</b> <span style="color:#34d399; font-size:18px;">${classScaleAverage !== 'Hesaplanmadı' ? '%' + classScaleAverage : 'Hesaplanmadı'}</span></div>
             </div>
 
             <div style="background:rgba(15,23,42,0.95); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.15);">
@@ -1490,7 +1648,7 @@ function openClassFullReportModal(grade, branchName, unitName, secName) {
             <div style="text-align:center; margin-bottom:15px; border-bottom:2px solid #333; padding-bottom:10px;">
                 <span style="font-size:28px;">🚀 ⚛️ 🔬</span>
                 <h3 style="color:black !important; font-size:16px; margin-top:5px; font-weight:700;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL</h3>
-                <p style="color:#333 !important; font-size:11px; font-weight:600;">TÜRKİYE YÜZYILI MAARİF MODELİ - ${grade}. SINIF (${branchName}) SINIF KARNESİ VE RAPORU</p>
+                <p style="color:#333 !important; font-size:11px; font-weight:600;">${grade}. SINIF (${branchName}) SINIF KARNESİ VE RAPORU</p>
                 <p style="color:#555 !important; font-size:10px; margin-top:3px;">Ünite: ${unitName} | Bölüm: ${secName}</p>
             </div>
             
@@ -1591,7 +1749,7 @@ function openStudentReportModal(grade, branchName, schoolNo, unitName, secName) 
             <div style="text-align:center; margin-bottom:15px; border-bottom:2px solid #333; padding-bottom:10px;">
                 <span style="font-size:32px;">🚀 ⚛️ 🔬</span>
                 <h3 style="color:black !important; font-size:16px; margin-top:5px; font-weight:700;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL</h3>
-                <p style="color:#333 !important; font-size:11px; font-weight:600;">TÜRKİYE YÜZYILI MAARİF MODELİ - RESMİ ÖĞRENCİ KARNESİ</p>
+                <p style="color:#333 !important; font-size:11px; font-weight:600;">ÖĞRENCİ KARNESİ VE DEĞERLENDİRME RAPORU</p>
             </div>
             <div style="color:black !important; font-size:12px; line-height:1.5;">
                 <div style="background:#f8fafc; padding:12px; border-radius:8px; margin-bottom:12px; border:1px solid #cbd5e1;">
@@ -1903,7 +2061,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
         <section class="dashboard-content" style="position:relative;">
             <div style="background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); padding: 24px; border-radius: 20px; margin-bottom: 25px; display: flex; gap: 40px; flex-wrap: wrap; box-shadow: 0 15px 35px rgba(0,0,0,0.4); position:relative; z-index:1;">
                 <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">OKUL NO</span><span style="color:#f8fafc; font-size:18px; font-weight:700;">${student.no}</span></div>
-                <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">SINIF / Şube</span><span style="color:#f8fafc; font-size:18px; font-weight:700;">${grade}. Sınıf - ${branch}</span></div>
+                <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">SINIF / ŞUBE</span><span style="color:#f8fafc; font-size:18px; font-weight:700;">${grade}. Sınıf - ${branch}</span></div>
                 <div><span style="color:#94a3b8; display:block; font-size:12px; font-weight:600;">ARTI / EKSİ</span><span style="color:#fbbf24; font-size:18px; font-weight:700;">+${student.plus} / -${student.minus}</span></div>
             </div>
 
@@ -1924,7 +2082,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
             <div class="table-responsive">
                 <table class="data-table">
                     <thead><tr><th>Etkinlik Adı</th><th>Başarı Puanım (Ort.)</th><th>Sınıf Ort.</th></tr></thead>
-                    <tbody>${scaleRows || '<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:20px;">Henüz değerlendirilmiş etkinlik ölçeğiniz bulunguyor. 🧬</td></tr>'}</tbody>
+                    <tbody>${scaleRows || '<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:20px;">Henüz değerlendirilmiş etkinlik ölçeğiniz bulunmuyor. 🧬</td></tr>'}</tbody>
                 </table>
             </div>
         </section>
