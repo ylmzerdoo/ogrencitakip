@@ -1000,7 +1000,7 @@ function loadBranchTabContent(tabType, grade, branchName) {
     } else if (tabType === 'activities') {
         contentArea.innerHTML = `
             <h3 style="color:#f8fafc; font-size:18px;">🧪 Etkinlik & Toplu Ölçek Puanlama</h3>
-            <p style="color: #94a3b8; margin-top: 5px; font-size: 13px;">Ünite, bölüm ve etkinlik seçin. Puanı yazıp Tümüne Uygula diyerek doldurun.</p>
+            <p style="color: #94a3b8; margin-top: 5px; font-size: 13px;">Ünite, bölüm ve etkinlik seçin. Puanı yazdığınız an tüm alt ölçeklere otomatik uygulanır.</p>
             <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
                 <select id="act-unit-sel" class="auth-input" style="flex:1; min-width:150px;" onchange="loadSectionsForActivity(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
                 <select id="activity-section-select" class="auth-input" style="flex:1; min-width:150px;" onchange="loadBaseActivitiesForSelection('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
@@ -1333,7 +1333,7 @@ function renderGroupedActivityTable(grade, branchName) {
 
     const students = fenData[grade]?.branches[branchName] || [];
 
-    let headerTh = '<th>No</th><th>Ad Soyad</th><th>⚡ Toplu Puan (0-100)</th>';
+    let headerTh = '<th>No</th><th>Ad Soyad</th><th>⚡ TOPLU PUAN (0-100)</th>';
     subScales.forEach(scale => {
         let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
         if (!shortName) shortName = scale.name;
@@ -1344,11 +1344,9 @@ function renderGroupedActivityTable(grade, branchName) {
     students.forEach((s, sIdx) => {
         let cols = `<td>${s.no}</td><td style="font-weight: 600; white-space: normal; word-break: break-word;">${s.name}</td>`;
         
+        // Buton kaldırıldı, oninput ile yazıldığı an otomatik uygulanıyor
         cols += `<td>
-            <div style="display:flex; gap:6px; align-items:center;">
-                <input type="number" id="group-quick-input-${sIdx}" class="auth-input" style="padding:4px; width:70px; font-size:12px; text-align:center;" min="0" max="100" placeholder="Örn: 85" onwheel="this.blur()">
-                <button onclick="applyScoreToAllSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})" style="background:#0284c7; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:600;" title="Tümüne Uygula">Uygula</button>
-            </div>
+            <input type="number" id="group-quick-input-${sIdx}" class="auth-input" style="padding:6px; width:100px; font-size:12px; text-align:center; display:block; margin:0 auto;" min="0" max="100" placeholder="Örn: 85" oninput="autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})" onwheel="this.blur()">
         </td>`;
 
         subScales.forEach((scale, scaleIdx) => {
@@ -1385,20 +1383,22 @@ function renderGroupedActivityTable(grade, branchName) {
     `;
 }
 
-function applyScoreToAllSubScales(sIdx, baseActName, subScalesCount) {
+// Yazıldığı an otomatik güncelleyen fonksiyon
+function autoApplyScoreToSubScales(sIdx, baseActName, subScalesCount) {
     const inputEl = document.getElementById(`group-quick-input-${sIdx}`);
     if (!inputEl) return;
     const targetVal = parseFloat(inputEl.value);
-    if (isNaN(targetVal) || targetVal < 0 || targetVal > 100) {
-        alert('Lütfen 0 ile 100 arasında geçerli bir puan girin!');
-        return;
-    }
-
+    
     for (let scaleIdx = 0; scaleIdx < subScalesCount; scaleIdx++) {
         const badgeEl = document.getElementById(`scale-badge-${sIdx}-${scaleIdx}`);
         if (badgeEl) {
-            badgeEl.innerText = `%${Math.round(targetVal)}`;
-            badgeEl.style.color = '#38bdf8';
+            if (!isNaN(targetVal) && targetVal >= 0 && targetVal <= 100) {
+                badgeEl.innerText = `%${Math.round(targetVal)}`;
+                badgeEl.style.color = '#38bdf8';
+            } else {
+                badgeEl.innerText = '%-%';
+                badgeEl.style.color = '#94a3b8';
+            }
         }
     }
 }
