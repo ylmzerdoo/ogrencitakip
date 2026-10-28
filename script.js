@@ -1024,7 +1024,6 @@ function renderQuizTable(grade, branchName) {
         const key = `${unitName}_${secName}`;
         const currentScore = s.quiz?.[key] ?? '';
         
-        // ÖĞRENCİ İSMİNİN KAYBOLMASINI ÖNLEYEN SABİT (STICKY) HÜCRELER
         rows += `<tr>
             <td style="position: sticky; left: 0; background: #1e293b; z-index: 2; width: 60px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1);">${s.no}</td>
             <td style="position: sticky; left: 60px; background: #1e293b; z-index: 2; min-width: 180px; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-right: 2px solid rgba(255,255,255,0.2); font-weight: 600;">${s.name}</td>
@@ -1034,16 +1033,18 @@ function renderQuizTable(grade, branchName) {
 
     container.innerHTML = `
         <div class="table-responsive" style="overflow-x: auto; max-width: 100%;">
-            <table class="data-table" style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr>
-                        <th style="position: sticky; left: 0; background: #0f172a; z-index: 3; width: 60px; border-right: 1px solid rgba(255,255,255,0.1);">No</th>
-                        <th style="position: sticky; left: 60px; background: #0f172a; z-index: 3; min-width: 180px; border-right: 2px solid rgba(255,255,255,0.2);">Ad Soyad</th>
-                        <th style="min-width: 140px;">Quiz Notu</th>
-                    </tr>
-                </thead>
-                <tbody>${rows || '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Öğrenci yok.</td></tr>'}</tbody>
-            </table>
+            <div style="min-width: 650px;">
+                <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="position: sticky; left: 0; background: #0f172a; z-index: 3; width: 60px; border-right: 1px solid rgba(255,255,255,0.1);">No</th>
+                            <th style="position: sticky; left: 60px; background: #0f172a; z-index: 3; min-width: 180px; border-right: 2px solid rgba(255,255,255,0.2);">Ad Soyad</th>
+                            <th style="min-width: 140px;">Quiz Notu</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows || '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Öğrenci yok.</td></tr>'}</tbody>
+                </table>
+            </div>
         </div>
         <button onclick="saveQuizScores('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Quiz Notlarını Kaydet</button>
     `;
@@ -1213,10 +1214,12 @@ function renderGroupedActivityTable(grade, branchName) {
                 <button onclick="executeDirectWordDownload('singleScale', {grade: '${grade}', branchName: '${branchName}', unitName: '${unitName || ''}', secName: '${secName || ''}', scaleName: '${selectedScaleName.replace(/'/g, "\\\\'")}'})" class="action-btn" style="background:#2563eb; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">📝 Word İndir</button>
             </div>
             <div class="table-responsive" style="overflow-x: auto; max-width: 100%;">
-                <table class="data-table" style="width: 100%; border-collapse: collapse;">
-                    <thead><tr>${headerTh}</tr></thead>
-                    <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci bulunamadı.</td></tr>'}</tbody>
-                </table>
+                <div style="min-width: 800px;">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                        <thead><tr>${headerTh}</tr></thead>
+                        <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci bulunamadı.</td></tr>'}</tbody>
+                    </table>
+                </div>
             </div>
         `;
         return;
@@ -1260,10 +1263,12 @@ function renderGroupedActivityTable(grade, branchName) {
             <button onclick="executeDirectWordDownload('groupActivity', {grade: '${grade}', branchName: '${branchName}', unitName: '${unitName || ''}', secName: '${secName || ''}', baseActName: '${baseActName.replace(/'/g, "\\\\'")}'})" class="action-btn" style="background:#2563eb; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">📝 Word İndir</button>
         </div>
         <div class="table-responsive" style="overflow-x: auto; max-width: 100%;">
-            <table class="data-table" style="width: 100%; border-collapse: collapse;">
-                <thead><tr>${headerTh}</tr></thead>
-                <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci bulunamadı.</td></tr>'}</tbody>
-            </table>
+            <div style="min-width: 850px;">
+                <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                    <thead><tr>${headerTh}</tr></thead>
+                    <tbody>${rows || '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">Öğrenci bulunamadı.</td></tr>'}</tbody>
+                </table>
+            </div>
         </div>
         <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\\\'")}')" class="auth-btn" style="width:auto; padding:10px 20px; margin-top:15px;">Tüm Ölçek Puanlarını Kaydet</button>
     `;
@@ -1772,10 +1777,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
     `;
 }
 
-// -------------------------------------------------------------------------
-// DOĞRUDAN WORD İNDİRME MOTORU (TEK TIKLA .DOCX FORMATI)
-// -------------------------------------------------------------------------
-
 async function executeDirectWordDownload(type, config) {
     let htmlString = "";
     let fileName = "Rapor";
@@ -1810,7 +1811,6 @@ async function executeDirectWordDownload(type, config) {
     }
 }
 
-// Word Şablon Oluşturucuları
 function generateSingleScaleHTML(grade, branchName, unitName, secName, scaleName) {
     const allActs = fenData[grade].activities || [];
     const scaleObj = allActs.find(a => a.name === scaleName);

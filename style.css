@@ -100,23 +100,25 @@ body {
 .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #f8fafc; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px; }
 
+/* TABLO VE STICKY SÜTUN YAPILARI */
 .table-responsive { 
     width: 100%; 
     overflow-x: auto; 
     -webkit-overflow-scrolling: touch; 
-    margin-bottom: 15px; 
+    margin-bottom: 15px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
 }
 .data-table { 
     width: 100% !important; 
     border-collapse: collapse; 
-    margin-top: 15px; 
+    margin-top: 0; 
     background: rgba(30, 41, 59, 0.7); 
     backdrop-filter: blur(10px); 
-    border-radius: 16px; 
     overflow: hidden; 
     box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
-    border: 1px solid rgba(255,255,255,0.08); 
     table-layout: auto !important; 
+    white-space: nowrap;
 }
 .data-table th, .data-table td { 
     padding: 12px 14px; 
@@ -124,11 +126,36 @@ body {
     border-bottom: 1px solid rgba(255,255,255,0.08); 
     font-size: 13px; 
     color: #e2e8f0; 
-    word-break: normal; 
 }
 
-.data-table th:nth-child(2), .data-table td:nth-child(2) { 
-    white-space: nowrap !important; 
+/* Sabit (Sticky) 1. Sütun (Okul No) */
+.data-table th:nth-child(1),
+.data-table td:nth-child(1) {
+    position: sticky !important;
+    left: 0 !important;
+    background-color: #1e293b !important;
+    z-index: 2 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    text-align: center;
+    width: 60px;
+}
+
+/* Sabit (Sticky) 2. Sütun (Ad Soyad) */
+.data-table th:nth-child(2),
+.data-table td:nth-child(2) {
+    position: sticky !important;
+    left: 60px !important; 
+    background-color: #1e293b !important;
+    z-index: 2 !important;
+    border-right: 2px solid rgba(255, 255, 255, 0.2) !important;
+    white-space: nowrap !important;
+}
+
+/* Başlıkların Üst Katman Önceliği */
+.data-table th:nth-child(1),
+.data-table th:nth-child(2) {
+    z-index: 3 !important;
+    background-color: #0f172a !important;
 }
 
 .data-table th { 
@@ -149,7 +176,7 @@ body {
 .branch-tab-card.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.15); box-shadow: 0 10px 25px rgba(59,130,246,0.3); }
 .branch-tab-card h3 { color: #f8fafc; font-size: 16px; font-weight: 600; }
 
-/* YENİ EKLENEN İNDİRME AÇILIR MENÜSÜ (DROPDOWN) STİLLERİ */
+/* İNDİRME AÇILIR MENÜSÜ (DROPDOWN) STİLLERİ */
 .download-dropdown {
     position: relative;
     display: inline-block;
@@ -286,4 +313,3 @@ body {
         height: auto !important; 
     }
 }
-

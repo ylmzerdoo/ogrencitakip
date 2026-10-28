@@ -11,16 +11,12 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- YENİ EKLENEN İNDİRME KÜTÜPHANELERİ -->
-    <!-- PDF için -->
+    <!-- İNDİRME KÜTÜPHANELERİ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- JPEG/PNG için -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Word için (html-docx-js ve FileSaver) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
 
-    <!-- YENİ AÇILIR MENÜ (DROPDOWN) İÇİN STİL (Bunu style.css içine de taşıyabilirsiniz) -->
     <style>
         .download-dropdown {
             position: relative;
@@ -112,7 +108,7 @@
                 <button onclick="studentLogin()" class="auth-btn">Öğrenci Paneline Giriş Yap</button>
             </div>
 
-            <!-- Öğretmen Giriş Formu (E-posta kutusu tamamen boşlatıldı) -->
+            <!-- Öğretmen Giriş Formu -->
             <div id="teacher-auth-form" class="auth-form" style="display: none;">
                 <input type="email" id="teacher-email" placeholder="E-posta Adresi" class="auth-input">
                 <input type="password" id="teacher-password" placeholder="Şifre" class="auth-input">
@@ -183,7 +179,7 @@
         </div>
     </div>
 
-    <!-- YENİ İNDİRME (EXPORT) FONKSİYONLARI -->
+    <!-- İNDİRME (EXPORT) FONKSİYONLARI -->
     <script>
         function exportContent(format, targetId, fileName) {
             const content = document.getElementById(targetId);
@@ -210,7 +206,6 @@
                 saveAs(converted, fileName + '.docx');
             } 
             else if (format === 'excel') {
-                // Etkinlik tablolarını algılayıp Excel'e aktarır
                 const tables = content.getElementsByTagName('table');
                 if(tables.length === 0) {
                     alert("Excel'e aktarılacak bir tablo bulunamadı!");
@@ -233,4 +228,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
