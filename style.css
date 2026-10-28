@@ -100,7 +100,7 @@ body {
 .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #f8fafc; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px; }
 
-/* TABLO VE STICKY SÜTUN YAPILARI */
+/* TABLO VE STICKY SÜTUN YAPILARI (İSİM KAYMASI VE KELİME BÖLME ÇÖZÜMÜ) */
 .table-responsive { 
     width: 100%; 
     overflow-x: auto; 
@@ -118,7 +118,6 @@ body {
     overflow: hidden; 
     box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
     table-layout: auto !important; 
-    white-space: nowrap;
 }
 .data-table th, .data-table td { 
     padding: 12px 14px; 
@@ -128,7 +127,7 @@ body {
     color: #e2e8f0; 
 }
 
-/* Sabit (Sticky) 1. Sütun (Okul No) */
+/* 1. Sütun (Okul No) - Sabit */
 .data-table th:nth-child(1),
 .data-table td:nth-child(1) {
     position: sticky !important;
@@ -137,18 +136,26 @@ body {
     z-index: 2 !important;
     border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
     text-align: center;
-    width: 60px;
+    width: 65px;
+    min-width: 65px;
+    max-width: 65px;
+    white-space: nowrap;
 }
 
-/* Sabit (Sticky) 2. Sütun (Ad Soyad) */
+/* 2. Sütun (Ad Soyad) - Sabit, Kelime Bütünlüğünü Koruyarak Alt Satıra Kayma */
 .data-table th:nth-child(2),
 .data-table td:nth-child(2) {
     position: sticky !important;
-    left: 60px !important; 
+    left: 65px !important; /* 1. sütun genişliğiyle tam örtüşür */
     background-color: #1e293b !important;
     z-index: 2 !important;
     border-right: 2px solid rgba(255, 255, 255, 0.2) !important;
-    white-space: nowrap !important;
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+    white-space: normal !important; /* Uzun isimlerin kelimelerini bölmeden alt satıra geçmesini sağlar */
+    word-break: keep-all !important; /* Kelimeleri harf harf bölmez, kelime bütünlüğünü korur */
+    overflow-wrap: break-word;
 }
 
 /* Başlıkların Üst Katman Önceliği */
@@ -302,7 +309,7 @@ body {
         border-bottom: 1px solid #999 !important; 
     }
     
-    div { margin-bottom: 4px !important; }
+    dir { margin-bottom: 4px !important; }
     
     textarea { 
         border: none !important; 

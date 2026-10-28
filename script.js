@@ -13,8 +13,6 @@ let fenData = {
     '8': { units: [], activities: [], branches: {} }
 };
 
-let currentDownloadConfig = null;
-
 async function loadAllDataFromSupabase() {
     if (!supabaseClient) return;
     try {
@@ -129,6 +127,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    restoreStateFromSession();
+});
+
+function restoreStateFromSession() {
     const savedState = sessionStorage.getItem('fen_app_state');
     if (savedState) {
         try {
@@ -138,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (state.type === 'grade-mgmt') {
                 renderGradeManagementView(state.grade, false);
             } else if (state.type === 'branch-detail') {
-                renderBranchDetailView(state.grade, state.branchName, false);
+                renderBranchDetailView(state.grade, state.branchName, state.tab || 'students', false);
             } else if (state.type === 'student') {
                 renderStudentPanelView(state.grade, state.branch, state.student, false);
             } else {
@@ -150,7 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         renderAuthScreenView();
     }
-});
+}
 
 window.addEventListener('popstate', (event) => {
     const state = event.state;
@@ -161,11 +163,11 @@ window.addEventListener('popstate', (event) => {
     } else if (state.type === 'grade-mgmt') {
         renderGradeManagementView(state.grade, false);
     } else if (state.type === 'branch-detail') {
-        renderBranchDetailView(state.grade, state.branchName, false);
+        renderBranchDetailView(state.grade, state.branchName, state.tab || 'students', false);
     } else if (state.type === 'student') {
         renderStudentPanelView(state.grade, state.branch, state.student, false);
     } else {
-        renderAuthScreenView();
+        restoreStateFromSession();
     }
 });
 
@@ -202,7 +204,6 @@ async function teacherLogin(push = true) {
     try {
         if (supabaseClient) {
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            
             if (error) {
                 alert('Giriş Başarısız: E-posta veya şifre hatalı! (' + error.message + ')');
                 return;
@@ -217,9 +218,10 @@ async function teacherLogin(push = true) {
 }
 
 function renderTeacherPanelView(push = true) {
-    sessionStorage.setItem('fen_app_state', JSON.stringify({ type: 'teacher' }));
+    const state = { type: 'teacher' };
+    sessionStorage.setItem('fen_app_state', JSON.stringify(state));
     if (push) {
-        history.pushState({ type: 'teacher' }, '', '');
+        history.pushState(state, '', '#ogretmen-paneli');
     }
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('grade-detail-panel').style.display = 'none';
@@ -233,13 +235,13 @@ async function logout() {
     if (supabaseClient) await supabaseClient.auth.signOut();
     sessionStorage.removeItem('fen_app_state');
     await loadAllDataFromSupabase();
-    history.pushState({ type: 'auth' }, '', '');
+    history.pushState({ type: 'auth' }, '', '#giris');
     renderAuthScreenView();
 }
 
 function logoutStudent() {
     sessionStorage.removeItem('fen_app_state');
-    history.pushState({ type: 'auth' }, '', '');
+    history.pushState({ type: 'auth' }, '', '#giris');
     renderAuthScreenView();
 }
 
@@ -297,7 +299,8 @@ function addNewBranchModal(grade) {
 
         await loadAllDataFromSupabase();
         inputEl.value = '';
-        alert(`"${bFullName}" şubesi buluta eklendi!`);
+        closeModal();
+        openGradeManagement(grade, false);
     });
 }
 
@@ -332,6 +335,7 @@ function globalAddUnit() {
         }
         await loadAllDataFromSupabase();
         inputEl.value = '';
+        closeModal();
         alert(`"${unitName}" buluta eklendi!`);
     });
 }
@@ -359,6 +363,7 @@ function globalAddSection() {
         }
         await loadAllDataFromSupabase();
         sectionInput.value = '';
+        closeModal();
         alert(`"${section}" bölümü buluta eklendi!`);
     });
     updateModalUnits('6');
@@ -414,6 +419,7 @@ function globalAddReportTemplate() {
         }
 
         textInput.value = '';
+        closeModal();
         alert('Rapor şablonu buluta başarıyla kaydedildi!');
     });
 
@@ -545,6 +551,7 @@ function globalAddActivity() {
 
                 await loadAllDataFromSupabase();
                 fileInput.value = '';
+                closeModal();
                 alert(`Toplam ${importedCount} farklı ölçek başarıyla yüklendi!`);
             } catch (err) {
                 console.error(err);
@@ -630,6 +637,7 @@ function globalDeleteManagement() {
                 }
                 await loadAllDataFromSupabase();
                 updateDelUnits(grade);
+                closeModal();
                 alert('Ünite, bölümleri ve ilgili tüm etkinlik/raporlar buluttan silindi!');
             }
         } else if (type === 'section') {
@@ -644,6 +652,7 @@ function globalDeleteManagement() {
                 }
                 await loadAllDataFromSupabase();
                 updateDelSections(unitName);
+                closeModal();
                 alert('Bölüm ve bağlı içerikler buluttan silindi!');
             }
         } else if (type === 'activity') {
@@ -656,6 +665,7 @@ function globalDeleteManagement() {
                 }
                 await loadAllDataFromSupabase();
                 updateDelActivitiesAndReports();
+                closeModal();
                 alert('Etkinlik buluttan silindi!');
             }
         } else if (type === 'report') {
@@ -669,6 +679,7 @@ function globalDeleteManagement() {
                 }
                 await loadAllDataFromSupabase();
                 updateDelActivitiesAndReports();
+                closeModal();
                 alert('Rapor şablonu buluttan silindi!');
             }
         }
@@ -775,9 +786,10 @@ function openGradeManagement(grade, push = true) {
 }
 
 function renderGradeManagementView(grade, push = true) {
-    sessionStorage.setItem('fen_app_state', JSON.stringify({ type: 'grade-mgmt', grade }));
+    const state = { type: 'grade-mgmt', grade };
+    sessionStorage.setItem('fen_app_state', JSON.stringify(state));
     if (push) {
-        history.pushState({ type: 'grade-mgmt', grade }, '', '');
+        history.pushState(state, '', `#sinif-${grade}`);
     }
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('teacher-panel').style.display = 'none';
@@ -792,6 +804,7 @@ function renderGradeManagementView(grade, push = true) {
     const branches = fenData[grade]?.branches || {};
     Object.keys(branches).forEach(bName => {
         const studentCount = branches[bName].length;
+        const cleanBranchCode = bName.split('/')[1] || bName;
         branchCards += `
             <div class="grade-card" style="border-top-color: #3b82f6; position: relative;">
                 <div onclick="openGradeManagementBranchDetail('${grade}', '${bName}')" style="cursor: pointer;">
@@ -808,6 +821,7 @@ function renderGradeManagementView(grade, push = true) {
         <header class="teacher-header">
             <div class="header-brand"><span class="brand-icon">📚</span><h1>${grade}. SINIFLAR ŞUBE YÖNETİMİ</h1></div>
             <div>
+                <button onclick="renderTeacherPanelView(true)" class="logout-btn" style="background:#3b82f6; margin-right:8px;">Geri Dön</button>
                 <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
             </div>
         </header>
@@ -824,17 +838,19 @@ function renderGradeManagementView(grade, push = true) {
 }
 
 function openGradeManagementBranchDetail(grade, branchName, push = true) {
-    openBranchDetail(grade, branchName, push);
+    openBranchDetail(grade, branchName, 'students', push);
 }
 
-function openBranchDetail(grade, branchName, push = true) {
-    renderBranchDetailView(grade, branchName, push);
+function openBranchDetail(grade, branchName, tab = 'students', push = true) {
+    renderBranchDetailView(grade, branchName, tab, push);
 }
 
-function renderBranchDetailView(grade, branchName, push = true) {
-    sessionStorage.setItem('fen_app_state', JSON.stringify({ type: 'branch-detail', grade, branchName }));
+function renderBranchDetailView(grade, branchName, tab = 'students', push = true) {
+    const state = { type: 'branch-detail', grade, branchName, tab };
+    sessionStorage.setItem('fen_app_state', JSON.stringify(state));
     if (push) {
-        history.pushState({ type: 'branch-detail', grade, branchName }, '', '');
+        const cleanBranch = branchName.replace('/', '-');
+        history.pushState(state, '', `#sube-${grade}-${cleanBranch}-${tab}`);
     }
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('teacher-panel').style.display = 'none';
@@ -847,30 +863,42 @@ function renderBranchDetailView(grade, branchName, push = true) {
 
     detailPanel.innerHTML = `
         <header class="teacher-header">
-            <div class="header-brand"><span class="brand-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
+            <div class="header-brand"><span class="brand-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
             <div>
+                <button onclick="openGradeManagement('${grade}', true)" class="logout-btn" style="background:#3b82f6; margin-right:8px;">Şubelere Dön</button>
                 <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
             </div>
         </header>
         <section class="dashboard-content">
             <div class="branch-tabs-grid">
-                <div class="branch-tab-card active" onclick="switchBranchTab(this, 'students', '${grade}', '${branchName}')"><div class="tab-icon">👥</div><h3>Sınıf Listesi & Artı/Eksi</h3></div>
-                <div class="branch-tab-card" onclick="switchBranchTab(this, 'quizzes', '${grade}', '${branchName}')"><div class="tab-icon">📝</div><h3>Quiz Sonuçları</h3></div>
-                <div class="branch-tab-card" onclick="switchBranchTab(this, 'activities', '${grade}', '${branchName}')"><div class="tab-icon">🧪</div><h3>Etkinlik Ölçekleri</h3></div>
-                <div class="branch-tab-card" onclick="switchBranchTab(this, 'reports', '${grade}', '${branchName}')"><div class="tab-icon">📊</div><h3>Raporlar & Analiz</h3></div>
+                <div class="branch-tab-card ${tab === 'students' ? 'active' : ''}" onclick="switchBranchTab(this, 'students', '${grade}', '${branchName}')"><div class="tab-icon">👥</div><h3>Sınıf Listesi & Artı/Eksi</h3></div>
+                <div class="branch-tab-card ${tab === 'quizzes' ? 'active' : ''}" onclick="switchBranchTab(this, 'quizzes', '${grade}', '${branchName}')"><div class="tab-icon">📝</div><h3>Quiz Sonuçları</h3></div>
+                <div class="branch-tab-card ${tab === 'activities' ? 'active' : ''}" onclick="switchBranchTab(this, 'activities', '${grade}', '${branchName}')"><div class="tab-icon">🧪</div><h3>Etkinlik Ölçekleri</h3></div>
+                <div class="branch-tab-card ${tab === 'reports' ? 'active' : ''}" onclick="switchBranchTab(this, 'reports', '${grade}', '${branchName}')"><div class="tab-icon">📊</div><h3>Raporlar & Analiz</h3></div>
             </div>
             <div id="branch-tab-content" style="background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); padding: 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); margin-top: 25px;"></div>
         </section>
     `;
-    switchBranchTab(document.querySelector('.branch-tab-card'), 'students', grade, branchName);
+    
+    const activeCard = document.querySelector(`.branch-tab-card:nth-child(${tab === 'students' ? 1 : tab === 'quizzes' ? 2 : tab === 'activities' ? 3 : 4})`);
+    loadBranchTabContent(activeCard, tab, grade, branchName);
 }
 
 function switchBranchTab(cardElement, tabType, grade, branchName) {
     document.querySelectorAll('.branch-tab-card').forEach(c => c.classList.remove('active'));
     if (cardElement) cardElement.classList.add('active');
     
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // URL ve state güncellemesi (Tarayıcının adres ve geçmişinde ayrı sayfa gibi görünmesini sağlar)
+    const state = { type: 'branch-detail', grade, branchName, tab: tabType };
+    sessionStorage.setItem('fen_app_state', JSON.stringify(state));
+    const cleanBranch = branchName.replace('/', '-');
+    history.pushState(state, '', `#sube-${grade}-${cleanBranch}-${tabType}`);
 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    loadBranchTabContent(cardElement, tabType, grade, branchName);
+}
+
+function loadBranchTabContent(cardElement, tabType, grade, branchName) {
     const contentArea = document.getElementById('branch-tab-content');
     if (!contentArea) return;
     const classUnits = fenData[grade]?.units || [];
@@ -994,7 +1022,7 @@ function openBulkStudentModal(grade, branchName) {
 
         alert(`Toplam ${addedCount} öğrenci başarıyla eklendi ve numaraya göre sıralandı!`);
         closeModal();
-        openBranchDetail(grade, branchName, false);
+        openBranchDetail(grade, branchName, 'students', false);
     });
 }
 
@@ -1537,7 +1565,7 @@ function addStudentModal(grade, branchName) {
 
         alert('Öğrenci buluta başarıyla kaydedildi ve sıralandı!');
         closeModal();
-        openBranchDetail(grade, branchName, false);
+        openBranchDetail(grade, branchName, 'students', false);
     });
 }
 
@@ -1555,7 +1583,7 @@ async function updatePoint(grade, branchName, index, type, val) {
     }
 
     await loadAllDataFromSupabase();
-    openBranchDetail(grade, branchName, false);
+    openBranchDetail(grade, branchName, 'students', false);
 }
 
 async function deleteStudent(grade, branchName, index) {
@@ -1564,7 +1592,7 @@ async function deleteStudent(grade, branchName, index) {
         await supabaseClient.from('students').delete().eq('grade', grade).eq('branch', branchName).eq('school_no', student.no);
     }
     await loadAllDataFromSupabase();
-    openBranchDetail(grade, branchName, false);
+    openBranchDetail(grade, branchName, 'students', false);
 }
 
 async function studentLogin(push = true) {
@@ -1626,9 +1654,10 @@ async function studentLogin(push = true) {
 }
 
 function renderStudentPanelView(grade, branch, student, push = true) {
-    sessionStorage.setItem('fen_app_state', JSON.stringify({ type: 'student', grade, branch, student }));
+    const state = { type: 'student', grade, branch, student };
+    sessionStorage.setItem('fen_app_state', JSON.stringify(state));
     if (push) {
-        history.pushState({ type: 'student', grade, branch, student }, '', '');
+        history.pushState(state, '', '#ogrenci-paneli');
     }
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('teacher-panel').style.display = 'none';
