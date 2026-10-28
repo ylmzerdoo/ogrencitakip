@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
-    <!-- Supabase ve Mevcut Excel Kütüphanesi -->
+    <!-- Supabase ve Excel Kütüphanesi -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -16,56 +16,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
-
-    <style>
-        .download-dropdown {
-            position: relative;
-            display: inline-block;
-        }
-        .download-btn {
-            background: #10b981;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .download-btn:hover {
-            background: #059669;
-        }
-        .download-content {
-            display: none;
-            position: absolute;
-            right: 0;
-            background-color: #1e293b;
-            min-width: 180px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid #334155;
-            margin-top: 5px;
-        }
-        .download-content a {
-            color: #f8fafc;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-            font-size: 13px;
-            transition: background 0.2s;
-        }
-        .download-content a:hover {
-            background-color: #334155;
-        }
-        .download-dropdown:hover .download-content {
-            display: block;
-        }
-    </style>
 </head>
 <body>
 
@@ -125,17 +75,37 @@
                 <h1>Erdoğan Yılmaz - Fen Bilimleri Öğretmen Paneli</h1>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <button onclick="globalAddUnit()" class="logout-btn" style="background:#3b82f6;">+ Ünite Ekle</button>
-                <button onclick="globalAddSection()" class="logout-btn" style="background:#2563eb;">+ Bölüm Ekle</button>
-                <button onclick="globalAddActivity()" class="logout-btn" style="background:#8b5cf6;">+ Excel Ölçek Ekle</button>
-                <button onclick="globalAddReportTemplate()" class="logout-btn" style="background:#059669;">+ Rapor Şablonu</button>
-                <button onclick="globalDeleteManagement()" class="logout-btn" style="background:#d97706;">🗑️ İçerik Sil</button>
                 <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
             </div>
         </header>
 
         <section class="dashboard-content">
-            <h2 style="margin-bottom: 20px; color: #f8fafc; font-size: 22px;">Sınıf Düzeyleri</h2>
+            <!-- DERS İŞLEMLERİ AÇILIR KARTI -->
+            <div style="margin-bottom: 25px;">
+                <div class="grade-card" onclick="toggleTeacherActionsCard()" style="border-top-color: #10b981; text-align: left; padding: 22px; cursor: pointer;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="font-size: 20px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; color: #f8fafc;">
+                                <span>⚙️</span> Ders İşlemleri ve Yönetim
+                            </h3>
+                            <p style="color: #94a3b8; font-size: 13px; margin: 0;">Ünite, bölüm, excel ölçek, rapor ve silme işlemleri için tıklayın</p>
+                        </div>
+                        <span id="teacher-actions-toggle-icon" style="font-size: 20px; color: #38bdf8; transition: transform 0.3s;">▼</span>
+                    </div>
+                    
+                    <div id="teacher-actions-container" style="display: none; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;" onclick="event.stopPropagation()">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                            <button onclick="globalAddUnit()" class="auth-btn" style="background: #3b82f6; padding: 10px; font-size: 13px; font-weight: 600; text-align: center;">+ Ünite Ekle</button>
+                            <button onclick="globalAddSection()" class="auth-btn" style="background: #2563eb; padding: 10px; font-size: 13px; font-weight: 600; text-align: center;">+ Bölüm Ekle</button>
+                            <button onclick="globalAddActivity()" class="auth-btn" style="background: #8b5cf6; padding: 10px; font-size: 13px; font-weight: 600; text-align: center;">+ Excel Ölçek Ekle</button>
+                            <button onclick="globalAddReportTemplate()" class="auth-btn" style="background: #059669; padding: 10px; font-size: 13px; font-weight: 600; text-align: center;">+ Rapor Şablonu</button>
+                            <button onclick="globalDeleteManagement()" class="auth-btn" style="background: #d97706; padding: 10px; font-size: 13px; font-weight: 600; text-align: center;">🗑️ İçerik Sil</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 style="margin-bottom: 15px; color: #f8fafc; font-size: 20px;">Sınıf Düzeyleri</h2>
             <div class="grade-cards-grid">
                 <div class="grade-card" onclick="openGradeManagement('5')">
                     <h3>5. Sınıflar</h3>
@@ -178,52 +148,6 @@
             </div>
         </div>
     </div>
-
-    <!-- İNDİRME (EXPORT) FONKSİYONLARI -->
-    <script>
-        function exportContent(format, targetId, fileName) {
-            const content = document.getElementById(targetId);
-            if (!content) {
-                alert("İndirilecek içerik bulunamadı!");
-                return;
-            }
-
-            if (format === 'pdf') {
-                const opt = {
-                    margin: 0.5,
-                    filename: fileName + '.pdf',
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-                };
-                html2pdf().set(opt).from(content).save();
-            } 
-            else if (format === 'word') {
-                const htmlString = `
-                    <!DOCTYPE html><html><head><meta charset="utf-8"><title>${fileName}</title></head>
-                    <body>${content.innerHTML}</body></html>`;
-                const converted = htmlDocx.asBlob(htmlString);
-                saveAs(converted, fileName + '.docx');
-            } 
-            else if (format === 'excel') {
-                const tables = content.getElementsByTagName('table');
-                if(tables.length === 0) {
-                    alert("Excel'e aktarılacak bir tablo bulunamadı!");
-                    return;
-                }
-                const wb = XLSX.utils.table_to_book(tables[0], {sheet:"Rapor"});
-                XLSX.writeFile(wb, fileName + '.xlsx');
-            } 
-            else if (format === 'jpeg') {
-                html2canvas(content).then(canvas => {
-                    const link = document.createElement('a');
-                    link.download = fileName + '.jpg';
-                    link.href = canvas.toDataURL('image/jpeg', 0.9);
-                    link.click();
-                });
-            }
-        }
-    </script>
 
     <script src="script.js"></script>
 </body>
