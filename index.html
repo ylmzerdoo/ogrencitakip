@@ -6,8 +6,70 @@
     <title>Erdoğan Yılmaz Fen Bilimleri - Dijital Eğitim Paneli</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Supabase ve Mevcut Excel Kütüphanesi -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- YENİ EKLENEN İNDİRME KÜTÜPHANELERİ -->
+    <!-- PDF için -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- JPEG/PNG için -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Word için (html-docx-js ve FileSaver) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+
+    <!-- YENİ AÇILIR MENÜ (DROPDOWN) İÇİN STİL (Bunu style.css içine de taşıyabilirsiniz) -->
+    <style>
+        .download-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .download-btn {
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .download-btn:hover {
+            background: #059669;
+        }
+        .download-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #1e293b;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            margin-top: 5px;
+        }
+        .download-content a {
+            color: #f8fafc;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .download-content a:hover {
+            background-color: #334155;
+        }
+        .download-dropdown:hover .download-content {
+            display: block;
+        }
+    </style>
 </head>
 <body>
 
@@ -121,6 +183,54 @@
         </div>
     </div>
 
+    <!-- YENİ İNDİRME (EXPORT) FONKSİYONLARI -->
+    <script>
+        function exportContent(format, targetId, fileName) {
+            const content = document.getElementById(targetId);
+            if (!content) {
+                alert("İndirilecek içerik bulunamadı!");
+                return;
+            }
+
+            if (format === 'pdf') {
+                const opt = {
+                    margin: 0.5,
+                    filename: fileName + '.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                };
+                html2pdf().set(opt).from(content).save();
+            } 
+            else if (format === 'word') {
+                const htmlString = `
+                    <!DOCTYPE html><html><head><meta charset="utf-8"><title>${fileName}</title></head>
+                    <body>${content.innerHTML}</body></html>`;
+                const converted = htmlDocx.asBlob(htmlString);
+                saveAs(converted, fileName + '.docx');
+            } 
+            else if (format === 'excel') {
+                // Etkinlik tablolarını algılayıp Excel'e aktarır
+                const tables = content.getElementsByTagName('table');
+                if(tables.length === 0) {
+                    alert("Excel'e aktarılacak bir tablo bulunamadı!");
+                    return;
+                }
+                const wb = XLSX.utils.table_to_book(tables[0], {sheet:"Rapor"});
+                XLSX.writeFile(wb, fileName + '.xlsx');
+            } 
+            else if (format === 'jpeg') {
+                html2canvas(content).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = fileName + '.jpg';
+                    link.href = canvas.toDataURL('image/jpeg', 0.9);
+                    link.click();
+                });
+            }
+        }
+    </script>
+
     <script src="script.js"></script>
 </body>
 </html>
+
