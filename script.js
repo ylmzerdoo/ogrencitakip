@@ -127,6 +127,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const teacherEmailInput = document.getElementById('teacher-email');
+    const teacherPasswordInput = document.getElementById('teacher-password');
+    
+    if (teacherEmailInput && teacherPasswordInput) {
+        const handleEnterKey = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                teacherLogin();
+            }
+        };
+        teacherEmailInput.addEventListener('keydown', handleEnterKey);
+        teacherPasswordInput.addEventListener('keydown', handleEnterKey);
+    }
+
     restoreStateFromSession();
 });
 
@@ -971,7 +985,7 @@ function loadBranchTabContent(tabType, grade, branchName) {
     } else if (tabType === 'quizzes') {
         contentArea.innerHTML = `
             <h3 style="color:#f8fafc; font-size:15px; margin-bottom:4px;">📝 Quiz Sonuçları</h3>
-            <p style="color: #94a3b8; margin-top: 0; font-size: 11px;">Ünite ve bölüm seçerek not girin.</p>
+            <p style="color: #94a3b8; margin-top: 0; font-size: 11px;">Ünite ve bölüm seçerek not girin (0-100 veya G yazabilirsiniz).</p>
             <div style="display: flex; gap: 8px; margin-top: 10px; flex-direction: column;">
                 <select id="quiz-unit-sel" class="auth-input" onchange="loadSectionsForQuiz(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
                 <select id="quiz-section-select" class="auth-input" onchange="renderQuizTable('${grade}', '${branchName}')"><option value="">-- Önce Ünite Seçin --</option></select>
@@ -981,7 +995,7 @@ function loadBranchTabContent(tabType, grade, branchName) {
     } else if (tabType === 'activities') {
         contentArea.innerHTML = `
             <h3 style="color:#f8fafc; font-size:15px; margin-bottom:4px;">🧪 Etkinlik Puanlama</h3>
-            <p style="color: #94a3b8; margin-top: 0; font-size: 11px;">Ünite, bölüm ve etkinlik seçin.</p>
+            <p style="color: #94a3b8; margin-top: 0; font-size: 11px;">Ünite, bölüm ve etkinlik seçin (0-100 veya G yazabilirsiniz).</p>
             <div style="display: flex; gap: 8px; margin-top: 10px; flex-direction: column;">
                 <select id="act-unit-sel" class="auth-input" onchange="loadSectionsForActivity(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
                 <select id="activity-section-select" class="auth-input" onchange="loadBaseActivitiesForSelection('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
@@ -1011,17 +1025,56 @@ function exportTableToWord(elementId, filename) {
         <style>
             @page Section1 { size: 21.0cm 29.7cm; margin: 1.5cm; }
             div.Section1 { page: Section1; }
-            body { font-family: 'Times New Roman', Times, serif; color: #000; }
-            table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-            th, td { border: 1px solid #000 !important; padding: 5px 3px !important; font-size: 9px !important; text-align: center; word-wrap: break-word; overflow: hidden; }
+            body { font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.4; }
+            table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; page-break-inside: avoid; }
+            th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; word-wrap: break-word; overflow: hidden; }
             th { background-color: #f2f2f2 !important; font-weight: bold; }
             td:nth-child(2) { text-align: left !important; }
+            div, p, ul, li { page-break-inside: avoid; break-inside: avoid; }
         </style>
     `;
 
     const htmlHeader = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Rapor</title>${styles}</head><body><div class="Section1">`;
     const htmlFooter = "</div></body></html>";
     const completeHtml = htmlHeader + element.outerHTML + htmlFooter;
+    
+    const blob = new Blob(['\ufeff' + completeHtml], { type: 'application/msword' });
+    saveAs(blob, filename + ".doc");
+}
+
+function exportReportToWord(filename) {
+    const part1 = document.getElementById('report-printable-area');
+    const part2 = document.getElementById('report-page-2');
+    if (!part1) { alert('İçerik bulunamadı!'); return; }
+
+    const styles = `
+        <style>
+            @page Section1 { size: 21.0cm 29.7cm; margin: 1.5cm; }
+            div.Section1 { page: Section1; }
+            body { font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.4; }
+            table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
+            th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; word-wrap: break-word; overflow: hidden; }
+            th { background-color: #f2f2f2 !important; font-weight: bold; }
+            td:nth-child(2) { text-align: left !important; }
+            
+            /* WORD İÇİN LİSTE VE BÖLÜM AYARLARI */
+            .page-break { page-break-before: always; mso-break-type: page-break; clear: both; display: block; }
+            .report-box { border: 1px solid #000; padding: 12px; margin-top: 15px; background: #fafafa; }
+            ul { margin: 5px 0 10px 20px; padding: 0; }
+            li { margin-bottom: 4px; font-size: 11px; line-height: 1.4; text-align: left; }
+            h4 { font-size: 12px; font-weight: bold; margin: 10px 0 6px 0; color: #000; }
+        </style>
+    `;
+
+    const combinedContent = `
+        ${part1.outerHTML}
+        <br style="page-break-before: always; mso-break-type: page-break;" />
+        ${part2.innerHTML}
+    `;
+
+    const htmlHeader = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Rapor</title>${styles}</head><body><div class="Section1">`;
+    const htmlFooter = "</div></body></html>";
+    const completeHtml = htmlHeader + combinedContent + htmlFooter;
     
     const blob = new Blob(['\ufeff' + completeHtml], { type: 'application/msword' });
     saveAs(blob, filename + ".doc");
@@ -1103,7 +1156,7 @@ function renderQuizTable(grade, branchName) {
         rows += `<tr>
             <td style="text-align: center;">${s.no}</td>
             <td style="font-weight: 600; text-align: left;">${s.name}</td>
-            <td style="text-align: center;"><input type="number" id="quiz-score-${idx}" class="auth-input" style="padding: 4px; width: 65px; margin: 0 auto; text-align:center;" value="${currentScore}" placeholder="Not" onwheel="this.blur()"></td>
+            <td style="text-align: center;"><input type="text" id="quiz-score-${idx}" class="auth-input" style="padding: 4px; width: 65px; margin: 0 auto; text-align:center;" value="${currentScore}" placeholder="Not/G" autocomplete="off"></td>
         </tr>`;
     });
 
@@ -1146,7 +1199,17 @@ async function saveQuizScores(grade, branchName) {
         const s = students[idx];
         const inputEl = document.getElementById(`quiz-score-${idx}`);
         if (!inputEl) continue;
-        const inputVal = inputEl.value;
+        let inputVal = inputEl.value.trim().toUpperCase();
+        
+        if (inputVal !== 'G' && inputVal !== '') {
+            let num = parseFloat(inputVal);
+            if (!isNaN(num)) {
+                if (num < 0) num = 0;
+                if (num > 100) num = 100;
+                inputVal = num.toString();
+            }
+        }
+
         if (!s.quiz) s.quiz = {};
         s.quiz[`${unitName}_${secName}`] = inputVal;
         
@@ -1275,7 +1338,9 @@ function renderGroupedActivityTable(grade, branchName) {
 
                     cols += `<td><span style="color:#38bdf8;">${textLabel}</span></td>`;
                 });
-                cols += `<td><b style="color:#34d399;">%${storedScale['totalScore']}</b></td>`;
+                let tScore = storedScale['totalScore'];
+                let displayScore = tScore === 'G' ? 'G' : `%${tScore}`;
+                cols += `<td><b style="color:#34d399;">${displayScore}</b></td>`;
             }
             rows += `<tr>${cols}</tr>`;
         });
@@ -1307,7 +1372,7 @@ function renderGroupedActivityTable(grade, branchName) {
 
     const students = fenData[grade]?.branches[branchName] || [];
 
-    let headerTh = '<th>No</th><th>Ad Soyad</th><th>⚡ PUAN</th>';
+    let headerTh = '<th>No</th><th>Ad Soyad</th><th>⚡ PUAN (0-100 / G)</th>';
     subScales.forEach(scale => {
         let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
         if (!shortName) shortName = scale.name;
@@ -1318,14 +1383,17 @@ function renderGroupedActivityTable(grade, branchName) {
     students.forEach((s, sIdx) => {
         let cols = `<td>${s.no}</td><td style="font-weight: 600;">${s.name}</td>`;
         
+        let firstSubName = subScales[0]?.name;
+        let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined) ? s.scale[firstSubName]['totalScore'] : '';
+
         cols += `<td>
-            <input type="number" id="group-quick-input-${sIdx}" class="auth-input" style="padding:4px; width:70px; font-size:11px; text-align:center; display:block; margin:0 auto;" min="0" max="100" placeholder="85" oninput="autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})" onwheel="this.blur()">
+            <input type="text" id="group-quick-input-${sIdx}" class="auth-input" style="padding:4px; width:70px; font-size:11px; text-align:center; display:block; margin:0 auto;" value="${existingQuickVal}" placeholder="85 veya G" autocomplete="off" oninput="autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})">
         </td>`;
 
         subScales.forEach((scale, scaleIdx) => {
             let hasScore = s.scale?.[scale.name] && s.scale[scale.name]['totalScore'] !== undefined && s.scale[scale.name]['totalScore'] !== '';
             let scVal = hasScore ? s.scale[scale.name]['totalScore'] : '-';
-            let displayVal = scVal !== '-' ? `%${scVal}` : '%-%';
+            let displayVal = scVal !== '-' ? (scVal === 'G' ? 'G' : `%${scVal}`) : '%-%';
             cols += `<td><span id="scale-badge-${sIdx}-${scaleIdx}" style="color:${scVal !== '-' ? '#38bdf8' : '#94a3b8'}; font-weight:600;">${displayVal}</span></td>`;
         });
 
@@ -1351,7 +1419,7 @@ function renderGroupedActivityTable(grade, branchName) {
         </div>
         <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
             <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px; font-size:12px;">Puanları Kaydet</button>
-            <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:6px 12px; font-size:11px;">📥 Word İndir</button>
+            <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px; font-size:12px;">📥 Word İndir</button>
         </div>
     `;
 }
@@ -1359,17 +1427,23 @@ function renderGroupedActivityTable(grade, branchName) {
 function autoApplyScoreToSubScales(sIdx, baseActName, subScalesCount) {
     const inputEl = document.getElementById(`group-quick-input-${sIdx}`);
     if (!inputEl) return;
-    const targetVal = parseFloat(inputEl.value);
+    const valText = inputEl.value.trim().toUpperCase();
     
     for (let scaleIdx = 0; scaleIdx < subScalesCount; scaleIdx++) {
         const badgeEl = document.getElementById(`scale-badge-${sIdx}-${scaleIdx}`);
         if (badgeEl) {
-            if (!isNaN(targetVal) && targetVal >= 0 && targetVal <= 100) {
-                badgeEl.innerText = `%${Math.round(targetVal)}`;
-                badgeEl.style.color = '#38bdf8';
+            if (valText === 'G') {
+                badgeEl.innerText = 'G';
+                badgeEl.style.color = '#f59e0b';
             } else {
-                badgeEl.innerText = '%-%';
-                badgeEl.style.color = '#94a3b8';
+                let targetVal = parseFloat(valText);
+                if (!isNaN(targetVal) && targetVal >= 0 && targetVal <= 100) {
+                    badgeEl.innerText = `%${Math.round(targetVal)}`;
+                    badgeEl.style.color = '#38bdf8';
+                } else {
+                    badgeEl.innerText = '%-%';
+                    badgeEl.style.color = '#94a3b8';
+                }
             }
         }
     }
@@ -1387,33 +1461,44 @@ async function saveGroupScaleScores(grade, branchName, baseActName) {
         const inputEl = document.getElementById(`group-quick-input-${sIdx}`);
         if (!inputEl || inputEl.value === '') continue;
 
-        let targetVal = parseFloat(inputEl.value);
-        if (isNaN(targetVal)) continue;
-
+        let valText = inputEl.value.trim().toUpperCase();
         if (!s.scale) s.scale = {};
 
         subScales.forEach(scale => {
             if (!s.scale[scale.name]) s.scale[scale.name] = {};
             const criteriaCount = scale.criteria?.length || 4;
-            
-            if (scale.scale_type === '1-4') {
-                let maxTotal = criteriaCount * 4;
-                let targetScore = Math.round((targetVal / 100) * maxTotal);
-                let baseVal = Math.floor(targetScore / criteriaCount);
-                let remainder = targetScore % criteriaCount;
 
+            if (valText === 'G') {
                 for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
-                    let val = baseVal + (cIdx < remainder ? 1 : 0);
-                    if (val < 1) val = 1; if (val > 4) val = 4;
-                    s.scale[scale.name][cIdx] = val;
+                    s.scale[scale.name][cIdx] = 0;
                 }
+                s.scale[scale.name]['totalScore'] = 'G';
             } else {
-                let targetScore = Math.round((targetVal / 100) * criteriaCount);
-                for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
-                    s.scale[scale.name][cIdx] = cIdx < targetScore ? 1 : 0;
+                let targetVal = parseFloat(valText);
+                if (!isNaN(targetVal)) {
+                    if (targetVal < 0) targetVal = 0;
+                    if (targetVal > 100) targetVal = 100;
+
+                    if (scale.scale_type === '1-4') {
+                        let maxTotal = criteriaCount * 4;
+                        let targetScore = Math.round((targetVal / 100) * maxTotal);
+                        let baseVal = Math.floor(targetScore / criteriaCount);
+                        let remainder = targetScore % criteriaCount;
+
+                        for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
+                            let val = baseVal + (cIdx < remainder ? 1 : 0);
+                            if (val < 1) val = 1; if (val > 4) val = 4;
+                            s.scale[scale.name][cIdx] = val;
+                        }
+                    } else {
+                        let targetScore = Math.round((targetVal / 100) * criteriaCount);
+                        for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
+                            s.scale[scale.name][cIdx] = cIdx < targetScore ? 1 : 0;
+                        }
+                    }
+                    s.scale[scale.name]['totalScore'] = Math.round(targetVal);
                 }
             }
-            s.scale[scale.name]['totalScore'] = Math.round(targetVal);
         });
 
         if (supabaseClient) {
@@ -1459,6 +1544,27 @@ async function renderReportData(grade, branchName) {
         }
     }
 
+    // RAPOR METNİNİ WORD İÇİN MÜKEMMEL LİSTELERE ÇEVİREN AKILLI FONKSİYON
+    let formattedReportHtml = customReportText;
+    if (customReportText.includes('ETKİNLİK İZLEME') || customReportText.includes('GELİŞİM ALANLARI')) {
+        formattedReportHtml = customReportText
+            .replace(/(ÖĞRENME ÇIKTILARI VE SÜREÇ BİLEŞENLERİNİN DEĞERLENDİRİLMESİ)/g, '<h4>$1</h4>')
+            .replace(/(ETKİNLİK İZLEME)/g, '<h4>$1</h4><ul>')
+            .replace(/(GELİŞİM ALANLARI)/g, '</ul><h4>$1</h4><ul>')
+            .replace(/(STRATEJİK YAKLAŞIMLAR)/g, '</ul><h4>$1</h4><ul>')
+            .replace(/•\s*/g, '</li><li>');
+        
+        if (formattedReportHtml.startsWith('<h4>')) {
+            // İlk h4'ten sonraki düz metin kısmını paragraf yap
+            formattedReportHtml = formattedReportHtml.replace('<h4>', '<p style="font-size:11px; margin:0 0 8px 0;">');
+        }
+        formattedReportHtml = '<ul><li>' + formattedReportHtml + '</ul>';
+        // Temizlik
+        formattedReportHtml = formattedReportHtml.replace(/<ul>\s*<h4>/g, '<h4>').replace(/<\/ul>\s*<ul>/g, '');
+    } else {
+        formattedReportHtml = `<p style="font-size: 11px; line-height: 1.4; margin: 0; white-space: pre-wrap;">${customReportText}</p>`;
+    }
+
     const students = fenData[grade]?.branches[branchName] || [];
     const allActs = fenData[grade]?.activities || [];
     const sectionActivities = allActs.filter(a => a.unit === unitName && a.section === secName);
@@ -1472,22 +1578,38 @@ async function renderReportData(grade, branchName) {
 
     students.forEach((s) => {
         const quizKey = `${unitName}_${secName}`;
-        const qScore = s.quiz?.[quizKey] !== undefined && s.quiz[quizKey] !== '' ? parseFloat(s.quiz[quizKey]) : null;
+        const rawQ = s.quiz?.[quizKey];
+        let qScore = null;
+        let qDisplay = '-';
 
-        if (qScore !== null) allQuizScoresForStats.push(qScore);
+        if (rawQ !== undefined && rawQ !== '') {
+            if (rawQ === 'G') {
+                qDisplay = 'G';
+            } else {
+                let parsed = parseFloat(rawQ);
+                if (!isNaN(parsed)) {
+                    qScore = parsed;
+                    qDisplay = parsed.toString();
+                    allQuizScoresForStats.push(qScore);
+                }
+            }
+        }
 
         let cols = `<td>${s.no}</td><td style="font-weight: 600;">${s.name}</td>`;
-        cols += `<td>${qScore !== null ? qScore : '-'}</td>`;
+        cols += `<td>${qDisplay}</td>`;
 
         let scaleScoreSum = 0;
         let scaleScoreCount = 0;
 
         sectionActivities.forEach(act => {
             const scaleData = s.scale?.[act.name];
-            const actScore = scaleData && scaleData['totalScore'] !== undefined ? parseFloat(scaleData['totalScore']) : null;
-            if (actScore !== null) {
-                scaleScoreSum += actScore;
-                scaleScoreCount++;
+            const rawActScore = scaleData && scaleData['totalScore'] !== undefined ? scaleData['totalScore'] : null;
+            if (rawActScore !== null && rawActScore !== 'G') {
+                let pScore = parseFloat(rawActScore);
+                if (!isNaN(pScore)) {
+                    scaleScoreSum += pScore;
+                    scaleScoreCount++;
+                }
             }
         });
 
@@ -1512,7 +1634,7 @@ async function renderReportData(grade, branchName) {
             allGradesForStats.push(generalAvg);
             cols += `<td><b style="color:#059669;">%${generalAvg}</b></td>`;
         } else {
-            cols += `<td><b style="color:#64748b;">-%</b></td>`;
+            cols += `<td><b style="color:#64748b;">${qDisplay === 'G' ? 'G' : '-%'}</b></td>`;
         }
 
         rows += `<tr>${cols}</tr>`;
@@ -1542,18 +1664,22 @@ async function renderReportData(grade, branchName) {
                     <tbody>${rows || '<tr><td colspan="5" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
                 </table>
             </div>
-            <div style="margin-top: 15px; border: 1px solid #000; padding: 12px; border-radius: 6px; background: #fafafa;">
-                <h4 style="font-size: 12px; font-weight: bold; margin: 0 0 6px 0; border-bottom: 1px solid #ccc; padding-bottom: 4px;">📌 Bölüm Sonu Resmi Değerlendirme Raporu</h4>
-                <p style="font-size: 11px; line-height: 1.4; margin: 0; white-space: pre-wrap;">${customReportText}</p>
+        </div>
+
+        <div id="report-page-2" style="background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-top: 15px;">
+            <div class="report-box" style="border: 1px solid #000; padding: 12px; border-radius: 6px; background: #fafafa;">
+                <h4 style="font-size: 12px; font-weight: bold; margin: 0 0 6px 0; border-bottom: 1px solid #ccc; padding-bottom: 4px; color:#000;">📌 Bölüm Sonu Resmi Değerlendirme Raporu</h4>
+                <div style="font-size: 11px; line-height: 1.4; color:#000;">${formattedReportHtml}</div>
             </div>
-            <div style="margin-top: 15px; border: 1px solid #000; padding: 10px; font-size: 11px; display: flex; justify-content: space-around; text-align: center;">
+            <div style="margin-top: 15px; border: 1px solid #000; padding: 10px; font-size: 11px; display: flex; justify-content: space-around; text-align: center; background:#fff; color:#000;">
                 <div><b>0-45 Altı:</b> ${countLow} Öğrenci</div>
                 <div><b>45-70 Arası:</b> ${countMid} Öğrenci</div>
                 <div><b>70-100 Arası:</b> ${countHigh} Öğrenci</div>
             </div>
         </div>
+
         <div style="display:flex; gap:8px; margin-top:12px;">
-            <button onclick="exportTableToWord('report-printable-area', '${branchName}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px; font-size:12px;">📥 Word İndir</button>
+            <button onclick="exportReportToWord('${branchName}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px; font-size:12px;">📥 Word İndir</button>
         </div>
     `;
 }
@@ -1667,12 +1793,15 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 let qKey = `${u.name}_${sec}`;
                 if (student.quiz && student.quiz[qKey] !== undefined && student.quiz[qKey] !== '') {
                     let score = student.quiz[qKey];
+                    let displayScore = score === 'G' ? 'G' : `${score} Puan`;
                     quizRows += `<tr>
                         <td style="padding:6px; text-align:left;"><b>${u.name}</b> / ${sec}</td>
-                        <td style="padding:6px; text-align:center; color:#0284c7;"><b>${score} Puan</b></td>
+                        <td style="padding:6px; text-align:center; color:#0284c7;"><b>${displayScore}</b></td>
                     </tr>`;
-                    totalQuizScore += parseFloat(score);
-                    quizCount++;
+                    if (score !== 'G') {
+                        totalQuizScore += parseFloat(score);
+                        quizCount++;
+                    }
                 }
             });
         }
@@ -1692,7 +1821,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
                 actsInSec.forEach(act => {
                     let scaleObj = student.scale?.[act.name];
-                    if (scaleObj && scaleObj['totalScore'] !== undefined) {
+                    if (scaleObj && scaleObj['totalScore'] !== undefined && scaleObj['totalScore'] !== 'G') {
                         secScoreSum += parseFloat(scaleObj['totalScore']);
                         secScoreCount++;
                     }
@@ -1756,7 +1885,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
             </div>
 
             <!-- TABLO 2: ETKİNLİKLER (KAYDIRILABİLİR KUTU) -->
-            <div style="background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 15px;">
+            <div style="background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,258,0.08); margin-bottom: 15px;">
                 <h4 style="font-size: 13px; margin-bottom: 8px; color: #f8fafc;">🧪 Etkinlik Ortalamalarım</h4>
                 <div class="table-responsive">
                     <table class="data-table" style="width: 100%; border-collapse: collapse;">
