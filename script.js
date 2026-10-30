@@ -296,7 +296,7 @@ function closeModal() {
 }
 
 function addNewBranchModal(grade) {
-    const content = `<label style="color:#cbd5e1;">Şube Adı (Örn: A, B, F):</label><input type="text" id="modal-branch-name" class="auth-input" placeholder="A">`;
+    const content = `<label style="color:#cbd5e1; font-size:12px;">Şube Adı (Örn: A, B, F):</label><input type="text" id="modal-branch-name" class="auth-input" placeholder="A">`;
     openModal("Yeni Şube Ekle", content, async () => {
         const inputEl = document.getElementById('modal-branch-name');
         const bInput = inputEl.value.trim().toUpperCase();
@@ -334,11 +334,11 @@ async function deleteBranch(grade, bName) {
 
 function globalAddUnit() {
     const content = `
-        <label style="display:block; margin-bottom:8px; font-weight:600; font-size:14px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
-        <select id="modal-grade" class="auth-input" style="margin-bottom:15px;">
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:13px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
+        <select id="modal-grade" class="auth-input" style="margin-bottom:12px;">
             <option value="5">5. Sınıf</option><option value="6">6. Sınıf</option><option value="7">7. Sınıf</option><option value="8">8. Sınıf</option>
         </select>
-        <label style="display:block; margin-bottom:8px; font-weight:600; font-size:14px; color:#cbd5e1;">Ünite Adı:</label>
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:13px; color:#cbd5e1;">Ünite Adı:</label>
         <input type="text" id="modal-text" placeholder="Örn: 1. Ünite" class="auth-input">
     `;
     openModal("Yeni Ünite Ekle", content, async () => {
@@ -359,13 +359,13 @@ function globalAddUnit() {
 
 function globalAddSection() {
     const content = `
-        <label style="display:block; margin-bottom:8px; font-weight:600; font-size:14px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
-        <select id="modal-grade" class="auth-input" style="margin-bottom:15px;" onchange="updateModalUnits(this.value)">
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:13px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
+        <select id="modal-grade" class="auth-input" style="margin-bottom:12px;" onchange="updateModalUnits(this.value)">
             <option value="5">5. Sınıf</option><option value="6" selected>6. Sınıf</option><option value="7">7. Sınıf</option><option value="8">8. Sınıf</option>
         </select>
-        <label style="display:block; margin-bottom:8px; font-weight:600; font-size:14px; color:#cbd5e1;">Ünite Seçin:</label>
-        <select id="modal-unit-select" class="auth-input" style="margin-bottom:15px;"><option value="">Önce sınıf seçin</option></select>
-        <label style="display:block; margin-bottom:8px; font-weight:600; font-size:14px; color:#cbd5e1;">Bölüm / Konu Adı:</label>
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:13px; color:#cbd5e1;">Ünite Seçin:</label>
+        <select id="modal-unit-select" class="auth-input" style="margin-bottom:12px;"><option value="">Önce sınıf seçin</option></select>
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:13px; color:#cbd5e1;">Bölüm / Konu Adı:</label>
         <input type="text" id="modal-section" placeholder="Örn: 1. Bölüm" class="auth-input">
     `;
     openModal("Yeni Bölüm Ekle", content, async () => {
@@ -397,19 +397,19 @@ function updateModalUnits(grade) {
 
 function globalAddReportTemplate() {
     const content = `
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
-        <select id="rep-modal-grade" class="auth-input" style="margin-bottom:12px;" onchange="updateRepModalUnits(this.value)">
+        <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Sınıf Düzeyi:</label>
+        <select id="rep-modal-grade" class="auth-input" style="margin-bottom:10px;" onchange="updateRepModalUnits(this.value)">
             <option value="5">5. Sınıf</option><option value="6">6. Sınıf</option><option value="7" selected>7. Sınıf</option><option value="8">8. Sınıf</option>
         </select>
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Ünite Seçin:</label>
-        <select id="rep-modal-unit" class="auth-input" style="margin-bottom:12px;" onchange="updateRepModalSections(this.value)"><option value="">Önce sınıf seçin</option></select>
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Bölüm Seçin:</label>
-        <select id="rep-modal-section" class="auth-input" style="margin-bottom:12px;"><option value="">Önce ünite seçin</option></select>
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Resmi Rapor Metni:</label>
-        <textarea id="rep-modal-text" class="auth-input" style="height:150px; font-size:12px; font-family:monospace;" placeholder="Rapor metnini buraya yazın..."></textarea>
+        <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Ünite:</label>
+        <select id="rep-modal-unit" class="auth-input" style="margin-bottom:10px;" onchange="updateRepModalSections(this.value)"><option value="">Önce sınıf seçin</option></select>
+        <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Bölüm:</label>
+        <select id="rep-modal-section" class="auth-input" style="margin-bottom:10px;"><option value="">Önce ünite seçin</option></select>
+        <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Rapor Metni:</label>
+        <textarea id="rep-modal-text" class="auth-input" style="height:120px; font-size:12px; font-family:monospace;" placeholder="Rapor metni..."></textarea>
     `;
 
-    openModal("Bölüme Özel Resmi Rapor Şablonu Ekle", content, async () => {
+    openModal("Resmi Rapor Şablonu Ekle", content, async () => {
         const grade = document.getElementById('rep-modal-grade').value;
         const unitName = document.getElementById('rep-modal-unit').value;
         const secName = document.getElementById('rep-modal-section').value;
@@ -417,7 +417,7 @@ function globalAddReportTemplate() {
         const reportText = textInput.value.trim();
 
         if (!unitName || !secName || !reportText) {
-            alert('Lütfen sınıf, ünite, bölüm seçin ve rapor metnini yazın!');
+            alert('Lütfen tüm alanları doldurun!');
             return;
         }
 
@@ -430,14 +430,14 @@ function globalAddReportTemplate() {
             }]);
 
             if (error) {
-                alert('Rapor kaydedilirken hata: ' + error.message);
+                alert('Hata: ' + error.message);
                 return;
             }
         }
 
         textInput.value = '';
         closeModal();
-        alert('Rapor şablonu buluta başarıyla kaydedildi!');
+        alert('Rapor şablonu kaydedildi!');
     });
 
     updateRepModalUnits('7');
@@ -467,21 +467,19 @@ function updateRepModalSections(unitName) {
 
 function globalAddActivity() {
     const content = `
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
-        <select id="modal-grade" class="auth-input" style="margin-bottom:12px;" onchange="updateModalUnitsForActivity(this.value)">
+        <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Sınıf:</label>
+        <select id="modal-grade" class="auth-input" style="margin-bottom:10px;" onchange="updateModalUnitsForActivity(this.value)">
             <option value="5">5. Sınıf</option><option value="6" selected>6. Sınıf</option><option value="7">7. Sınıf</option><option value="8">8. Sınıf</option>
         </select>
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Ünite Seçin:</label>
-        <select id="modal-unit" class="auth-input" style="margin-bottom:12px;" onchange="updateModalSectionsForActivity(this.value)">
-            <option value="">Önce sınıf seçin</option>
-        </select>
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Bölüm Seçin:</label>
-        <select id="modal-section" class="auth-input" style="margin-bottom:12px;"><option value="">Önce ünite seçin</option></select>
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Excel Dosyası (.xlsx):</label>
-        <input type="file" id="modal-excel-file" class="auth-input" accept=".xlsx, .xls, .csv" style="margin-bottom:12px;">
+        <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Ünite:</label>
+        <select id="modal-unit" class="auth-input" style="margin-bottom:10px;" onchange="updateModalSectionsForActivity(this.value)"><option value="">Önce sınıf seçin</option></select>
+        <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Bölüm:</label>
+        <select id="modal-section" class="auth-input" style="margin-bottom:10px;"><option value="">Önce ünite seçin</option></select>
+        <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Excel Dosyası (.xlsx):</label>
+        <input type="file" id="modal-excel-file" class="auth-input" accept=".xlsx, .xls, .csv" style="margin-bottom:10px;">
     `;
 
-    openModal("Excel Çoklu Ölçek ve Tür Entegrasyonu", content, () => {
+    openModal("Excel Ölçek Entegrasyonu", content, () => {
         const grade = document.getElementById('modal-grade').value;
         const unit = document.getElementById('modal-unit').value;
         const section = document.getElementById('modal-section').value;
@@ -489,7 +487,7 @@ function globalAddActivity() {
         const file = fileInput.files[0];
 
         if (!unit || !section || !file) {
-            alert('Lütfen ünite, bölüm seçin ve bir Excel dosyası yükleyin!');
+            alert('Lütfen ünite, bölüm seçin ve dosya yükleyin!');
             return;
         }
 
@@ -514,13 +512,9 @@ function globalAddActivity() {
 
                         for (let cell of row) {
                             if (cell && typeof cell === 'string') {
-                                if (cell.includes('RUBRİK') || cell.includes('1-4')) {
-                                    scaleType = '1-4';
-                                } else if (cell.includes('KONTROL') || cell.includes('VAR') || cell.includes('YOK')) {
-                                    scaleType = 'var-yok';
-                                } else if (cell.includes('FORMU') || cell.includes('EVET') || cell.includes('HAYIR')) {
-                                    scaleType = 'evet-hayir';
-                                }
+                                if (cell.includes('RUBRİK') || cell.includes('1-4')) scaleType = '1-4';
+                                else if (cell.includes('KONTROL') || cell.includes('VAR')) scaleType = 'var-yok';
+                                else if (cell.includes('FORMU') || cell.includes('EVET')) scaleType = 'evet-hayir';
 
                                 if (cell.includes('RUBRİK') || cell.includes('FORMU') || cell.includes('LİSTESİ') || cell.includes('ÖLÇEĞİ')) {
                                     currentScaleTitle = `${sheetName.trim()} - ${cell.trim()}`;
@@ -569,7 +563,7 @@ function globalAddActivity() {
                 await loadAllDataFromSupabase();
                 fileInput.value = '';
                 closeModal();
-                alert(`Toplam ${importedCount} farklı ölçek başarıyla yüklendi!`);
+                alert(`Toplam ${importedCount} ölçek yüklendi!`);
             } catch (err) {
                 console.error(err);
                 alert('Hata: ' + err.message);
@@ -606,36 +600,32 @@ function updateModalSectionsForActivity(unitName) {
 
 function globalDeleteManagement() {
     const content = `
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Sınıf Düzeyi Seçin:</label>
-        <select id="del-grade" class="auth-input" style="margin-bottom:12px;" onchange="updateDelUnits(this.value)">
+        <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Sınıf:</label>
+        <select id="del-grade" class="auth-input" style="margin-bottom:10px;" onchange="updateDelUnits(this.value)">
             <option value="5">5. Sınıf</option><option value="6" selected>6. Sınıf</option><option value="7">7. Sınıf</option><option value="8">8. Sınıf</option>
         </select>
-        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Silinecek Öğe Türü:</label>
-        <select id="del-type" class="auth-input" style="margin-bottom:12px;" onchange="toggleDelFields()">
-            <option value="unit">Ünite Sil (Tüm Bölüm ve Etkinlikleriyle)</option>
+        <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">İşlem Türü:</label>
+        <select id="del-type" class="auth-input" style="margin-bottom:10px;" onchange="toggleDelFields()">
+            <option value="unit">Ünite Sil</option>
             <option value="section">Bölüm Sil</option>
             <option value="activity">Etkinlik / Ölçek Sil</option>
-            <option value="report">Resmi Rapor Şablonu Sil</option>
+            <option value="report">Rapor Şablonu Sil</option>
         </select>
-
-        <div id="del-unit-container" style="margin-bottom:12px;">
-            <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Ünite Seçin:</label>
-            <select id="del-unit-select" class="auth-input" onchange="updateDelSections(this.value)"><option value="">-- Ünite Seçin --</option></select>
+        <div id="del-unit-container" style="margin-bottom:10px;">
+            <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Ünite:</label>
+            <select id="del-unit-select" class="auth-input" onchange="updateDelSections(this.value)"><option value="">-- Ünite --</option></select>
         </div>
-
-        <div id="del-section-container" style="margin-bottom:12px; display:none;">
-            <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Bölüm Seçin:</label>
-            <select id="del-section-select" class="auth-input" style="margin-bottom:12px;" onchange="updateDelActivitiesAndReports()"><option value="">-- Bölüm Seçin --</option></select>
+        <div id="del-section-container" style="margin-bottom:10px; display:none;">
+            <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Bölüm:</label>
+            <select id="del-section-select" class="auth-input" onchange="updateDelActivitiesAndReports()"><option value="">-- Bölüm --</option></select>
         </div>
-
-        <div id="del-activity-container" style="margin-bottom:12px; display:none;">
-            <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Etkinlik / Ölçek Seçin:</label>
-            <select id="del-activity-select" class="auth-input"><option value="">-- Önce Bölüm Seçin --</option></select>
+        <div id="del-activity-container" style="margin-bottom:10px; display:none;">
+            <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Etkinlik:</label>
+            <select id="del-activity-select" class="auth-input"><option value="">-- Etkinlik --</option></select>
         </div>
-
-        <div id="del-report-container" style="margin-bottom:12px; display:none;">
-            <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px; color:#cbd5e1;">Silinecek Rapor (Bölüm):</label>
-            <select id="del-report-select" class="auth-input"><option value="">-- Önce Bölüm Seçin --</option></select>
+        <div id="del-report-container" style="margin-bottom:10px; display:none;">
+            <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Rapor:</label>
+            <select id="del-report-select" class="auth-input"><option value="">-- Rapor --</option></select>
         </div>
     `;
 
@@ -645,8 +635,8 @@ function globalDeleteManagement() {
 
         if (type === 'unit') {
             const unitName = document.getElementById('del-unit-select').value;
-            if (!unitName) { alert('Lütfen silinecek üniteyi seçin.'); return; }
-            if (confirm(`"${unitName}" ünitesini, bu üniteye ait tüm bölümleri ve etkinlikleri silmek istiyor musunuz?`)) {
+            if (!unitName) { alert('Ünite seçin.'); return; }
+            if (confirm(`"${unitName}" ünitesi ve bağlı her şey silinsin mi?`)) {
                 if (supabaseClient) {
                     await supabaseClient.from('units_sections').delete().eq('grade', grade).eq('unit_name', unitName);
                     await supabaseClient.from('activities').delete().eq('grade', grade).eq('unit_name', unitName);
@@ -655,13 +645,13 @@ function globalDeleteManagement() {
                 await loadAllDataFromSupabase();
                 updateDelUnits(grade);
                 closeModal();
-                alert('Ünite, bölümleri ve ilgili tüm etkinlik/raporlar buluttan silindi!');
+                alert('Ünite silindi!');
             }
         } else if (type === 'section') {
             const unitName = document.getElementById('del-unit-select').value;
             const secName = document.getElementById('del-section-select').value;
-            if (!unitName || !secName) { alert('Lütfen ünite ve bölüm seçin.'); return; }
-            if (confirm(`"${secName}" bölümünü silmek istiyor musunuz?`)) {
+            if (!unitName || !secName) { alert('Ünite ve bölüm seçin.'); return; }
+            if (confirm(`"${secName}" bölümü silinsin mi?`)) {
                 if (supabaseClient) {
                     await supabaseClient.from('units_sections').delete().eq('grade', grade).eq('unit_name', unitName).eq('section_name', secName);
                     await supabaseClient.from('activities').delete().eq('grade', grade).eq('unit_name', unitName).eq('section_name', secName);
@@ -670,12 +660,12 @@ function globalDeleteManagement() {
                 await loadAllDataFromSupabase();
                 updateDelSections(unitName);
                 closeModal();
-                alert('Bölüm ve bağlı içerikler buluttan silindi!');
+                alert('Bölüm silindi!');
             }
         } else if (type === 'activity') {
             const actName = document.getElementById('del-activity-select').value;
-            if (!actName) { alert('Lütfen silinecek etkinliği seçin.'); return; }
-            if (confirm(`"${actName}" etkinliğini silmek istiyor musunuz?`)) {
+            if (!actName) { alert('Etkinlik seçin.'); return; }
+            if (confirm(`"${actName}" etkinliği silinsin mi?`)) {
                 if (supabaseClient) {
                     await supabaseClient.from('activities').delete().eq('grade', grade).eq('activity_name', actName);
                     await supabaseClient.from('activities').delete().eq('grade', grade).ilike('activity_name', actName + ' -%');
@@ -683,21 +673,20 @@ function globalDeleteManagement() {
                 await loadAllDataFromSupabase();
                 updateDelActivitiesAndReports();
                 closeModal();
-                alert('Etkinlik buluttan silindi!');
+                alert('Etkinlik silindi!');
             }
         } else if (type === 'report') {
-            const gradeVal = document.getElementById('del-grade').value;
             const unitName = document.getElementById('del-unit-select').value;
             const secName = document.getElementById('del-section-select').value;
-            if (!unitName || !secName) { alert('Lütfen ünite ve bölüm seçin.'); return; }
-            if (confirm(`Bu bölüme ait resmi rapor şablonunu silmek istiyor musunuz?`)) {
+            if (!unitName || !secName) { alert('Ünite ve bölüm seçin.'); return; }
+            if (confirm('Rapor şablonu silinsin mi?')) {
                 if (supabaseClient) {
-                    await supabaseClient.from('report_templates').delete().eq('grade', gradeVal).eq('unit_name', unitName).eq('section_name', secName);
+                    await supabaseClient.from('report_templates').delete().eq('grade', grade).eq('unit_name', unitName).eq('section_name', secName);
                 }
                 await loadAllDataFromSupabase();
                 updateDelActivitiesAndReports();
                 closeModal();
-                alert('Rapor şablonu buluttan silindi!');
+                alert('Rapor silindi!');
             }
         }
     });
@@ -709,7 +698,7 @@ function globalDeleteManagement() {
 function updateDelUnits(grade) {
     const unitSel = document.getElementById('del-unit-select');
     if (!unitSel) return;
-    unitSel.innerHTML = '<option value="">-- Ünite Seçin --</option>';
+    unitSel.innerHTML = '<option value="">-- Ünite --</option>';
     (fenData[grade]?.units || []).forEach(u => {
         unitSel.innerHTML += `<option value="${u.name}">${u.name}</option>`;
     });
@@ -720,7 +709,7 @@ function updateDelSections(unitName) {
     const grade = document.getElementById('del-grade').value;
     const secSel = document.getElementById('del-section-select');
     if (!secSel) return;
-    secSel.innerHTML = '<option value="">-- Bölüm Seçin --</option>';
+    secSel.innerHTML = '<option value="">-- Bölüm --</option>';
     const unit = fenData[grade]?.units.find(u => u.name === unitName);
     if (unit && unit.sections) {
         unit.sections.forEach(s => {
@@ -737,7 +726,7 @@ function updateDelActivitiesAndReports() {
     
     const actSel = document.getElementById('del-activity-select');
     if (actSel) {
-        actSel.innerHTML = '<option value="">-- Etkinlik Seçin --</option>';
+        actSel.innerHTML = '<option value="">-- Etkinlik --</option>';
         if (unitName && secName) {
             let baseActivityNames = new Set();
             (fenData[grade]?.activities || []).filter(a => a.unit === unitName && a.section === secName).forEach(a => {
@@ -752,14 +741,6 @@ function updateDelActivitiesAndReports() {
             baseActivityNames.forEach(bAct => {
                 actSel.innerHTML += `<option value="${bAct}">${bAct}</option>`;
             });
-        }
-    }
-
-    const repSel = document.getElementById('del-report-select');
-    if (repSel) {
-        repSel.innerHTML = '<option value="">-- Rapor Şablonu Bulunuyor --</option>';
-        if (unitName && secName) {
-            repSel.innerHTML = `<option value="${unitName}|||${secName}">${unitName} / ${secName} (Raporu)</option>`;
         }
     }
 }
@@ -828,26 +809,26 @@ function renderGradeManagementView(grade, push = true) {
                     <p>${studentCount} Öğrenci Kayıtlı</p>
                     <span class="card-action">Şubeye Git &rarr;</span>
                 </div>
-                <button onclick="event.stopPropagation(); deleteBranch('${grade}', '${bName}')" style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; padding: 2px 6px; cursor: pointer;">Sil</button>
+                <button onclick="event.stopPropagation(); deleteBranch('${grade}', '${bName}')" style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size:11px;">Sil</button>
             </div>
         `;
     });
 
     detailPanel.innerHTML = `
         <header class="teacher-header">
-            <div class="header-brand"><span class="brand-icon">📚</span><h1>${grade}. SINIFLAR ŞUBE YÖNETİMİ</h1></div>
+            <div class="header-brand"><span class="brand-icon">📚</span><h1>${grade}. SINIFLAR</h1></div>
             <div>
-                <button onclick="renderTeacherPanelView(true)" class="logout-btn" style="background:#3b82f6; margin-right:8px;">Geri Dön</button>
-                <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
+                <button onclick="renderTeacherPanelView(true)" class="logout-btn" style="background:#3b82f6; margin-right:6px;">Geri Dön</button>
+                <button onclick="logout()" class="logout-btn">Çıkış</button>
             </div>
         </header>
         <section class="dashboard-content">
-            <div style="margin-bottom: 20px;">
-                <button onclick="addNewBranchModal('${grade}')" class="action-btn student-btn" style="width: auto; padding: 10px 20px;">+ Yeni Şube Ekle</button>
+            <div style="margin-bottom: 15px;">
+                <button onclick="addNewBranchModal('${grade}')" class="auth-btn" style="width: auto; padding: 8px 16px; background:#059669;">+ Yeni Şube Ekle</button>
             </div>
-            <h3>Şubeler</h3>
-            <div class="grade-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-top: 15px;">
-                ${branchCards || '<p style="color:#94a3b8;">Henüz şube eklenmemiş.</p>'}
+            <h3 style="font-size:15px; margin-bottom:10px;">Şubeler</h3>
+            <div class="grade-cards-grid">
+                ${branchCards || '<p style="color:#94a3b8; font-size:12px;">Henüz şube eklenmemiş.</p>'}
             </div>
         </section>
     `;
@@ -875,38 +856,38 @@ function renderBranchMenuView(grade, branchName, push = true) {
 
     detailPanel.innerHTML = `
         <header class="teacher-header">
-            <div class="header-brand"><span class="header-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
+            <div class="header-brand"><h1>${grade}. Sınıf - ${branchName}</h1></div>
             <div>
-                <button onclick="openGradeManagement('${grade}', true)" class="logout-btn" style="background:#3b82f6; margin-right:8px;">Şubelere Dön</button>
-                <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
+                <button onclick="openGradeManagement('${grade}', true)" class="logout-btn" style="background:#3b82f6; margin-right:6px;">Geri</button>
+                <button onclick="logout()" class="logout-btn">Çıkış</button>
             </div>
         </header>
         <section class="dashboard-content">
-            <h2 style="margin-bottom: 20px; color: #f8fafc; font-size: 20px;">Şube İşlemleri ve Yönetim Kartları</h2>
-            <div class="grade-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px;">
+            <h2 style="margin-bottom: 15px; color: #f8fafc; font-size: 16px;">Yönetim Kartları</h2>
+            <div class="grade-cards-grid">
                 <div class="grade-card" onclick="openBranchDetail('${grade}', '${branchName}', 'students', true)" style="border-top-color: #3b82f6;">
-                    <div style="font-size: 28px; margin-bottom: 8px;">👥</div>
+                    <div style="font-size: 24px; margin-bottom: 6px;">👥</div>
                     <h3>Sınıf Listesi & Artı/Eksi</h3>
-                    <p>Öğrenci performans ve artı/eksi takibi</p>
-                    <span class="card-action">Sayfaya Git &rarr;</span>
+                    <p>Öğrenci performans takibi</p>
+                    <span class="card-action">Git &rarr;</span>
                 </div>
                 <div class="grade-card" onclick="openBranchDetail('${grade}', '${branchName}', 'quizzes', true)" style="border-top-color: #8b5cf6;">
-                    <div style="font-size: 28px; margin-bottom: 8px;">📝</div>
+                    <div style="font-size: 24px; margin-bottom: 6px;">📝</div>
                     <h3>Quiz Sonuçları</h3>
-                    <p>Quiz değerlendirmeleri ve not girişleri</p>
-                    <span class="card-action">Sayfaya Git &rarr;</span>
+                    <p>Değerlendirme ve not girişleri</p>
+                    <span class="card-action">Git &rarr;</span>
                 </div>
                 <div class="grade-card" onclick="openBranchDetail('${grade}', '${branchName}', 'activities', true)" style="border-top-color: #10b981;">
-                    <div style="font-size: 28px; margin-bottom: 8px;">🧪</div>
+                    <div style="font-size: 24px; margin-bottom: 6px;">🧪</div>
                     <h3>Etkinlik Ölçekleri</h3>
-                    <p>Toplu ölçek puanlama ve rubrikler</p>
-                    <span class="card-action">Sayfaya Git &rarr;</span>
+                    <p>Toplu ölçek ve rubrikler</p>
+                    <span class="card-action">Git &rarr;</span>
                 </div>
                 <div class="grade-card" onclick="openBranchDetail('${grade}', '${branchName}', 'reports', true)" style="border-top-color: #f59e0b;">
-                    <div style="font-size: 28px; margin-bottom: 8px;">📊</div>
+                    <div style="font-size: 24px; margin-bottom: 6px;">📊</div>
                     <h3>Raporlar & Analiz</h3>
                     <p>Karne özeti ve resmi raporlar</p>
-                    <span class="card-action">Sayfaya Git &rarr;</span>
+                    <span class="card-action">Git &rarr;</span>
                 </div>
             </div>
         </section>
@@ -935,14 +916,14 @@ function renderBranchDetailView(grade, branchName, tab = 'students', push = true
 
     detailPanel.innerHTML = `
         <header class="teacher-header">
-            <div class="header-brand"><span class="header-icon">🏫</span><h1>${grade}. Sınıf - ${branchName} Yönetim Paneli</h1></div>
+            <div class="header-brand"><h1>${grade}. Sınıf - ${branchName}</h1></div>
             <div>
-                <button onclick="openBranchMenu('${grade}', '${branchName}', true)" class="logout-btn" style="background:#3b82f6; margin-right:8px;">Şube Menüsüne Dön</button>
-                <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
+                <button onclick="openBranchMenu('${grade}', '${branchName}', true)" class="logout-btn" style="background:#3b82f6; margin-right:6px;">Menü</button>
+                <button onclick="logout()" class="logout-btn">Çıkış</button>
             </div>
         </header>
         <section class="dashboard-content">
-            <div id="branch-tab-content" style="background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);"></div>
+            <div id="branch-tab-content" style="background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);"></div>
         </section>
     `;
     
@@ -963,18 +944,18 @@ function loadBranchTabContent(tabType, grade, branchName) {
         students.forEach((s, idx) => {
             rows += `<tr>
                 <td>${s.no}</td><td>${s.name}</td>
-                <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'plus', 1)" style="background:#10b981; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">+</button> ${s.plus}</td>
-                <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'minus', 1)" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">-</button> ${s.minus}</td>
-                <td><button onclick="deleteStudent('${grade}', '${branchName}', ${idx})" style="background:#64748b; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Sil</button></td>
+                <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'plus', 1)" style="background:#10b981; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;">+</button> ${s.plus}</td>
+                <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'minus', 1)" style="background:#ef4444; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;">-</button> ${s.minus}</td>
+                <td><button onclick="deleteStudent('${grade}', '${branchName}', ${idx})" style="background:#64748b; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;">Sil</button></td>
             </tr>`;
         });
 
         contentArea.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-                <h3 style="color:#f8fafc; font-size:18px;">Öğrenci Listesi ve Anlık Performans (${branchName})</h3>
-                <div style="display:flex; gap:10px;">
-                    <button onclick="openBulkStudentModal('${grade}', '${branchName}')" class="action-btn" style="width:auto; padding:8px 16px; background:#059669; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;">📋 e-Okul Toplu Yapıştır</button>
-                    <button onclick="addStudentModal('${grade}', '${branchName}')" class="action-btn student-btn" style="width:auto; padding:8px 16px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer;">+ Öğrenci Ekle</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                <h3 style="color:#f8fafc; font-size:15px; margin:0;">Öğrenci Listesi</h3>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button onclick="openBulkStudentModal('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:6px 10px; background:#059669; font-size:11px;">📋 e-Okul Yapıştır</button>
+                    <button onclick="addStudentModal('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:6px 10px; background:#2563eb; font-size:11px;">+ Öğrenci</button>
                 </div>
             </div>
             <div class="table-responsive">
@@ -983,65 +964,58 @@ function loadBranchTabContent(tabType, grade, branchName) {
                     <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
                 </table>
             </div>
-            <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap;">
-                <button onclick="exportTableToWord('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 16px;">📥 Word İndir</button>
+            <div style="display:flex; gap:8px; margin-top:10px;">
+                <button onclick="exportTableToWord('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#2563eb; width:auto; padding:6px 12px; font-size:11px;">📥 Word İndir</button>
             </div>
         `;
     } else if (tabType === 'quizzes') {
         contentArea.innerHTML = `
-            <h3 style="color:#f8fafc; font-size:18px;">📝 Quiz Sonuçları ve Değerlendirme</h3>
-            <p style="color: #94a3b8; margin-top: 5px; font-size: 13px;">Ünite ve bölüm seçerek öğrenci notlarını girin ve kaydedin.</p>
-            <div style="display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
-                <select id="quiz-unit-sel" class="auth-input" style="flex:1; min-width:200px;" onchange="loadSectionsForQuiz(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
-                <select id="quiz-section-select" class="auth-input" style="flex:1; min-width:200px;" onchange="renderQuizTable('${grade}', '${branchName}')"><option value="">-- Önce Ünite Seçin --</option></select>
+            <h3 style="color:#f8fafc; font-size:15px; margin-bottom:4px;">📝 Quiz Sonuçları</h3>
+            <p style="color: #94a3b8; margin-top: 0; font-size: 11px;">Ünite ve bölüm seçerek not girin.</p>
+            <div style="display: flex; gap: 8px; margin-top: 10px; flex-direction: column;">
+                <select id="quiz-unit-sel" class="auth-input" onchange="loadSectionsForQuiz(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
+                <select id="quiz-section-select" class="auth-input" onchange="renderQuizTable('${grade}', '${branchName}')"><option value="">-- Önce Ünite Seçin --</option></select>
             </div>
-            <div id="quiz-table-container" style="margin-top:15px;"></div>
+            <div id="quiz-table-container" style="margin-top:12px;"></div>
         `;
     } else if (tabType === 'activities') {
         contentArea.innerHTML = `
-            <h3 style="color:#f8fafc; font-size:18px;">🧪 Etkinlik & Toplu Ölçek Puanlama</h3>
-            <p style="color: #94a3b8; margin-top: 5px; font-size: 13px;">Ünite, bölüm ve etkinlik seçin. Puanı yazdığınız an tüm alt ölçeklere otomatik uygulanır.</p>
-            <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-                <select id="act-unit-sel" class="auth-input" style="flex:1; min-width:150px;" onchange="loadSectionsForActivity(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
-                <select id="activity-section-select" class="auth-input" style="flex:1; min-width:150px;" onchange="loadBaseActivitiesForSelection('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
-                <select id="activity-name-select" class="auth-input" style="flex:1; min-width:150px;" onchange="loadSubScalesForSelection('${grade}', '${branchName}')"><option value="">-- Etkinlik Seçin --</option></select>
-                <select id="sub-scale-select" class="auth-input" style="flex:1; min-width:160px;" onchange="renderGroupedActivityTable('${grade}', '${branchName}')"><option value="-- TÜM ÖLÇEKLER --">-- Tüm Ölçekler --</option></select>
+            <h3 style="color:#f8fafc; font-size:15px; margin-bottom:4px;">🧪 Etkinlik Puanlama</h3>
+            <p style="color: #94a3b8; margin-top: 0; font-size: 11px;">Ünite, bölüm ve etkinlik seçin.</p>
+            <div style="display: flex; gap: 8px; margin-top: 10px; flex-direction: column;">
+                <select id="act-unit-sel" class="auth-input" onchange="loadSectionsForActivity(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
+                <select id="activity-section-select" class="auth-input" onchange="loadBaseActivitiesForSelection('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
+                <select id="activity-name-select" class="auth-input" onchange="loadSubScalesForSelection('${grade}', '${branchName}')"><option value="">-- Etkinlik Seçin --</option></select>
+                <select id="sub-scale-select" class="auth-input" onchange="renderGroupedActivityTable('${grade}', '${branchName}')"><option value="-- TÜM ÖLÇEKLER --">-- Tüm Ölçekler --</option></select>
             </div>
-            <div id="activity-table-container" style="margin-top:15px;"></div>
+            <div id="activity-table-container" style="margin-top:12px;"></div>
         `;
     } else if (tabType === 'reports') {
         contentArea.innerHTML = `
-            <h3 style="color:#f8fafc; font-size:18px;">📊 Şube Raporları ve Karne Analizi</h3>
-            <p style="color: #94a3b8; margin-top: 5px; font-size: 13px;">Ünite ve bölüm seçerek sınıf özetini görün ve resmi rapor oluşturun.</p>
-            <div style="display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap; max-width: 600px;">
-                <select id="rep-unit-sel" class="auth-input" style="flex:1;" onchange="loadSectionsForReport(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
-                <select id="report-section-select" class="auth-input" style="flex:1;" onchange="renderReportData('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
+            <h3 style="color:#f8fafc; font-size:15px; margin-bottom:4px;">📊 Şube Raporları</h3>
+            <p style="color: #94a3b8; margin-top: 0; font-size: 11px;">Ünite ve bölüm seçerek karne analizi görün.</p>
+            <div style="display: flex; gap: 8px; margin-top: 10px; flex-direction: column;">
+                <select id="rep-unit-sel" class="auth-input" onchange="loadSectionsForReport(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
+                <select id="report-section-select" class="auth-input" onchange="renderReportData('${grade}', '${branchName}')"><option value="">-- Bölüm Seçin --</option></select>
             </div>
-            <div id="report-result-container" style="margin-top:15px;"></div>
+            <div id="report-result-container" style="margin-top:12px;"></div>
         `;
     }
 }
 
-// A4 DİKEY (PORTRAIT) UYUMLU, SÜTUNLARI KESMEYEN WORD İNDİRME FONKSİYONU
 function exportTableToWord(elementId, filename) {
     const element = document.getElementById(elementId);
-    if (!element) { alert('İndirilecek içerik bulunamadı!'); return; }
+    if (!element) { alert('İçerik bulunamadı!'); return; }
     
     const styles = `
         <style>
-            @page Section1 {
-                size: 21.0cm 29.7cm; /* A4 Dikey (Portrait) */
-                margin: 1.5cm;
-            }
+            @page Section1 { size: 21.0cm 29.7cm; margin: 1.5cm; }
             div.Section1 { page: Section1; }
             body { font-family: 'Times New Roman', Times, serif; color: #000; }
-            table { width: 100% !important; border-collapse: collapse !important; margin-top: 15px; table-layout: fixed; }
-            th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; word-wrap: break-word; overflow: hidden; }
+            table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
+            th, td { border: 1px solid #000 !important; padding: 5px 3px !important; font-size: 9px !important; text-align: center; word-wrap: break-word; overflow: hidden; }
             th { background-color: #f2f2f2 !important; font-weight: bold; }
-            td:nth-child(2) { text-align: left !important; } /* Ad Soyad sola dayalı */
-            .header-box { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-            .info-box { border: 1px solid #000; padding: 10px; margin-bottom: 15px; background: #fff; font-size: 11px; }
-            .stats-box { margin-top: 15px; border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold; font-size: 11px; }
+            td:nth-child(2) { text-align: left !important; }
         </style>
     `;
 
@@ -1055,27 +1029,20 @@ function exportTableToWord(elementId, filename) {
 
 function openBulkStudentModal(grade, branchName) {
     const content = `
-        <p style="color:#cbd5e1; font-size:13px; margin-bottom:10px;">
-            ℹ️ e-Okul veya Excel'deki öğrenci listesini kopyalayıp buraya yapıştırın:
-        </p>
-        <textarea id="bulk-student-text" class="auth-input" style="height:180px; font-family:monospace; font-size:12px;" placeholder="2\tMUHAMMED HALİL İBRAHİM VARLI\n29\tİREM DİNÇ..."></textarea>
+        <p style="color:#cbd5e1; font-size:12px; margin-bottom:8px;">e-Okul listesini kopyalayıp yapıştırın:</p>
+        <textarea id="bulk-student-text" class="auth-input" style="height:140px; font-family:monospace; font-size:11px;" placeholder="2\tMUHAMMED HALİL...\n29\tİREM DİNÇ..."></textarea>
     `;
 
     openModal(`Toplu Öğrenci Aktar (${branchName})`, content, async () => {
         const rawText = document.getElementById('bulk-student-text').value.trim();
-        if (!rawText) {
-            alert('Lütfen listeyi yapıştırın!');
-            return;
-        }
+        if (!rawText) { alert('Liste yapıştırın!'); return; }
 
         const lines = rawText.split('\n');
         let addedCount = 0;
 
         for (let line of lines) {
             let parts = line.split('\t');
-            if (parts.length < 2) {
-                parts = line.trim().split(/\s{2,}/);
-            }
+            if (parts.length < 2) parts = line.trim().split(/\s{2,}/);
 
             if (parts.length >= 2) {
                 let schoolNo = parseInt(parts[0].trim());
@@ -1088,10 +1055,7 @@ function openBulkStudentModal(grade, branchName) {
                             branch: branchName,
                             school_no: schoolNo,
                             name: studentName,
-                            plus: 0,
-                            minus: 0,
-                            quiz: {},
-                            scale: {}
+                            plus: 0, minus: 0, quiz: {}, scale: {}
                         }]);
                     }
                     addedCount++;
@@ -1104,7 +1068,7 @@ function openBulkStudentModal(grade, branchName) {
             fenData[grade].branches[branchName].sort((a, b) => parseInt(a.no) - parseInt(b.no));
         }
 
-        alert(`Toplam ${addedCount} öğrenci başarıyla eklendi!`);
+        alert(`${addedCount} öğrenci eklendi!`);
         closeModal();
         openBranchDetail(grade, branchName, 'students', false);
     });
@@ -1126,7 +1090,7 @@ function renderQuizTable(grade, branchName) {
     if (!container) return;
 
     if (!unitName || !secName) {
-        container.innerHTML = '<p style="color:#94a3b8;">Lütfen ünite ve bölüm seçin.</p>';
+        container.innerHTML = '<p style="color:#94a3b8; font-size:12px;">Lütfen ünite ve bölüm seçin.</p>';
         return;
     }
 
@@ -1137,28 +1101,38 @@ function renderQuizTable(grade, branchName) {
         const currentScore = s.quiz?.[key] ?? '';
         
         rows += `<tr>
-            <td style="width: 15%; text-align: center; vertical-align: middle;">${s.no}</td>
-            <td style="width: 55%; font-weight: 600; text-align: left; padding-left: 10px; white-space: normal; word-break: break-word; vertical-align: middle;">${s.name}</td>
-            <td style="width: 30%; text-align: center; vertical-align: middle;"><input type="number" id="quiz-score-${idx}" class="auth-input" style="padding: 6px; width: 85px; margin: 0 auto; display: block;" value="${currentScore}" placeholder="Not gir" onwheel="this.blur()"></td>
+            <td style="text-align: center;">${s.no}</td>
+            <td style="font-weight: 600; text-align: left;">${s.name}</td>
+            <td style="text-align: center;"><input type="number" id="quiz-score-${idx}" class="auth-input" style="padding: 4px; width: 65px; margin: 0 auto; text-align:center;" value="${currentScore}" placeholder="Not" onwheel="this.blur()"></td>
         </tr>`;
     });
 
     container.innerHTML = `
-        <div class="table-responsive" style="overflow-x: hidden; width: 100%;">
-            <table class="data-table" id="export-quiz-table" style="width: 100%; table-layout: fixed;">
-                <thead>
-                    <tr>
-                        <th style="width: 15%; text-align: center;">NO</th>
-                        <th style="width: 55%; text-align: left; padding-left: 10px;">AD SOYAD</th>
-                        <th style="width: 30%; text-align: center;">QUİZ NOTU</th>
-                    </tr>
-                </thead>
-                <tbody>${rows || '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Öğrenci yok.</td></tr>'}</tbody>
-            </table>
+        <div id="quiz-printable-area" style="background: #ffffff; color: #000; padding: 15px; border-radius: 10px;">
+            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px;">
+                <h2 style="font-size: 14px; font-weight: bold; margin: 0 0 3px 0;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                <h3 style="font-size: 12px; font-weight: bold; margin: 0;">${grade}. SINIF (${branchName}) - QUİZ DEĞERLENDİRME RAPORU</h3>
+            </div>
+            <div style="border: 1px solid #000; padding: 8px; margin-bottom: 12px; font-size: 11px;">
+                <p style="margin: 2px 0;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                <p style="margin: 2px 0;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table" id="export-quiz-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f2f2f2;">
+                            <th style="text-align: center; width: 20%;">NO</th>
+                            <th style="text-align: left; width: 50%;">AD SOYAD</th>
+                            <th style="text-align: center; width: 30%;">QUİZ NOTU</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows || '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Öğrenci yok.</td></tr>'}</tbody>
+                </table>
+            </div>
         </div>
-        <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap; align-items:center;">
-            <button onclick="saveQuizScores('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:10px 20px;">Quiz Notlarını Kaydet</button>
-            <button onclick="exportTableToWord('export-quiz-table', '${branchName}_Quiz_Sonuclari')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 16px;">📥 Word İndir</button>
+        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <button onclick="saveQuizScores('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:8px 14px; font-size:12px;">Notları Kaydet</button>
+            <button onclick="exportTableToWord('quiz-printable-area', '${branchName}_Quiz_Sonuclari')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px; font-size:12px;">📥 Word İndir</button>
         </div>
     `;
 }
@@ -1255,7 +1229,7 @@ function renderGroupedActivityTable(grade, branchName) {
     if (!container) return;
 
     if (!baseActName) {
-        container.innerHTML = '<p style="color:#94a3b8;">Lütfen bir etkinlik seçin.</p>';
+        container.innerHTML = '<p style="color:#94a3b8; font-size:12px;">Lütfen etkinlik seçin.</p>';
         return;
     }
 
@@ -1263,7 +1237,7 @@ function renderGroupedActivityTable(grade, branchName) {
     const subScales = allActs.filter(a => a.unit === unitName && a.section === secName && (a.name === baseActName || a.name.startsWith(baseActName + ' -')));
 
     if (subScales.length === 0) {
-        container.innerHTML = '<p style="color:#94a3b8;">Ölçek bulunamadı.</p>';
+        container.innerHTML = '<p style="color:#94a3b8; font-size:12px;">Ölçek bulunamadı.</p>';
         return;
     }
 
@@ -1277,11 +1251,11 @@ function renderGroupedActivityTable(grade, branchName) {
 
         let headerTh = '<th>No</th><th>Ad Soyad</th>';
         criteria.forEach(c => { headerTh += `<th>${c}</th>`; });
-        headerTh += '<th>Başarı (%)</th>';
+        headerTh += '<th>Başarı</th>';
 
         let rows = '';
         students.forEach((s) => {
-            let cols = `<td>${s.no}</td><td style="font-weight: 600; white-space: normal; word-break: break-word;">${s.name}</td>`;
+            let cols = `<td>${s.no}</td><td style="font-weight: 600;">${s.name}</td>`;
             let storedScale = s.scale?.[selectedScaleName];
             
             if (!storedScale || storedScale['totalScore'] === undefined) {
@@ -1292,14 +1266,14 @@ function renderGroupedActivityTable(grade, branchName) {
                     let val = storedScale[cIdx] !== undefined ? storedScale[cIdx] : (scaleType === '1-4' ? 4 : 1);
                     let textLabel = val;
                     if (scaleType === '1-4') {
-                        if (val == 4) textLabel = '4 - Çok İyi';
-                        else if (val == 3) textLabel = '3 - İyi';
-                        else if (val == 2) textLabel = '2 - Geliş.';
-                        else if (val == 1) textLabel = '1 - Yetersiz';
+                        if (val == 4) textLabel = '4';
+                        else if (val == 3) textLabel = '3';
+                        else if (val == 2) textLabel = '2';
+                        else if (val == 1) textLabel = '1';
                     } else if (scaleType === 'var-yok') textLabel = val == 1 ? 'Var' : 'Yok';
                     else textLabel = val == 1 ? 'Evet' : 'Hayır';
 
-                    cols += `<td><span style="color:#38bdf8; font-size:12px;">${textLabel}</span></td>`;
+                    cols += `<td><span style="color:#38bdf8;">${textLabel}</span></td>`;
                 });
                 cols += `<td><b style="color:#34d399;">%${storedScale['totalScore']}</b></td>`;
             }
@@ -1307,25 +1281,25 @@ function renderGroupedActivityTable(grade, branchName) {
         });
 
         container.innerHTML = `
-            <div id="activity-printable-area" style="background: #ffffff; color: #000; padding: 20px;">
-                <div class="header-box" style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
-                    <h2 style="font-size: 16px; margin-bottom: 4px;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL</h2>
-                    <h3 style="font-size: 14px; margin-bottom: 0;">TEKİL ÖLÇEK DEĞERLENDİRME RAPORU</h3>
+            <div id="activity-printable-area" style="background: #ffffff; color: #000; padding: 15px; border-radius: 10px;">
+                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px;">
+                    <h2 style="font-size: 14px; font-weight: bold; margin: 0 0 3px 0;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                    <h3 style="font-size: 12px; font-weight: bold; margin: 0;">${grade}. SINIF (${branchName}) - TEKİL ÖLÇEK RAPORU</h3>
                 </div>
-                <div class="info-box" style="border: 1px solid #000; padding: 10px; margin-bottom: 15px;">
-                    <p style="font-size: 12px; margin: 3px 0;"><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                    <p style="font-size: 12px; margin: 3px 0;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
-                    <p style="font-size: 12px; margin: 3px 0;"><b>Ölçek Adı:</b> ${scaleObj.name}</p>
+                <div style="border: 1px solid #000; padding: 8px; margin-bottom: 12px; font-size: 11px;">
+                    <p style="margin: 2px 0;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                    <p style="margin: 2px 0;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
+                    <p style="margin: 2px 0;"><b>Ölçek Adı:</b> ${scaleObj.name}</p>
                 </div>
                 <div class="table-responsive">
                     <table class="data-table" id="export-activity-table" style="width: 100%; border-collapse: collapse;">
                         <thead><tr style="background: #f2f2f2;">${headerTh}</tr></thead>
-                        <tbody>${rows || '<tr><td colspan="10" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
+                        <tbody>${rows}</tbody>
                     </table>
                 </div>
             </div>
-            <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap;">
-                <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Etkinlik_Olcegi')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 16px;">📥 Word İndir</button>
+            <div style="display:flex; gap:8px; margin-top:10px;">
+                <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#2563eb; width:auto; padding:6px 12px; font-size:11px;">📥 Word İndir</button>
             </div>
         `;
         return;
@@ -1333,20 +1307,19 @@ function renderGroupedActivityTable(grade, branchName) {
 
     const students = fenData[grade]?.branches[branchName] || [];
 
-    let headerTh = '<th>No</th><th>Ad Soyad</th><th>⚡ TOPLU PUAN (0-100)</th>';
+    let headerTh = '<th>No</th><th>Ad Soyad</th><th>⚡ PUAN</th>';
     subScales.forEach(scale => {
         let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
         if (!shortName) shortName = scale.name;
-        headerTh += `<th>${shortName} (% Ort.)</th>`;
+        headerTh += `<th>${shortName}</th>`;
     });
 
     let rows = '';
     students.forEach((s, sIdx) => {
-        let cols = `<td>${s.no}</td><td style="font-weight: 600; white-space: normal; word-break: break-word;">${s.name}</td>`;
+        let cols = `<td>${s.no}</td><td style="font-weight: 600;">${s.name}</td>`;
         
-        // Buton kaldırıldı, oninput ile yazıldığı an otomatik uygulanıyor
         cols += `<td>
-            <input type="number" id="group-quick-input-${sIdx}" class="auth-input" style="padding:6px; width:100px; font-size:12px; text-align:center; display:block; margin:0 auto;" min="0" max="100" placeholder="Örn: 85" oninput="autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})" onwheel="this.blur()">
+            <input type="number" id="group-quick-input-${sIdx}" class="auth-input" style="padding:4px; width:70px; font-size:11px; text-align:center; display:block; margin:0 auto;" min="0" max="100" placeholder="85" oninput="autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})" onwheel="this.blur()">
         </td>`;
 
         subScales.forEach((scale, scaleIdx) => {
@@ -1360,30 +1333,29 @@ function renderGroupedActivityTable(grade, branchName) {
     });
 
     container.innerHTML = `
-        <div id="activity-printable-area" style="background: #ffffff; color: #000; padding: 20px;">
-            <div class="header-box" style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
-                <h2 style="font-size: 16px; margin-bottom: 4px;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL</h2>
-                <h3 style="font-size: 14px; margin-bottom: 0;">TÜM ÖLÇEKLER DEĞERLENDİRME RAPORU</h3>
+        <div id="activity-printable-area" style="background: #ffffff; color: #000; padding: 15px; border-radius: 10px;">
+            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px;">
+                <h2 style="font-size: 14px; font-weight: bold; margin: 0 0 3px 0;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                <h3 style="font-size: 12px; font-weight: bold; margin: 0;">${grade}. SINIF (${branchName}) - TÜM ÖLÇEKLER RAPORU</h3>
             </div>
-            <div class="info-box" style="border: 1px solid #000; padding: 10px; margin-bottom: 15px;">
-                <p style="font-size: 12px; margin: 3px 0;"><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                <p style="font-size: 12px; margin: 3px 0;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
+            <div style="border: 1px solid #000; padding: 8px; margin-bottom: 12px; font-size: 11px;">
+                <p style="margin: 2px 0;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                <p style="margin: 2px 0;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
             </div>
             <div class="table-responsive">
                 <table class="data-table" id="export-activity-table" style="width: 100%; border-collapse: collapse;">
                     <thead><tr style="background: #f2f2f2;">${headerTh}</tr></thead>
-                    <tbody>${rows || '<tr><td colspan="10" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
+                    <tbody>${rows}</tbody>
                 </table>
             </div>
         </div>
-        <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap; align-items:center;">
-            <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\\\'")}')" class="auth-btn" style="width:auto; padding:10px 20px;">Tüm Ölçek Puanlarını Kaydet</button>
-            <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 16px;">📥 Word İndir</button>
+        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px; font-size:12px;">Puanları Kaydet</button>
+            <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:6px 12px; font-size:11px;">📥 Word İndir</button>
         </div>
     `;
 }
 
-// Yazıldığı an otomatik güncelleyen fonksiyon
 function autoApplyScoreToSubScales(sIdx, baseActName, subScalesCount) {
     const inputEl = document.getElementById(`group-quick-input-${sIdx}`);
     if (!inputEl) return;
@@ -1450,7 +1422,7 @@ async function saveGroupScaleScores(grade, branchName, baseActName) {
     }
 
     await loadAllDataFromSupabase();
-    alert('Puanlar başarıyla kaydedildi!');
+    alert('Puanlar kaydedildi!');
 }
 
 function loadSectionsForReport(unitName, grade, branchName) {
@@ -1469,15 +1441,29 @@ async function renderReportData(grade, branchName) {
     if (!container) return;
 
     if (!unitName || !secName) {
-        container.innerHTML = '<p style="color:#94a3b8;">Lütfen ünite ve bölüm seçin.</p>';
+        container.innerHTML = '<p style="color:#94a3b8; font-size:12px;">Lütfen ünite ve bölüm seçin.</p>';
         return;
+    }
+
+    let customReportText = "Bu bölüm için henüz resmi rapor şablonu eklenmemiş.";
+    if (supabaseClient) {
+        const { data, error } = await supabaseClient
+            .from('report_templates')
+            .select('report_text')
+            .eq('grade', grade)
+            .eq('unit_name', unitName)
+            .eq('section_name', secName)
+            .single();
+        if (!error && data && data.report_text) {
+            customReportText = data.report_text;
+        }
     }
 
     const students = fenData[grade]?.branches[branchName] || [];
     const allActs = fenData[grade]?.activities || [];
     const sectionActivities = allActs.filter(a => a.unit === unitName && a.section === secName);
 
-    let headerTh = '<th>No</th><th>Ad Soyad</th><th>Quiz Sonucu</th><th>Ölçek Ortalaması</th><th>Genel Ortalama</th>';
+    let headerTh = '<th>No</th><th>Ad Soyad</th><th>Quiz</th><th>Ölçek</th><th>Genel</th>';
 
     let allGradesForStats = [];
     let allScaleScoresForStats = [];
@@ -1490,8 +1476,8 @@ async function renderReportData(grade, branchName) {
 
         if (qScore !== null) allQuizScoresForStats.push(qScore);
 
-        let cols = `<td>${s.no}</td><td style="font-weight: 600; white-space: normal; word-break: break-word;">${s.name}</td>`;
-        cols += `<td>${qScore !== null ? qScore + ' Puan' : 'Girilmedi'}</td>`;
+        let cols = `<td>${s.no}</td><td style="font-weight: 600;">${s.name}</td>`;
+        cols += `<td>${qScore !== null ? qScore : '-'}</td>`;
 
         let scaleScoreSum = 0;
         let scaleScoreCount = 0;
@@ -1510,7 +1496,7 @@ async function renderReportData(grade, branchName) {
             allScaleScoresForStats.push(sectionScaleAvg);
             cols += `<td><b>%${sectionScaleAvg}</b></td>`;
         } else {
-            cols += `<td style="color: #64748b;">Değerlendirilmedi</td>`;
+            cols += `<td style="color: #64748b;">-</td>`;
         }
 
         let generalAvg = null;
@@ -1533,96 +1519,61 @@ async function renderReportData(grade, branchName) {
     });
 
     let classQuizAvg = allQuizScoresForStats.length > 0 ? Math.round(allQuizScoresForStats.reduce((a, b) => a + b, 0) / allQuizScoresForStats.length) : '-';
-    let classScaleAvg = allScaleScoresForStats.length > 0 ? '%' + Math.round(allScaleScoresForStats.reduce((a, b) => a + b, 0) / allScaleScoresForStats.length) : '100%';
+    let classScaleAvg = allScaleScoresForStats.length > 0 ? '%' + Math.round(allScaleScoresForStats.reduce((a, b) => a + b, 0) / allScaleScoresForStats.length) : '-';
 
-    let totalEvaluated = allGradesForStats.length;
     let countLow = allGradesForStats.filter(g => g < 45).length;
     let countMid = allGradesForStats.filter(g => g >= 45 && g < 70).length;
     let countHigh = allGradesForStats.filter(g => g >= 70).length;
 
-    let pctLow = totalEvaluated > 0 ? Math.round((countLow / totalEvaluated) * 100) : 0;
-    let pctMid = totalEvaluated > 0 ? Math.round((countMid / totalEvaluated) * 100) : 0;
-    let pctHigh = totalEvaluated > 0 ? Math.round((countHigh / totalEvaluated) * 100) : 0;
-
     container.innerHTML = `
-        <div id="report-printable-area" style="background: #ffffff; color: #000; padding: 25px; border-radius: 12px; border: 1px solid #cbd5e1;">
-            <!-- ÜST KURUMSAL BAŞLIK ALANI -->
-            <div class="header-box" style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 12px;">
-                <h2 style="color: #000; font-size: 16px; font-weight: 700; margin-bottom: 4px;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                <h3 style="color: #000; font-size: 14px; font-weight: 600; margin-bottom: 0;">${grade}. SINIF (${branchName}) SINIF KARNESİ VE RAPORU</h3>
+        <div id="report-printable-area" style="background: #ffffff; color: #000; padding: 20px; border-radius: 10px; font-family: 'Times New Roman', serif;">
+            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="font-size: 15px; font-weight: bold; margin: 0 0 4px 0;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                <h3 style="font-size: 13px; font-weight: bold; margin: 0;">${grade}. SINIF (${branchName}) - ÜNİTE VE BÖLÜM ANALİZİ & KARNE RAPORU</h3>
             </div>
-
-            <!-- BİLGİ ÇERÇEVESİ -->
-            <div class="info-box" style="border: 1px solid #000; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #fff;">
-                <p style="font-size: 13px; margin-bottom: 4px; color: #000;"><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                <p style="font-size: 13px; margin-bottom: 4px; color: #000;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
-                <p style="font-size: 13px; color: #000; margin-bottom: 0;"><b>Toplam Mevcut:</b> ${students.length} Öğrenci | <b>Sınıf Quiz Ort.:</b> ${classQuizAvg !== '-' ? classQuizAvg + ' Puan' : 'Girilmedi'} | <b>Sınıf Ölçek Ort.:</b> ${classScaleAvg}</p>
+            <div style="border: 1px solid #000; padding: 10px; margin-bottom: 15px; font-size: 11px;">
+                <p style="margin: 2px 0;"><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                <p style="margin: 2px 0;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
+                <p style="margin: 2px 0;"><b>Mevcut:</b> ${students.length} Öğrenci | <b>Quiz Ort.:</b> ${classQuizAvg} | <b>Ölçek Ort.:</b> ${classScaleAvg}</p>
             </div>
-
             <div class="table-responsive">
-                <table class="data-table" id="export-report-table" style="width: 100%; border-collapse: collapse; background: #ffffff; color: #000;">
-                    <thead>
-                        <tr style="background: #f2f2f2; color: #000;">${headerTh}</tr>
-                    </thead>
-                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#64748b;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
+                <table class="data-table" id="export-report-table" style="width: 100%; border-collapse: collapse; background: #fff; color: #000;">
+                    <thead><tr style="background: #f2f2f2;">${headerTh}</tr></thead>
+                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
                 </table>
             </div>
-
-            <!-- İSTATİSTİK ÖZET KARTI -->
-            <div class="stats-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 20px;">
-                <div style="border: 1px solid #000; padding: 10px; border-radius: 8px; text-align: center;">
-                    <h4 style="font-size: 12px; margin-bottom: 4px;">0 - 45 Puan Altı</h4>
-                    <p style="font-size: 15px; font-weight: 700; margin-bottom: 0;">${countLow} Öğrenci (%${pctLow})</p>
-                </div>
-                <div style="border: 1px solid #000; padding: 10px; border-radius: 8px; text-align: center;">
-                    <h4 style="font-size: 12px; margin-bottom: 4px;">45 - 70 Puan Arası</h4>
-                    <p style="font-size: 15px; font-weight: 700; margin-bottom: 0;">${countMid} Öğrenci (%${pctMid})</p>
-                </div>
-                <div style="border: 1px solid #000; padding: 10px; border-radius: 8px; text-align: center;">
-                    <h4 style="font-size: 12px; margin-bottom: 4px;">70 - 100 Puan Arası</h4>
-                    <p style="font-size: 15px; font-weight: 700; margin-bottom: 0;">${countHigh} Öğrenci (%${pctHigh})</p>
-                </div>
+            <div style="margin-top: 15px; border: 1px solid #000; padding: 12px; border-radius: 6px; background: #fafafa;">
+                <h4 style="font-size: 12px; font-weight: bold; margin: 0 0 6px 0; border-bottom: 1px solid #ccc; padding-bottom: 4px;">📌 Bölüm Sonu Resmi Değerlendirme Raporu</h4>
+                <p style="font-size: 11px; line-height: 1.4; margin: 0; white-space: pre-wrap;">${customReportText}</p>
+            </div>
+            <div style="margin-top: 15px; border: 1px solid #000; padding: 10px; font-size: 11px; display: flex; justify-content: space-around; text-align: center;">
+                <div><b>0-45 Altı:</b> ${countLow} Öğrenci</div>
+                <div><b>45-70 Arası:</b> ${countMid} Öğrenci</div>
+                <div><b>70-100 Arası:</b> ${countHigh} Öğrenci</div>
             </div>
         </div>
-
-        <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
-            <button onclick="exportTableToWord('report-printable-area', '${branchName}_${secName}_Raporu')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 16px;">📥 Word İndir</button>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+            <button onclick="exportTableToWord('report-printable-area', '${branchName}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px; font-size:12px;">📥 Word İndir</button>
         </div>
     `;
 }
 
 function addStudentModal(grade, branchName) {
     const content = `
-        <label style="color:#cbd5e1;">Okul No:</label><input type="number" id="s-no" class="auth-input" style="margin-bottom:10px;">
-        <label style="color:#cbd5e1;">Ad Soyad:</label><input type="text" id="s-name" class="auth-input">
+        <label style="color:#cbd5e1; font-size:12px;">Okul No:</label><input type="number" id="s-no" class="auth-input" style="margin-bottom:8px;">
+        <label style="color:#cbd5e1; font-size:12px;">Ad Soyad:</label><input type="text" id="s-name" class="auth-input">
     `;
     openModal("Öğrenci Ekle", content, async () => {
         const noInput = document.getElementById('s-no').value.trim();
         const name = document.getElementById('s-name').value.trim().toUpperCase();
         
-        if (!noInput || !name) {
-            alert('Lütfen okul no ve ad soyad girin.');
-            return;
-        }
-
+        if (!noInput || !name) { alert('Alanları doldurun.'); return; }
         const no = parseInt(noInput);
 
         if (supabaseClient) {
-            const { error } = await supabaseClient.from('students').insert([{
-                grade: grade,
-                branch: branchName,
-                school_no: no,
-                name: name,
-                plus: 0,
-                minus: 0,
-                quiz: {},
-                scale: {}
+            await supabaseClient.from('students').insert([{
+                grade: grade, branch: branchName, school_no: no, name: name, plus: 0, minus: 0, quiz: {}, scale: {}
             }]);
-
-            if (error) {
-                alert('Hata: ' + error.message);
-                return;
-            }
         }
 
         await loadAllDataFromSupabase();
@@ -1643,10 +1594,7 @@ async function updatePoint(grade, branchName, index, type, val) {
     else student.minus += val;
 
     if (supabaseClient) {
-        await supabaseClient.from('students').update({
-            plus: student.plus,
-            minus: student.minus
-        }).eq('grade', grade).eq('branch', branchName).eq('school_no', student.no);
+        await supabaseClient.from('students').update({ plus: student.plus, minus: student.minus }).eq('grade', grade).eq('branch', branchName).eq('school_no', student.no);
     }
 
     await loadAllDataFromSupabase();
@@ -1693,13 +1641,11 @@ async function studentLogin(push = true) {
     renderStudentPanelView(grade, branch, foundStudent, push);
 }
 
-// ÖĞRENCİ PANELİ: Ünite ve Bölüm Bazlı Quiz & Etkinlik Ortalamaları (Canlı Renkler)
 function renderStudentPanelView(grade, branch, student, push = true) {
     const state = { type: 'student', grade, branch, student };
     sessionStorage.setItem('fen_app_state', JSON.stringify(state));
-    if (push) {
-        history.pushState(state, '', '#ogrenci-paneli');
-    }
+    if (push) history.pushState(state, '', '#ogrenci-paneli');
+
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('teacher-panel').style.display = 'none';
     document.getElementById('grade-detail-panel').style.display = 'none';
@@ -1711,7 +1657,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
     const classUnits = fenData[grade]?.units || [];
 
-    // 1. Quizleri Topla ve Sırala
     let quizRows = '';
     let totalQuizScore = 0;
     let quizCount = 0;
@@ -1723,8 +1668,8 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 if (student.quiz && student.quiz[qKey] !== undefined && student.quiz[qKey] !== '') {
                     let score = student.quiz[qKey];
                     quizRows += `<tr>
-                        <td style="border:1px solid #000; padding:6px; text-align:left;"><b>${u.name}</b> / ${sec}</td>
-                        <td style="border:1px solid #000; padding:6px; text-align:center; color:#0284c7;"><b>${score} Puan</b></td>
+                        <td style="padding:6px; text-align:left;"><b>${u.name}</b> / ${sec}</td>
+                        <td style="padding:6px; text-align:center; color:#0284c7;"><b>${score} Puan</b></td>
                     </tr>`;
                     totalQuizScore += parseFloat(score);
                     quizCount++;
@@ -1734,7 +1679,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
     });
     let avgQuiz = quizCount > 0 ? Math.round(totalQuizScore / quizCount) : 0;
 
-    // 2. Bölüm Bazlı Etkinlik Ortalamalarını Hesapla ve Listele
     let scaleRows = '';
     let totalScaleScore = 0;
     let scaleCount = 0;
@@ -1757,8 +1701,8 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 if (secScoreCount > 0) {
                     let secAvg = Math.round(secScoreSum / secScoreCount);
                     scaleRows += `<tr>
-                        <td style="border:1px solid #000; padding:6px; text-align:left;"><b>${u.name}</b> / ${sec}</td>
-                        <td style="border:1px solid #000; padding:6px; text-align:center;"><b style="color:#0284c7; font-size:13px;">%${secAvg} Başarı</b></td>
+                        <td style="padding:6px; text-align:left;"><b>${u.name}</b> / ${sec}</td>
+                        <td style="padding:6px; text-align:center;"><b style="color:#0284c7;">%${secAvg}</b></td>
                     </tr>`;
                     totalScaleScore += secAvg;
                     scaleCount++;
@@ -1768,81 +1712,62 @@ function renderStudentPanelView(grade, branch, student, push = true) {
     });
     let avgScale = scaleCount > 0 ? Math.round(totalScaleScore / scaleCount) : 0;
 
-    // Genel Ortalama Hesaplama (%50 Quiz + %50 Etkinlik)
     let generalAvg = 0;
     if (quizCount > 0 && scaleCount > 0) generalAvg = Math.round((avgQuiz * 0.5) + (avgScale * 0.5));
     else if (quizCount > 0) generalAvg = avgQuiz;
     else if (scaleCount > 0) generalAvg = avgScale;
 
-    // Rozet Belirleme Mantığı
-    let badgeHtml = '';
-    if (generalAvg >= 85) {
-        badgeHtml = `<div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 15px; border-radius: 12px; color: white; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(245,158,11,0.3);">
-            <span style="font-size: 32px;">🏆</span>
-            <h3 style="margin: 5px 0 2px; font-size: 18px;">Fen Bilimleri Yıldızı Rozeti</h3>
-            <p style="margin: 0; font-size: 13px; opacity: 0.9;">Harika bir performans! Sınıfının en başarılı öğrencilerinden birisin.</p>
-        </div>`;
-    } else if (generalAvg >= 70) {
-        badgeHtml = `<div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 15px; border-radius: 12px; color: white; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(59,130,246,0.3);">
-            <span style="font-size: 32px;">⭐</span>
-            <h3 style="margin: 5px 0 2px; font-size: 18px;">Süper Başarı Rozeti</h3>
-            <p style="margin: 0; font-size: 13px; opacity: 0.9;">Çok iyi gidiyorsun! İstikrarlı çalışman meyvelerini veriyor.</p>
-        </div>`;
-    } else if (generalAvg > 0) {
-        badgeHtml = `<div style="background: linear-gradient(135deg, #10b981, #047857); padding: 15px; border-radius: 12px; color: white; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
-            <span style="font-size: 32px;">🚀</span>
-            <h3 style="margin: 5px 0 2px; font-size: 18px;">Yükselen Trend Rozeti</h3>
-            <p style="margin: 0; font-size: 13px; opacity: 0.9;">Gayretin göz kamaştırıyor, biraz daha gayretle zirveye çıkabilirsin!</p>
-        </div>`;
-    } else {
-        badgeHtml = `<div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; color: #94a3b8; text-align: center; margin-bottom: 20px;">
-            <span>🎯</span>
-            <p style="margin: 0; font-size: 13px;">Not ve etkinlik girişleri yapıldıkça rozetlerin burada görünecek!</p>
-        </div>`;
-    }
+    let badgeHtml = generalAvg >= 85 ? 
+        `<div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 12px; border-radius: 10px; color: white; text-align: center; margin-bottom: 15px;"><span style="font-size: 24px;">🏆</span><h3 style="margin: 4px 0 2px; font-size: 15px;">Fen Bilimleri Yıldızı</h3></div>` :
+        generalAvg >= 70 ? `<div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 12px; border-radius: 10px; color: white; text-align: center; margin-bottom: 15px;"><span style="font-size: 24px;">⭐</span><h3 style="margin: 4px 0 2px; font-size: 15px;">Süper Başarı</h3></div>` : '';
 
     studentPanel.innerHTML = `
         <header class="teacher-header">
-            <div class="header-brand">
-                <h1>Öğrenci Gelişim Paneli - ${student.name} (${branch})</h1>
-            </div>
-            <div>
-                <button onclick="logoutStudent()" class="logout-btn">Çıkış Yap</button>
-            </div>
+            <div class="header-brand"><h1>${student.name} (${branch})</h1></div>
+            <div><button onclick="logoutStudent()" class="logout-btn">Çıkış</button></div>
         </header>
-        <section class="dashboard-content" style="max-width: 900px; margin: 0 auto;">
+        <section class="dashboard-content" style="max-width: 600px; margin: 0 auto;">
             ${badgeHtml}
 
-            <!-- KARNE ÖZET KARTI -->
-            <div id="student-report-card" style="background: #ffffff; color: #000; padding: 25px; border-radius: 16px; border: 1px solid #cbd5e1; margin-bottom: 20px;">
-                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 15px;">
-                    <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL PORTALI</h2>
-                    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 0;">ÖĞRENCİ GELİŞİM VE KARNE RAPORU</h3>
+            <!-- KARNE ÖZETİ -->
+            <div id="student-report-card" style="background: #ffffff; color: #000; padding: 15px; border-radius: 12px; border: 1px solid #cbd5e1; margin-bottom: 15px;">
+                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px;">
+                    <h2 style="font-size: 14px; font-weight: bold; margin: 0 0 3px 0;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                    <h3 style="font-size: 12px; font-weight: bold; margin: 0;">ÖĞRENCİ GELİŞİM VE KARNE RAPORU</h3>
                 </div>
-                <div style="border: 1px solid #000; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #fff;">
-                    <p style="font-size: 13px; margin: 3px 0;"><b>Öğrenci Adı:</b> ${student.name}</p>
-                    <p style="font-size: 13px; margin: 3px 0;"><b>Okul No / Şube:</b> ${student.no} | ${grade}. Sınıf - ${branch}</p>
-                    <p style="font-size: 13px; margin: 3px 0;"><b>Quiz Ortalama Puanı:</b> ${quizCount > 0 ? avgQuiz + ' Puan' : 'Henüz not yok'}</p>
-                    <p style="font-size: 13px; margin: 3px 0;"><b>Etkinlik Başarı Ortalaması:</b> ${scaleCount > 0 ? '%' + avgScale : 'Henüz ölçek yok'}</p>
-                    <p style="font-size: 13px; margin: 3px 0; font-weight: bold;"><b>Genel Başarı Puanı:</b> %${generalAvg}</p>
+                <div style="border: 1px solid #000; padding: 10px; border-radius: 6px; background: #fff; font-size: 12px;">
+                    <p style="margin: 2px 0;"><b>Adı:</b> ${student.name}</p>
+                    <p style="margin: 2px 0;"><b>No / Şube:</b> ${student.no} | ${grade}. Sınıf - ${branch}</p>
+                    <p style="margin: 2px 0;"><b>Quiz Ort:</b> ${quizCount > 0 ? avgQuiz + ' Puan' : '-'}</p>
+                    <p style="margin: 2px 0;"><b>Etkinlik Ort:</b> ${scaleCount > 0 ? '%' + avgScale : '-'}</p>
+                    <p style="margin: 2px 0; font-weight: bold;"><b>Genel Puan:</b> %${generalAvg}</p>
                 </div>
-
-                <h4 style="font-size: 14px; margin-bottom: 8px; color: #000;">📝 Ünite ve Bölümlere Göre Quiz Sonuçlarım</h4>
-                <table class="data-table" style="width: 100%; border-collapse: collapse; margin-bottom: 15px; color: #000;">
-                    <thead><tr style="background: #f2f2f2;"><th style="border:1px solid #000; padding:6px; text-align:left;">Ünite ve Bölüm</th><th style="border:1px solid #000; padding:6px; text-align:center;">Not</th></tr></thead>
-                    <tbody>${quizRows || '<tr><td colspan="2" style="border:1px solid #000; text-align:center; padding:6px;">Henüz quiz notu girilmemiş.</td></tr>'}</tbody>
-                </table>
-
-                <h4 style="font-size: 14px; margin-bottom: 8px; color: #000;">🧪 Bölüm Bazlı Etkinlik Başarı Ortalamalarım</h4>
-                <table class="data-table" style="width: 100%; border-collapse: collapse; color: #000;">
-                    <thead><tr style="background: #f2f2f2;"><th style="border:1px solid #000; padding:6px; text-align:left;">Ünite ve Bölüm</th><th style="border:1px solid #000; padding:6px; text-align:center;">Bölüm Etkinlik Ortalaması</th></tr></thead>
-                    <tbody>${scaleRows || '<tr><td colspan="2" style="border:1px solid #000; text-align:center; padding:6px;">Henüz etkinlik değerlendirmesi yok.</td></tr>'}</tbody>
-                </table>
             </div>
 
-            <!-- KARNEYİ İNDİR BUTONU -->
-            <div style="display:flex; justify-content:center; margin-bottom: 30px;">
-                <button onclick="exportTableToWord('student-report-card', '${student.name.replace(/\s+/g, '_')}_Karne_Raporu')" class="auth-btn" style="background:#2563eb; width:auto; padding:12px 24px; font-size:15px; font-weight:600;">📥 Karnemi Word Olarak İndir</button>
+            <!-- TABLO 1: QUİZLER (KAYDIRILABİLİR KUTU) -->
+            <div style="background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 15px;">
+                <h4 style="font-size: 13px; margin-bottom: 8px; color: #f8fafc;">📝 Quiz Sonuçlarım</h4>
+                <div class="table-responsive">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                        <thead><tr style="background:#f2f2f2;"><th style="text-align:left;">Ünite ve Bölüm</th><th style="text-align:center;">Not</th></tr></thead>
+                        <tbody>${quizRows || '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Quiz notu yok.</td></tr>'}</tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TABLO 2: ETKİNLİKLER (KAYDIRILABİLİR KUTU) -->
+            <div style="background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 15px;">
+                <h4 style="font-size: 13px; margin-bottom: 8px; color: #f8fafc;">🧪 Etkinlik Ortalamalarım</h4>
+                <div class="table-responsive">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                        <thead><tr style="background:#f2f2f2;"><th style="text-align:left;">Ünite ve Bölüm</th><th style="text-align:center;">Ortalama</th></tr></thead>
+                        <tbody>${scaleRows || '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Etkinlik yok.</td></tr>'}</tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:center; margin-bottom: 20px;">
+                <button onclick="exportTableToWord('student-report-card', '${student.name.replace(/\s+/g, '_')}_Karne')" class="auth-btn" style="background:#2563eb; width:auto; padding:10px 18px; font-size:13px;">📥 Karnemi Word İndir</button>
             </div>
         </section>
     `;
