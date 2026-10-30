@@ -957,10 +957,10 @@ function loadBranchTabContent(tabType, grade, branchName) {
         let rows = '';
         students.forEach((s, idx) => {
             rows += `<tr>
-                <td style="color: #000; font-weight: bold;">${s.no}</td>
-                <td style="color: #000; font-weight: bold; text-align: left;">${s.name}</td>
-                <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'plus', 1)" style="background:#10b981; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;">+</button> <span style="color: #000; font-weight: bold;">${s.plus}</span></td>
-                <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'minus', 1)" style="background:#ef4444; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;">-</button> <span style="color: #000; font-weight: bold;">${s.minus}</span></td>
+                <td style="color: #000000 !important; font-weight: bold !important;">${s.no}</td>
+                <td style="color: #000000 !important; font-weight: bold !important; text-align: left !important;">${s.name}</td>
+                <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'plus', 1)" style="background:#10b981; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;">+</button> <span style="color: #000000 !important; font-weight: bold !important;">${s.plus}</span></td>
+                <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'minus', 1)" style="background:#ef4444; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;">-</button> <span style="color: #000000 !important; font-weight: bold !important;">${s.minus}</span></td>
                 <td><button onclick="deleteStudent('${grade}', '${branchName}', ${idx})" style="background:#64748b; color:white; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;">Sil</button></td>
             </tr>`;
         });
@@ -976,7 +976,7 @@ function loadBranchTabContent(tabType, grade, branchName) {
             <div class="table-responsive">
                 <table class="data-table" id="export-target-table">
                     <thead><tr><th>No</th><th>Ad Soyad</th><th>Artı</th><th>Eksi</th><th>İşlem</th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
+                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#000000 !important; font-weight:bold !important;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
                 </table>
             </div>
             <div style="display:flex; gap:8px; margin-top:10px;">
@@ -1028,7 +1028,7 @@ function exportTableToWord(elementId, filename) {
             div.Section1 { page: Section1; }
             body { font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.4; }
             table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; page-break-inside: avoid; }
-            th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; word-wrap: break-word; overflow: hidden; color: #000 !important; font-weight: bold !important; }
+            th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; word-wrap: break-word; overflow: hidden; color: #000000 !important; font-weight: bold !important; }
             th { background-color: #f2f2f2 !important; }
             td:nth-child(2) { text-align: left !important; }
             div, p, ul, li { page-break-inside: avoid; break-inside: avoid; }
@@ -1054,15 +1054,15 @@ function exportReportToWord(filename) {
             div.Section1 { page: Section1; }
             body { font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.4; }
             table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-            th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; word-wrap: break-word; overflow: hidden; color: #000 !important; font-weight: bold !important; }
+            th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; word-wrap: break-word; overflow: hidden; color: #000000 !important; font-weight: bold !important; }
             th { background-color: #f2f2f2 !important; }
             td:nth-child(2) { text-align: left !important; }
             
             .page-break { page-break-before: always; mso-break-type: page-break; clear: both; display: block; }
             .report-box { border: 1px solid #000; padding: 12px; margin-top: 15px; background: #fafafa; }
             ul { margin: 5px 0 10px 20px; padding: 0; }
-            li { margin-bottom: 4px; font-size: 11px; line-height: 1.4; text-align: left; color: #000 !important; font-weight: bold !important; }
-            h4 { font-size: 12px; font-weight: bold; margin: 10px 0 6px 0; color: #000 !important; }
+            li { margin-bottom: 4px; font-size: 11px; line-height: 1.4; text-align: left; color: #000000 !important; font-weight: bold !important; }
+            h4 { font-size: 12px; font-weight: bold; margin: 10px 0 6px 0; color: #000000 !important; }
         </style>
     `;
 
@@ -1154,9 +1154,9 @@ function renderQuizTable(grade, branchName) {
         const currentScore = s.quiz?.[key] ?? '';
         
         rows += `<tr>
-            <td style="text-align: center; color: #000; font-weight: bold;">${s.no}</td>
-            <td style="font-weight: bold; text-align: left; color: #000;">${s.name}</td>
-            <td style="text-align: center;"><input type="text" id="quiz-score-${idx}" class="auth-input" style="padding: 4px; width: 65px; margin: 0 auto; text-align:center; color: #000; font-weight: bold;" value="${currentScore}" placeholder="Not/G" autocomplete="off"></td>
+            <td style="text-align: center; color: #000000 !important; font-weight: bold !important;">${s.no}</td>
+            <td style="font-weight: bold !important; text-align: left !important; color: #000000 !important;">${s.name}</td>
+            <td style="text-align: center;"><input type="text" id="quiz-score-${idx}" class="auth-input" style="padding: 4px; width: 65px; margin: 0 auto; text-align:center; color: #000000 !important; font-weight: bold !important;" value="${currentScore}" placeholder="Not/G" autocomplete="off"></td>
         </tr>`;
     });
 
@@ -1167,19 +1167,19 @@ function renderQuizTable(grade, branchName) {
                 <h3 style="font-size: 12px; font-weight: bold; margin: 0;">${grade}. SINIF (${branchName}) - QUİZ DEĞERLENDİRME RAPORU</h3>
             </div>
             <div style="border: 1px solid #000; padding: 8px; margin-bottom: 12px; font-size: 11px;">
-                <p style="margin: 2px 0; color: #000; font-weight: bold;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                <p style="margin: 2px 0; color: #000; font-weight: bold;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
+                <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
             </div>
             <div class="table-responsive">
                 <table class="data-table" id="export-quiz-table" style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="background: #f2f2f2;">
-                            <th style="text-align: center; width: 20%; color: #000; font-weight: bold;">NO</th>
-                            <th style="text-align: left; width: 50%; color: #000; font-weight: bold;">AD SOYAD</th>
-                            <th style="text-align: center; width: 30%; color: #000; font-weight: bold;">QUİZ NOTU</th>
+                            <th style="text-align: center; width: 20%; color: #000000 !important; font-weight: bold !important;">NO</th>
+                            <th style="text-align: left; width: 50%; color: #000000 !important; font-weight: bold !important;">AD SOYAD</th>
+                            <th style="text-align: center; width: 30%; color: #000000 !important; font-weight: bold !important;">QUİZ NOTU</th>
                         </tr>
                     </thead>
-                    <tbody>${rows || '<tr><td colspan="3" style="text-align:center; color:#000; font-weight:bold;">Öğrenci yok.</td></tr>'}</tbody>
+                    <tbody>${rows || '<tr><td colspan="3" style="text-align:center; color:#000000 !important; font-weight:bold !important;">Öğrenci yok.</td></tr>'}</tbody>
                 </table>
             </div>
         </div>
@@ -1312,18 +1312,18 @@ function renderGroupedActivityTable(grade, branchName) {
         const scaleType = scaleObj.scale_type || '1-4';
         const students = fenData[grade]?.branches[branchName] || [];
 
-        let headerTh = '<th style="color: #000; font-weight: bold;">No</th><th style="color: #000; font-weight: bold;">Ad Soyad</th>';
-        criteria.forEach(c => { headerTh += `<th style="color: #000; font-weight: bold;">${c}</th>`; });
-        headerTh += '<th style="color: #000; font-weight: bold;">Başarı</th>';
+        let headerTh = '<th style="color: #000000 !important; font-weight: bold !important;">No</th><th style="color: #000000 !important; font-weight: bold !important;">Ad Soyad</th>';
+        criteria.forEach(c => { headerTh += `<th style="color: #000000 !important; font-weight: bold !important;">${c}</th>`; });
+        headerTh += '<th style="color: #000000 !important; font-weight: bold !important;">Başarı</th>';
 
         let rows = '';
         students.forEach((s) => {
-            let cols = `<td style="color: #000; font-weight: bold;">${s.no}</td><td style="font-weight: bold; text-align: left; color: #000;">${s.name}</td>`;
+            let cols = `<td style="color: #000000 !important; font-weight: bold !important;">${s.no}</td><td style="font-weight: bold !important; text-align: left !important; color: #000000 !important;">${s.name}</td>`;
             let storedScale = s.scale?.[selectedScaleName];
             
             if (!storedScale || storedScale['totalScore'] === undefined) {
-                criteria.forEach(() => { cols += `<td><span style="color:#000; font-weight: bold;">-</span></td>`; });
-                cols += `<td><b style="color:#000; font-weight: bold;">%-%</b></td>`;
+                criteria.forEach(() => { cols += `<td><span style="color:#000000 !important; font-weight: bold !important;">-</span></td>`; });
+                cols += `<td><b style="color:#000000 !important; font-weight: bold !important;">%-%</b></td>`;
             } else {
                 criteria.forEach((c, cIdx) => {
                     let val = storedScale[cIdx] !== undefined ? storedScale[cIdx] : (scaleType === '1-4' ? 4 : 1);
@@ -1336,11 +1336,11 @@ function renderGroupedActivityTable(grade, branchName) {
                     } else if (scaleType === 'var-yok') textLabel = val == 1 ? 'Var' : 'Yok';
                     else textLabel = val == 1 ? 'Evet' : 'Hayır';
 
-                    cols += `<td><span style="color:#000; font-weight: bold;">${textLabel}</span></td>`;
+                    cols += `<td><span style="color:#000000 !important; font-weight: bold !important;">${textLabel}</span></td>`;
                 });
                 let tScore = storedScale['totalScore'];
                 let displayScore = tScore === 'G' ? 'G' : `%${tScore}`;
-                cols += `<td><b style="color:#000; font-weight: bold;">${displayScore}</b></td>`;
+                cols += `<td><b style="color:#000000 !important; font-weight: bold !important;">${displayScore}</b></td>`;
             }
             rows += `<tr>${cols}</tr>`;
         });
@@ -1352,9 +1352,9 @@ function renderGroupedActivityTable(grade, branchName) {
                     <h3 style="font-size: 12px; font-weight: bold; margin: 0;">${grade}. SINIF (${branchName}) - TEKİL ÖLÇEK RAPORU</h3>
                 </div>
                 <div style="border: 1px solid #000; padding: 8px; margin-bottom: 12px; font-size: 11px;">
-                    <p style="margin: 2px 0; color: #000; font-weight: bold;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                    <p style="margin: 2px 0; color: #000; font-weight: bold;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
-                    <p style="margin: 2px 0; color: #000; font-weight: bold;"><b>Ölçek Adı:</b> ${scaleObj.name}</p>
+                    <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                    <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
+                    <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Ölçek Adı:</b> ${scaleObj.name}</p>
                 </div>
                 <div class="table-responsive">
                     <table class="data-table" id="export-activity-table" style="width: 100%; border-collapse: collapse;">
@@ -1372,29 +1372,29 @@ function renderGroupedActivityTable(grade, branchName) {
 
     const students = fenData[grade]?.branches[branchName] || [];
 
-    let headerTh = '<th style="color: #000; font-weight: bold;">No</th><th style="color: #000; font-weight: bold;">Ad Soyad</th><th style="color: #000; font-weight: bold;">⚡ PUAN (0-100 / G)</th>';
+    let headerTh = '<th style="color: #000000 !important; font-weight: bold !important;">No</th><th style="color: #000000 !important; font-weight: bold !important;">Ad Soyad</th><th style="color: #000000 !important; font-weight: bold !important;">⚡ PUAN (0-100 / G)</th>';
     subScales.forEach(scale => {
         let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
         if (!shortName) shortName = scale.name;
-        headerTh += `<th style="color: #000; font-weight: bold;">${shortName}</th>`;
+        headerTh += `<th style="color: #000000 !important; font-weight: bold !important;">${shortName}</th>`;
     });
 
     let rows = '';
     students.forEach((s, sIdx) => {
-        let cols = `<td style="color: #000; font-weight: bold;">${s.no}</td><td style="font-weight: bold; text-align: left; color: #000;">${s.name}</td>`;
+        let cols = `<td style="color: #000000 !important; font-weight: bold !important;">${s.no}</td><td style="font-weight: bold !important; text-align: left !important; color: #000000 !important;">${s.name}</td>`;
         
         let firstSubName = subScales[0]?.name;
         let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined) ? s.scale[firstSubName]['totalScore'] : '';
 
         cols += `<td>
-            <input type="text" id="group-quick-input-${sIdx}" class="auth-input" style="padding:4px; width:70px; font-size:11px; text-align:center; display:block; margin:0 auto; color: #000; font-weight: bold;" value="${existingQuickVal}" placeholder="85 veya G" autocomplete="off" oninput="autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})">
+            <input type="text" id="group-quick-input-${sIdx}" class="auth-input" style="padding:4px; width:70px; font-size:11px; text-align:center; display:block; margin:0 auto; color: #000000 !important; font-weight: bold !important;" value="${existingQuickVal}" placeholder="85 veya G" autocomplete="off" oninput="autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})">
         </td>`;
 
         subScales.forEach((scale, scaleIdx) => {
             let hasScore = s.scale?.[scale.name] && s.scale[scale.name]['totalScore'] !== undefined && s.scale[scale.name]['totalScore'] !== '';
             let scVal = hasScore ? s.scale[scale.name]['totalScore'] : '-';
             let displayVal = scVal !== '-' ? (scVal === 'G' ? 'G' : `%${scVal}`) : '%-%';
-            cols += `<td><span id="scale-badge-${sIdx}-${scaleIdx}" style="color: #000; font-weight: bold;">${displayVal}</span></td>`;
+            cols += `<td><span id="scale-badge-${sIdx}-${scaleIdx}" style="color: #000000 !important; font-weight: bold !important;">${displayVal}</span></td>`;
         });
 
         rows += `<tr>${cols}</tr>`;
@@ -1407,8 +1407,8 @@ function renderGroupedActivityTable(grade, branchName) {
                 <h3 style="font-size: 12px; font-weight: bold; margin: 0;">${grade}. SINIF (${branchName}) - TÜM ÖLÇEKLER RAPORU</h3>
             </div>
             <div style="border: 1px solid #000; padding: 8px; margin-bottom: 12px; font-size: 11px;">
-                <p style="margin: 2px 0; color: #000; font-weight: bold;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                <p style="margin: 2px 0; color: #000; font-weight: bold;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
+                <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
             </div>
             <div class="table-responsive">
                 <table class="data-table" id="export-activity-table" style="width: 100%; border-collapse: collapse;">
@@ -1434,15 +1434,15 @@ function autoApplyScoreToSubScales(sIdx, baseActName, subScalesCount) {
         if (badgeEl) {
             if (valText === 'G') {
                 badgeEl.innerText = 'G';
-                badgeEl.style.color = '#000';
+                badgeEl.style.color = '#000000';
             } else {
                 let targetVal = parseFloat(valText);
                 if (!isNaN(targetVal) && targetVal >= 0 && targetVal <= 100) {
                     badgeEl.innerText = `%${Math.round(targetVal)}`;
-                    badgeEl.style.color = '#000';
+                    badgeEl.style.color = '#000000';
                 } else {
                     badgeEl.innerText = '%-%';
-                    badgeEl.style.color = '#000';
+                    badgeEl.style.color = '#000000';
                 }
             }
         }
@@ -1554,19 +1554,19 @@ async function renderReportData(grade, branchName) {
             .replace(/•\s*/g, '</li><li>');
         
         if (formattedReportHtml.startsWith('<h4>')) {
-            formattedReportHtml = formattedReportHtml.replace('<h4>', '<p style="font-size:11px; margin:0 0 8px 0; color: #000; font-weight: bold;">');
+            formattedReportHtml = formattedReportHtml.replace('<h4>', '<p style="font-size:11px; margin:0 0 8px 0; color: #000000 !important; font-weight: bold !important;">');
         }
         formattedReportHtml = '<ul><li>' + formattedReportHtml + '</ul>';
         formattedReportHtml = formattedReportHtml.replace(/<ul>\s*<h4>/g, '<h4>').replace(/<\/ul>\s*<ul>/g, '');
     } else {
-        formattedReportHtml = `<p style="font-size: 11px; line-height: 1.4; margin: 0; white-space: pre-wrap; color: #000; font-weight: bold;">${customReportText}</p>`;
+        formattedReportHtml = `<p style="font-size: 11px; line-height: 1.4; margin: 0; white-space: pre-wrap; color: #000000 !important; font-weight: bold !important;">${customReportText}</p>`;
     }
 
     const students = fenData[grade]?.branches[branchName] || [];
     const allActs = fenData[grade]?.activities || [];
     const sectionActivities = allActs.filter(a => a.unit === unitName && a.section === secName);
 
-    let headerTh = '<th style="color: #000; font-weight: bold;">No</th><th style="color: #000; font-weight: bold;">Ad Soyad</th><th style="color: #000; font-weight: bold;">Quiz</th><th style="color: #000; font-weight: bold;">Ölçek</th><th style="color: #000; font-weight: bold;">Genel</th>';
+    let headerTh = '<th style="color: #000000 !important; font-weight: bold !important;">No</th><th style="color: #000000 !important; font-weight: bold !important;">Ad Soyad</th><th style="color: #000000 !important; font-weight: bold !important;">Quiz</th><th style="color: #000000 !important; font-weight: bold !important;">Ölçek</th><th style="color: #000000 !important; font-weight: bold !important;">Genel</th>';
 
     let allGradesForStats = [];
     let allScaleScoresForStats = [];
@@ -1592,8 +1592,8 @@ async function renderReportData(grade, branchName) {
             }
         }
 
-        let cols = `<td style="color: #000; font-weight: bold;">${s.no}</td><td style="font-weight: bold; text-align: left; color: #000;">${s.name}</td>`;
-        cols += `<td style="color: #000; font-weight: bold;">${qDisplay}</td>`;
+        let cols = `<td style="color: #000000 !important; font-weight: bold !important;">${s.no}</td><td style="font-weight: bold !important; text-align: left !important; color: #000000 !important;">${s.name}</td>`;
+        cols += `<td style="color: #000000 !important; font-weight: bold !important;">${qDisplay}</td>`;
 
         let scaleScoreSum = 0;
         let scaleScoreCount = 0;
@@ -1613,9 +1613,9 @@ async function renderReportData(grade, branchName) {
         let sectionScaleAvg = scaleScoreCount > 0 ? Math.round(scaleScoreSum / scaleScoreCount) : null;
         if (sectionScaleAvg !== null) {
             allScaleScoresForStats.push(sectionScaleAvg);
-            cols += `<td><b style="color: #000; font-weight: bold;">%${sectionScaleAvg}</b></td>`;
+            cols += `<td><b style="color: #000000 !important; font-weight: bold !important;">%${sectionScaleAvg}</b></td>`;
         } else {
-            cols += `<td style="color: #000; font-weight: bold;">-</td>`;
+            cols += `<td style="color: #000000 !important; font-weight: bold !important;">-</td>`;
         }
 
         let generalAvg = null;
@@ -1629,9 +1629,9 @@ async function renderReportData(grade, branchName) {
 
         if (generalAvg !== null) {
             allGradesForStats.push(generalAvg);
-            cols += `<td><b style="color:#000; font-weight: bold;">%${generalAvg}</b></td>`;
+            cols += `<td><b style="color:#000000 !important; font-weight: bold !important;">%${generalAvg}</b></td>`;
         } else {
-            cols += `<td><b style="color:#000; font-weight: bold;">${qDisplay === 'G' ? 'G' : '-%'}</b></td>`;
+            cols += `<td><b style="color:#000000 !important; font-weight: bold !important;">${qDisplay === 'G' ? 'G' : '-%'}</b></td>`;
         }
 
         rows += `<tr>${cols}</tr>`;
@@ -1647,28 +1647,28 @@ async function renderReportData(grade, branchName) {
     container.innerHTML = `
         <div id="report-printable-area" style="background: #ffffff; color: #000; padding: 20px; border-radius: 10px; font-family: 'Times New Roman', serif;">
             <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
-                <h2 style="font-size: 15px; font-weight: bold; margin: 0 0 4px 0; color: #000;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                <h3 style="font-size: 13px; font-weight: bold; margin: 0; color: #000;">${grade}. SINIF (${branchName}) - ÜNİTE VE BÖLÜM ANALİZİ & KARNE RAPORU</h3>
+                <h2 style="font-size: 15px; font-weight: bold; margin: 0 0 4px 0; color: #000000 !important;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                <h3 style="font-size: 13px; font-weight: bold; margin: 0; color: #000000 !important;">${grade}. SINIF (${branchName}) - ÜNİTE VE BÖLÜM ANALİZİ & KARNE RAPORU</h3>
             </div>
             <div style="border: 1px solid #000; padding: 10px; margin-bottom: 15px; font-size: 11px;">
-                <p style="margin: 2px 0; color: #000; font-weight: bold;"><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                <p style="margin: 2px 0; color: #000; font-weight: bold;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
-                <p style="margin: 2px 0; color: #000; font-weight: bold;"><b>Mevcut:</b> ${students.length} Öğrenci | <b>Quiz Ort.:</b> ${classQuizAvg} | <b>Ölçek Ort.:</b> ${classScaleAvg}</p>
+                <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
+                <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Mevcut:</b> ${students.length} Öğrenci | <b>Quiz Ort.:</b> ${classQuizAvg} | <b>Ölçek Ort.:</b> ${classScaleAvg}</p>
             </div>
             <div class="table-responsive">
                 <table class="data-table" id="export-report-table" style="width: 100%; border-collapse: collapse; background: #fff; color: #000;">
                     <thead><tr style="background: #f2f2f2;">${headerTh}</tr></thead>
-                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#000; font-weight:bold;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
+                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#000000 !important; font-weight:bold !important;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
                 </table>
             </div>
         </div>
 
         <div id="report-page-2" style="background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-top: 15px;">
             <div class="report-box" style="border: 1px solid #000; padding: 12px; border-radius: 6px; background: #fafafa;">
-                <h4 style="font-size: 12px; font-weight: bold; margin: 0 0 6px 0; border-bottom: 1px solid #ccc; padding-bottom: 4px; color:#000;">📌 Bölüm Sonu Resmi Değerlendirme Raporu</h4>
-                <div style="font-size: 11px; line-height: 1.4; color:#000; font-weight: bold;">${formattedReportHtml}</div>
+                <h4 style="font-size: 12px; font-weight: bold; margin: 0 0 6px 0; border-bottom: 1px solid #ccc; padding-bottom: 4px; color:#000000 !important;">📌 Bölüm Sonu Resmi Değerlendirme Raporu</h4>
+                <div style="font-size: 11px; line-height: 1.4; color:#000000 !important; font-weight: bold !important;">${formattedReportHtml}</div>
             </div>
-            <div style="margin-top: 15px; border: 1px solid #000; padding: 10px; font-size: 11px; display: flex; justify-content: space-around; text-align: center; background:#fff; color:#000; font-weight: bold;">
+            <div style="margin-top: 15px; border: 1px solid #000; padding: 10px; font-size: 11px; display: flex; justify-content: space-around; text-align: center; background:#fff; color:#000000 !important; font-weight: bold !important;">
                 <div><b>0-45 Altı:</b> ${countLow} Öğrenci</div>
                 <div><b>45-70 Arası:</b> ${countMid} Öğrenci</div>
                 <div><b>70-100 Arası:</b> ${countHigh} Öğrenci</div>
@@ -1792,8 +1792,8 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                     let score = student.quiz[qKey];
                     let displayScore = score === 'G' ? 'G' : `${score} Puan`;
                     quizRows += `<tr>
-                        <td style="padding:6px; text-align:left; color: #000; font-weight: bold;"><b>${u.name}</b> / ${sec}</td>
-                        <td style="padding:6px; text-align:center; color:#000; font-weight: bold;"><b>${displayScore}</b></td>
+                        <td style="padding:6px; text-align:left; color: #000000 !important; font-weight: bold !important;"><b>${u.name}</b> / ${sec}</td>
+                        <td style="padding:6px; text-align:center; color:#000000 !important; font-weight: bold !important;"><b>${displayScore}</b></td>
                     </tr>`;
                     if (score !== 'G') {
                         totalQuizScore += parseFloat(score);
@@ -1827,8 +1827,8 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 if (secScoreCount > 0) {
                     let secAvg = Math.round(secScoreSum / secScoreCount);
                     scaleRows += `<tr>
-                        <td style="padding:6px; text-align:left; color: #000; font-weight: bold;"><b>${u.name}</b> / ${sec}</td>
-                        <td style="padding:6px; text-align:center; color: #000; font-weight: bold;"><b style="color:#000;">%${secAvg}</b></td>
+                        <td style="padding:6px; text-align:left; color: #000000 !important; font-weight: bold !important;"><b>${u.name}</b> / ${sec}</td>
+                        <td style="padding:6px; text-align:center; color: #000000 !important; font-weight: bold !important;"><b style="color:#000000 !important;">%${secAvg}</b></td>
                     </tr>`;
                     totalScaleScore += secAvg;
                     scaleCount++;
@@ -1858,15 +1858,15 @@ function renderStudentPanelView(grade, branch, student, push = true) {
             <!-- KARNE ÖZETİ -->
             <div id="student-report-card" style="background: #ffffff; color: #000; padding: 15px; border-radius: 12px; border: 1px solid #cbd5e1; margin-bottom: 15px;">
                 <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px;">
-                    <h2 style="font-size: 14px; font-weight: bold; margin: 0 0 3px 0; color: #000;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                    <h3 style="font-size: 12px; font-weight: bold; margin: 0; color: #000;">ÖĞRENCİ GELİŞİM VE KARNE RAPORU</h3>
+                    <h2 style="font-size: 14px; font-weight: bold; margin: 0 0 3px 0; color: #000000 !important;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                    <h3 style="font-size: 12px; font-weight: bold; margin: 0; color: #000000 !important;">ÖĞRENCİ GELİŞİM VE KARNE RAPORU</h3>
                 </div>
-                <div style="border: 1px solid #000; padding: 10px; border-radius: 6px; background: #fff; font-size: 12px; color: #000; font-weight: bold;">
-                    <p style="margin: 2px 0; color: #000;"><b>Adı:</b> ${student.name}</p>
-                    <p style="margin: 2px 0; color: #000;"><b>No / Şube:</b> ${student.no} | ${grade}. Sınıf - ${branch}</p>
-                    <p style="margin: 2px 0; color: #000;"><b>Quiz Ort:</b> ${quizCount > 0 ? avgQuiz + ' Puan' : '-'}</p>
-                    <p style="margin: 2px 0; color: #000;"><b>Etkinlik Ort:</b> ${scaleCount > 0 ? '%' + avgScale : '-'}</p>
-                    <p style="margin: 2px 0; font-weight: bold; color: #000;"><b>Genel Puan:</b> %${generalAvg}</p>
+                <div style="border: 1px solid #000; padding: 10px; border-radius: 6px; background: #fff; font-size: 12px; color: #000000 !important; font-weight: bold !important;">
+                    <p style="margin: 2px 0; color: #000000 !important;"><b>Adı:</b> ${student.name}</p>
+                    <p style="margin: 2px 0; color: #000000 !important;"><b>No / Şube:</b> ${student.no} | ${grade}. Sınıf - ${branch}</p>
+                    <p style="margin: 2px 0; color: #000000 !important;"><b>Quiz Ort:</b> ${quizCount > 0 ? avgQuiz + ' Puan' : '-'}</p>
+                    <p style="margin: 2px 0; color: #000000 !important;"><b>Etkinlik Ort:</b> ${scaleCount > 0 ? '%' + avgScale : '-'}</p>
+                    <p style="margin: 2px 0; font-weight: bold; color: #000000 !important;"><b>Genel Puan:</b> %${generalAvg}</p>
                 </div>
             </div>
 
@@ -1875,8 +1875,8 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 <h4 style="font-size: 13px; margin-bottom: 8px; color: #f8fafc;">📝 Quiz Sonuçlarım</h4>
                 <div class="table-responsive">
                     <table class="data-table" style="width: 100%; border-collapse: collapse;">
-                        <thead><tr style="background:#f2f2f2;"><th style="text-align:left; color: #000; font-weight: bold;">Ünite ve Bölüm</th><th style="text-align:center; color: #000; font-weight: bold;">Not</th></tr></thead>
-                        <tbody>${quizRows || '<tr><td colspan="2" style="text-align:center; color:#000; font-weight:bold;">Quiz notu yok.</td></tr>'}</tbody>
+                        <thead><tr style="background:#f2f2f2;"><th style="text-align:left; color: #000000 !important; font-weight: bold !important;">Ünite ve Bölüm</th><th style="text-align:center; color: #000000 !important; font-weight: bold !important;">Not</th></tr></thead>
+                        <tbody>${quizRows || '<tr><td colspan="2" style="text-align:center; color:#000000 !important; font-weight:bold !important;">Quiz notu yok.</td></tr>'}</tbody>
                     </table>
                 </div>
             </div>
@@ -1886,8 +1886,8 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 <h4 style="font-size: 13px; margin-bottom: 8px; color: #f8fafc;">🧪 Etkinlik Ortalamalarım</h4>
                 <div class="table-responsive">
                     <table class="data-table" style="width: 100%; border-collapse: collapse;">
-                        <thead><tr style="background:#f2f2f2;"><th style="text-align:left; color: #000; font-weight: bold;">Ünite ve Bölüm</th><th style="text-align:center; color: #000; font-weight: bold;">Ortalama</th></tr></thead>
-                        <tbody>${scaleRows || '<tr><td colspan="2" style="text-align:center; color:#000; font-weight:bold;">Etkinlik yok.</td></tr>'}</tbody>
+                        <thead><tr style="background:#f2f2f2;"><th style="text-align:left; color: #000000 !important; font-weight: bold !important;">Ünite ve Bölüm</th><th style="text-align:center; color: #000000 !important; font-weight: bold !important;">Ortalama</th></tr></thead>
+                        <tbody>${scaleRows || '<tr><td colspan="2" style="text-align:center; color:#000000 !important; font-weight:bold !important;">Etkinlik yok.</td></tr>'}</tbody>
                     </table>
                 </div>
             </div>
