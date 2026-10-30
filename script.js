@@ -975,7 +975,7 @@ function loadBranchTabContent(tabType, grade, branchName) {
             </div>
             <div class="table-responsive">
                 <table class="data-table" id="export-target-table">
-                    <thead><tr><th>No</th><th>Ad Soyad</th><th>Artı</th><th>Eksi</th><th>İşlem</th></tr></thead>
+                    <thead><tr><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">No</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Ad Soyad</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Artı</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Eksi</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">İşlem</th></tr></thead>
                     <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#000000 !important; font-weight:bold !important;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
                 </table>
             </div>
@@ -1156,38 +1156,51 @@ function renderQuizTable(grade, branchName) {
         rows += `<tr>
             <td style="text-align: center; color: #000000 !important; font-weight: bold !important;">${s.no}</td>
             <td style="font-weight: bold !important; text-align: left !important; color: #000000 !important;">${s.name}</td>
-            <td style="text-align: center;"><input type="text" id="quiz-score-${idx}" class="auth-input" style="padding: 4px; width: 65px; margin: 0 auto; text-align:center; color: #000000 !important; font-weight: bold !important;" value="${currentScore}" placeholder="Not/G" autocomplete="off"></td>
+            <td style="text-align: center;"><input type="text" id="quiz-score-${idx}" class="auth-input" style="padding: 4px; width: 65px; margin: 0 auto; text-align:center; color: #000000 !important; font-weight: bold !important;" value="${currentScore}" placeholder="Not/G" autocomplete="off" oninput="validateScoreInput(this)"></td>
         </tr>`;
     });
 
     container.innerHTML = `
-        <div id="quiz-printable-area" style="background: #ffffff; color: #000; padding: 15px; border-radius: 10px;">
-            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px;">
-                <h2 style="font-size: 14px; font-weight: bold; margin: 0 0 3px 0;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                <h3 style="font-size: 12px; font-weight: bold; margin: 0;">${grade}. SINIF (${branchName}) - QUİZ DEĞERLENDİRME RAPORU</h3>
+        <div id="quiz-printable-area" style="background: #ffffff; color: #000; padding: 20px; border-radius: 10px; font-family: 'Times New Roman', serif;">
+            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="font-size: 15px; font-weight: bold; margin: 0 0 4px 0; color: #000000 !important;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                <h3 style="font-size: 13px; font-weight: bold; margin: 0; color: #000000 !important;">${grade}. SINIF (${branchName}) - QUİZ DEĞERLENDİRME RAPORU</h3>
             </div>
-            <div style="border: 1px solid #000; padding: 8px; margin-bottom: 12px; font-size: 11px;">
+            <div style="border: 1px solid #000; padding: 10px; margin-bottom: 15px; font-size: 11px;">
                 <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
                 <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
             </div>
             <div class="table-responsive">
-                <table class="data-table" id="export-quiz-table" style="width: 100%; border-collapse: collapse;">
+                <table class="data-table" id="export-quiz-table" style="width: 100%; border-collapse: collapse; background: #fff; color: #000;">
                     <thead>
                         <tr style="background: #f2f2f2;">
-                            <th style="text-align: center; width: 20%; color: #000000 !important; font-weight: bold !important;">NO</th>
-                            <th style="text-align: left; width: 50%; color: #000000 !important; font-weight: bold !important;">AD SOYAD</th>
-                            <th style="text-align: center; width: 30%; color: #000000 !important; font-weight: bold !important;">QUİZ NOTU</th>
+                            <th style="text-align: center; width: 20%; color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">NO</th>
+                            <th style="text-align: left; width: 50%; color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">AD SOYAD</th>
+                            <th style="text-align: center; width: 30%; color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">QUİZ NOTU</th>
                         </tr>
                     </thead>
                     <tbody>${rows || '<tr><td colspan="3" style="text-align:center; color:#000000 !important; font-weight:bold !important;">Öğrenci yok.</td></tr>'}</tbody>
                 </table>
             </div>
         </div>
-        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
             <button onclick="saveQuizScores('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:8px 14px; font-size:12px;">Notları Kaydet</button>
             <button onclick="exportTableToWord('quiz-printable-area', '${branchName}_Quiz_Sonuclari')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px; font-size:12px;">📥 Word İndir</button>
         </div>
     `;
+}
+
+function validateScoreInput(inputEl) {
+    let val = inputEl.value.trim().toUpperCase();
+    if (val === 'G' || val === '') return;
+    let num = parseFloat(val);
+    if (!isNaN(num)) {
+        if (num > 100) {
+            inputEl.value = '100';
+        } else if (num < 0) {
+            inputEl.value = '0';
+        }
+    }
 }
 
 async function saveQuizScores(grade, branchName) {
@@ -1312,9 +1325,9 @@ function renderGroupedActivityTable(grade, branchName) {
         const scaleType = scaleObj.scale_type || '1-4';
         const students = fenData[grade]?.branches[branchName] || [];
 
-        let headerTh = '<th style="color: #000000 !important; font-weight: bold !important;">No</th><th style="color: #000000 !important; font-weight: bold !important;">Ad Soyad</th>';
-        criteria.forEach(c => { headerTh += `<th style="color: #000000 !important; font-weight: bold !important;">${c}</th>`; });
-        headerTh += '<th style="color: #000000 !important; font-weight: bold !important;">Başarı</th>';
+        let headerTh = '<th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">No</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Ad Soyad</th>';
+        criteria.forEach(c => { headerTh += `<th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">${c}</th>`; });
+        headerTh += '<th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Başarı</th>';
 
         let rows = '';
         students.forEach((s) => {
@@ -1346,25 +1359,25 @@ function renderGroupedActivityTable(grade, branchName) {
         });
 
         container.innerHTML = `
-            <div id="activity-printable-area" style="background: #ffffff; color: #000; padding: 15px; border-radius: 10px;">
-                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px;">
-                    <h2 style="font-size: 14px; font-weight: bold; margin: 0 0 3px 0;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                    <h3 style="font-size: 12px; font-weight: bold; margin: 0;">${grade}. SINIF (${branchName}) - TEKİL ÖLÇEK RAPORU</h3>
+            <div id="activity-printable-area" style="background: #ffffff; color: #000; padding: 20px; border-radius: 10px; font-family: 'Times New Roman', serif;">
+                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
+                    <h2 style="font-size: 15px; font-weight: bold; margin: 0 0 4px 0; color: #000000 !important;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                    <h3 style="font-size: 13px; font-weight: bold; margin: 0; color: #000000 !important;">${grade}. SINIF (${branchName}) - TEKİL ÖLÇEK RAPORU</h3>
                 </div>
-                <div style="border: 1px solid #000; padding: 8px; margin-bottom: 12px; font-size: 11px;">
+                <div style="border: 1px solid #000; padding: 10px; margin-bottom: 15px; font-size: 11px;">
                     <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
                     <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
                     <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Ölçek Adı:</b> ${scaleObj.name}</p>
                 </div>
                 <div class="table-responsive">
-                    <table class="data-table" id="export-activity-table" style="width: 100%; border-collapse: collapse;">
+                    <table class="data-table" id="export-activity-table" style="width: 100%; border-collapse: collapse; background: #fff; color: #000;">
                         <thead><tr style="background: #f2f2f2;">${headerTh}</tr></thead>
                         <tbody>${rows}</tbody>
                     </table>
                 </div>
             </div>
-            <div style="display:flex; gap:8px; margin-top:10px;">
-                <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#2563eb; width:auto; padding:6px 12px; font-size:11px;">📥 Word İndir</button>
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px; font-size:12px;">📥 Word İndir</button>
             </div>
         `;
         return;
@@ -1372,11 +1385,11 @@ function renderGroupedActivityTable(grade, branchName) {
 
     const students = fenData[grade]?.branches[branchName] || [];
 
-    let headerTh = '<th style="color: #000000 !important; font-weight: bold !important;">No</th><th style="color: #000000 !important; font-weight: bold !important;">Ad Soyad</th><th style="color: #000000 !important; font-weight: bold !important;">⚡ PUAN (0-100 / G)</th>';
+    let headerTh = '<th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">No</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Ad Soyad</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">⚡ PUAN (0-100 / G)</th>';
     subScales.forEach(scale => {
         let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
         if (!shortName) shortName = scale.name;
-        headerTh += `<th style="color: #000000 !important; font-weight: bold !important;">${shortName}</th>`;
+        headerTh += `<th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">${shortName}</th>`;
     });
 
     let rows = '';
@@ -1387,7 +1400,7 @@ function renderGroupedActivityTable(grade, branchName) {
         let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined) ? s.scale[firstSubName]['totalScore'] : '';
 
         cols += `<td>
-            <input type="text" id="group-quick-input-${sIdx}" class="auth-input" style="padding:4px; width:70px; font-size:11px; text-align:center; display:block; margin:0 auto; color: #000000 !important; font-weight: bold !important;" value="${existingQuickVal}" placeholder="85 veya G" autocomplete="off" oninput="autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})">
+            <input type="text" id="group-quick-input-${sIdx}" class="auth-input" style="padding:4px; width:70px; font-size:11px; text-align:center; display:block; margin:0 auto; color: #000000 !important; font-weight: bold !important;" value="${existingQuickVal}" placeholder="85 veya G" autocomplete="off" oninput="validateScoreInput(this); autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})">
         </td>`;
 
         subScales.forEach((scale, scaleIdx) => {
@@ -1401,23 +1414,23 @@ function renderGroupedActivityTable(grade, branchName) {
     });
 
     container.innerHTML = `
-        <div id="activity-printable-area" style="background: #ffffff; color: #000; padding: 15px; border-radius: 10px;">
-            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px;">
-                <h2 style="font-size: 14px; font-weight: bold; margin: 0 0 3px 0;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                <h3 style="font-size: 12px; font-weight: bold; margin: 0;">${grade}. SINIF (${branchName}) - TÜM ÖLÇEKLER RAPORU</h3>
+        <div id="activity-printable-area" style="background: #ffffff; color: #000; padding: 20px; border-radius: 10px; font-family: 'Times New Roman', serif;">
+            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="font-size: 15px; font-weight: bold; margin: 0 0 4px 0; color: #000000 !important;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                <h3 style="font-size: 13px; font-weight: bold; margin: 0; color: #000000 !important;">${grade}. SINIF (${branchName}) - TÜM ÖLÇEKLER RAPORU</h3>
             </div>
-            <div style="border: 1px solid #000; padding: 8px; margin-bottom: 12px; font-size: 11px;">
+            <div style="border: 1px solid #000; padding: 10px; margin-bottom: 15px; font-size: 11px;">
                 <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
                 <p style="margin: 2px 0; color: #000000 !important; font-weight: bold !important;"><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
             </div>
             <div class="table-responsive">
-                <table class="data-table" id="export-activity-table" style="width: 100%; border-collapse: collapse;">
+                <table class="data-table" id="export-activity-table" style="width: 100%; border-collapse: collapse; background: #fff; color: #000;">
                     <thead><tr style="background: #f2f2f2;">${headerTh}</tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
         </div>
-        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
             <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px; font-size:12px;">Puanları Kaydet</button>
             <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px; font-size:12px;">📥 Word İndir</button>
         </div>
@@ -1566,7 +1579,7 @@ async function renderReportData(grade, branchName) {
     const allActs = fenData[grade]?.activities || [];
     const sectionActivities = allActs.filter(a => a.unit === unitName && a.section === secName);
 
-    let headerTh = '<th style="color: #000000 !important; font-weight: bold !important;">No</th><th style="color: #000000 !important; font-weight: bold !important;">Ad Soyad</th><th style="color: #000000 !important; font-weight: bold !important;">Quiz</th><th style="color: #000000 !important; font-weight: bold !important;">Ölçek</th><th style="color: #000000 !important; font-weight: bold !important;">Genel</th>';
+    let headerTh = '<th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">No</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Ad Soyad</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Quiz</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Ölçek</th><th style="color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Genel</th>';
 
     let allGradesForStats = [];
     let allScaleScoresForStats = [];
@@ -1875,7 +1888,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 <h4 style="font-size: 13px; margin-bottom: 8px; color: #f8fafc;">📝 Quiz Sonuçlarım</h4>
                 <div class="table-responsive">
                     <table class="data-table" style="width: 100%; border-collapse: collapse;">
-                        <thead><tr style="background:#f2f2f2;"><th style="text-align:left; color: #000000 !important; font-weight: bold !important;">Ünite ve Bölüm</th><th style="text-align:center; color: #000000 !important; font-weight: bold !important;">Not</th></tr></thead>
+                        <thead><tr style="background:#f2f2f2;"><th style="text-align:left; color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Ünite ve Bölüm</th><th style="text-align:center; color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Not</th></tr></thead>
                         <tbody>${quizRows || '<tr><td colspan="2" style="text-align:center; color:#000000 !important; font-weight:bold !important;">Quiz notu yok.</td></tr>'}</tbody>
                     </table>
                 </div>
@@ -1886,7 +1899,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 <h4 style="font-size: 13px; margin-bottom: 8px; color: #f8fafc;">🧪 Etkinlik Ortalamalarım</h4>
                 <div class="table-responsive">
                     <table class="data-table" style="width: 100%; border-collapse: collapse;">
-                        <thead><tr style="background:#f2f2f2;"><th style="text-align:left; color: #000000 !important; font-weight: bold !important;">Ünite ve Bölüm</th><th style="text-align:center; color: #000000 !important; font-weight: bold !important;">Ortalama</th></tr></thead>
+                        <thead><tr style="background:#f2f2f2;"><th style="text-align:left; color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Ünite ve Bölüm</th><th style="text-align:center; color: #000000 !important; background-color: #f2f2f2 !important; font-weight: bold !important;">Ortalama</th></tr></thead>
                         <tbody>${scaleRows || '<tr><td colspan="2" style="text-align:center; color:#000000 !important; font-weight:bold !important;">Etkinlik yok.</td></tr>'}</tbody>
                     </table>
                 </div>
