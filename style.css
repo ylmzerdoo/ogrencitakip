@@ -1,5 +1,5 @@
 /* ==========================================
-   MOBİL ÖNCELİKLİ STİL DOSYASI
+   MOBİL ÖNCELİKLİ STİL DOSYASI & TABLO DÜZENLERİ
    ========================================== */
 
 *, *::before, *::after {
@@ -23,288 +23,142 @@ html, body {
     -webkit-text-size-adjust: 100%;
 }
 
-.auth-container { 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    min-height: 100vh; 
-    padding: 15px; 
-    width: 100%;
-    box-sizing: border-box;
-}
+.auth-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; width: 100%; box-sizing: border-box; }
 
 .auth-card { 
     background: rgba(255, 255, 255, 0.05); 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 20px; 
-    border-radius: 16px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4); 
-    width: 100%; 
-    max-width: 400px; 
-    box-sizing: border-box;
+    padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); 
+    width: 100%; max-width: 400px; box-sizing: border-box;
 }
 
-.auth-tabs { 
-    display: flex; 
-    margin-bottom: 15px; 
-    background: rgba(0,0,0,0.3); 
-    border-radius: 10px; 
-    padding: 3px; 
-    border: 1px solid rgba(255,255,255,0.05); 
-    width: 100%;
-}
+.auth-tabs { display: flex; margin-bottom: 15px; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 3px; border: 1px solid rgba(255,255,255,0.05); width: 100%; }
+.auth-tab { flex: 1; padding: 8px; text-align: center; border: none; background: transparent; font-weight: 600; cursor: pointer; border-radius: 8px; color: #94a3b8; font-size: 12px; }
+.auth-tab.active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; box-shadow: 0 2px 10px rgba(37,99,235,0.4); }
 
-.auth-tab { 
-    flex: 1; 
-    padding: 8px; 
-    text-align: center; 
-    border: none; 
-    background: transparent; 
-    font-weight: 600; 
-    cursor: pointer; 
-    border-radius: 8px; 
-    color: #94a3b8; 
-    font-size: 12px; 
-}
-
-.auth-tab.active { 
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
-    color: white; 
-    box-shadow: 0 2px 10px rgba(37,99,235,0.4); 
-}
-
-.auth-form { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px; 
-    width: 100%;
-}
-
+.auth-form { display: flex; flex-direction: column; gap: 10px; width: 100%; }
 .auth-input { 
-    width: 100%; 
-    padding: 10px 14px; 
-    border: 1px solid rgba(255,255,255,0.15); 
-    background: rgba(15, 23, 42, 0.7); 
-    color: white; 
-    border-radius: 8px; 
-    font-size: 13px; 
-    outline: none; 
-    box-sizing: border-box;
+    width: 100%; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.15); 
+    background: rgba(15, 23, 42, 0.7); color: white; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;
 }
+.auth-input:focus { border-color: #3b82f6; box-shadow: 0 0 8px rgba(59,130,246,0.3); }
+.auth-input option { background: #0f172a; color: white; }
 
-.auth-input:focus { 
-    border-color: #3b82f6; 
-    box-shadow: 0 0 8px rgba(59,130,246,0.3); 
-}
-
-.auth-input option { 
-    background: #0f172a; 
-    color: white; 
-}
-
-.auth-btn { 
-    width: 100%; 
-    padding: 11px; 
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); 
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
-    font-weight: 600; 
-    cursor: pointer; 
-    font-size: 13px; 
-    box-sizing: border-box;
-}
+.auth-btn { width: 100%; padding: 11px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; box-sizing: border-box; transition: opacity 0.2s;}
+.auth-btn:hover { opacity: 0.9; }
 
 .teacher-header { 
-    background: rgba(15, 23, 42, 0.9); 
-    backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 12px 15px; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    flex-wrap: wrap;
-    gap: 8px;
-    width: 100%;
-    box-sizing: border-box;
+    padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; width: 100%; box-sizing: border-box;
 }
 
-.header-brand { 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    min-width: 0;
-    flex: 1;
-}
+.header-brand { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.header-brand h1 { font-size: 14px; font-weight: 700; color: #f8fafc; white-space: normal; word-break: break-word; margin: 0; }
+.logout-btn { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; flex-shrink: 0; transition: opacity 0.2s;}
+.logout-btn:hover { opacity: 0.9; }
 
-.header-brand h1 { 
-    font-size: 14px; 
-    font-weight: 700; 
-    color: #f8fafc; 
-    white-space: normal;
-    word-break: break-word;
-    margin: 0;
-}
-
-.logout-btn { 
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
-    color: white; 
-    border: none; 
-    padding: 6px 12px; 
-    border-radius: 6px; 
-    font-weight: 600; 
-    cursor: pointer; 
-    font-size: 12px; 
-    flex-shrink: 0;
-}
-
-.dashboard-content { 
-    max-width: 100%; 
-    margin: 10px auto; 
-    width: 100%; 
-    padding: 0 10px; 
-    flex: 1; 
-    box-sizing: border-box; 
-    overflow-x: hidden;
-}
-
-.grade-cards-grid { 
-    display: grid; 
-    grid-template-columns: 1fr; 
-    gap: 10px; 
-    width: 100%; 
-    box-sizing: border-box;
-}
-
-@media screen and (min-width: 600px) {
-    .grade-cards-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
+.dashboard-content { max-width: 100%; margin: 10px auto; width: 100%; padding: 0 10px; flex: 1; box-sizing: border-box; overflow-x: hidden; }
+.grade-cards-grid { display: grid; grid-template-columns: 1fr; gap: 10px; width: 100%; box-sizing: border-box; }
+@media screen and (min-width: 600px) { .grade-cards-grid { grid-template-columns: repeat(2, 1fr); } }
 
 .grade-card { 
-    background: rgba(255, 255, 255, 0.05); 
-    backdrop-filter: blur(10px); 
-    border: 1px solid rgba(255, 255, 255, 0.1); 
-    padding: 16px; 
-    border-radius: 14px; 
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3); 
-    text-align: center; 
-    cursor: pointer; 
-    border-top: 4px solid #3b82f6; 
-    position: relative; 
-    overflow: hidden; 
-    width: 100%;
-    box-sizing: border-box; 
+    background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); 
+    padding: 16px; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); text-align: center; cursor: pointer; 
+    border-top: 4px solid #3b82f6; position: relative; overflow: hidden; width: 100%; box-sizing: border-box; transition: transform 0.2s;
 }
+.grade-card:hover { transform: translateY(-2px); }
+.grade-card h3 { font-size: 16px; margin-bottom: 4px; color: #f8fafc; font-weight: 700; }
+.grade-card p { color: #94a3b8; font-size: 12px; margin-bottom: 8px; }
+.card-action { color: #60a5fa; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
 
-.grade-card h3 { 
-    font-size: 16px; 
-    margin-bottom: 4px; 
-    color: #f8fafc; 
-    font-weight: 700; 
-}
+/* Modal Sistem */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 10px; overflow-y: auto; box-sizing: border-box; }
+.modal-box { background: rgba(30, 41, 59, 0.98); border: 1px solid rgba(255, 255, 255, 0.15); padding: 18px; border-radius: 14px; width: 100%; max-width: 500px; box-shadow: 0 15px 30px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #f8fafc; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; }
 
-.grade-card p { 
-    color: #94a3b8; 
-    font-size: 12px; 
-    margin-bottom: 8px; 
-}
-
-.card-action { 
-    color: #60a5fa; 
-    font-weight: 600; 
-    font-size: 12px; 
-    display: inline-flex; 
-    align-items: center; 
-    gap: 4px; 
-}
-
-.modal-overlay { 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100vw; 
-    height: 100vh; 
-    background: rgba(15, 23, 42, 0.85); 
-    backdrop-filter: blur(6px); 
-    display: none; 
-    justify-content: center; 
-    align-items: center; 
-    z-index: 1000; 
-    padding: 10px; 
-    overflow-y: auto; 
-    box-sizing: border-box;
-}
-
-.modal-box { 
-    background: rgba(30, 41, 59, 0.98); 
-    border: 1px solid rgba(255, 255, 255, 0.15); 
-    padding: 18px; 
-    border-radius: 14px; 
-    width: 100%; 
-    max-width: 500px; 
-    box-shadow: 0 15px 30px rgba(0,0,0,0.5); 
-    max-height: 90vh; 
-    overflow-y: auto; 
-    box-sizing: border-box;
-}
-
-.modal-title { 
-    font-size: 16px; 
-    font-weight: 700; 
-    margin-bottom: 12px; 
-    color: #f8fafc; 
-}
-
-.modal-footer { 
-    display: flex; 
-    justify-content: flex-end; 
-    gap: 8px; 
-    margin-top: 15px; 
-}
-
-/* TABLO VE TAŞMA KONTROLÜ (KAYDIRILABİLİR ALAN) */
+/* ==========================================
+   TABLO VE KAYDIRILABİLİR ALAN (SCROLLBAR)
+   ========================================== */
 .table-responsive { 
-    width: 100%; 
-    max-width: 100%;
-    overflow-x: auto !important; 
-    -webkit-overflow-scrolling: touch; 
-    margin-bottom: 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.08);
-    box-sizing: border-box;
-    display: block;
+    width: 100%; max-width: 100%; overflow-x: auto !important; -webkit-overflow-scrolling: touch; 
+    margin-bottom: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); box-sizing: border-box; display: block;
 }
+/* Özel Scrollbar */
+.table-responsive::-webkit-scrollbar { height: 8px; }
+.table-responsive::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 4px; }
+.table-responsive::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
 
 .data-table { 
-    width: 100% !important; 
-    border-collapse: collapse; 
-    background: rgba(30, 41, 59, 0.8); 
-    table-layout: auto;
+    width: 100% !important; border-collapse: collapse; background: #1e293b; table-layout: auto;
 }
-
 .data-table th, .data-table td { 
-    padding: 8px 10px; 
+    padding: 12px 14px; /* Satır aralıkları artırıldı */
     text-align: left; 
-    border-bottom: 1px solid rgba(255,255,255,0.08); 
-    font-size: 11px; 
-    color: #e2e8f0; 
+    border-bottom: 1px solid #334155; 
+    font-size: 12px; 
+    color: #f8fafc; /* Beyaz/Açık Gri metin */
     white-space: nowrap;
 }
-
 .data-table td:nth-child(2), .data-table th:nth-child(2) {
-    white-space: normal !important;
-    min-width: 110px;
-    word-break: break-word;
+    white-space: normal !important; min-width: 130px; word-break: break-word;
 }
-
 .data-table th { 
-    background: rgba(15, 23, 42, 0.95); 
-    font-weight: 600; 
-    color: #94a3b8; 
-    text-transform: uppercase; 
-    font-size: 10px; 
+    background: #0f172a; font-weight: 600; color: #94a3b8; text-transform: uppercase; font-size: 11px; 
 }
+/* Zebra Deseni */
+.data-table tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.02); }
+.data-table tbody tr:nth-child(odd) { background-color: rgba(255,255,255,0.04); }
+.data-table tbody tr:hover { background-color: rgba(255,255,255,0.08); }
+
+/* ==========================================
+   RAPOR/BASKI ALANI (EKRANDA KOYU, WORD'DE BEYAZ)
+   ========================================== */
+.print-area {
+    background: rgba(30, 41, 59, 0.6);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 15px;
+}
+.print-header {
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 12px;
+    margin-bottom: 15px;
+}
+.print-header h2 { font-size: 15px; font-weight: 700; margin: 0 0 4px 0; color: #f8fafc; }
+.print-header h3 { font-size: 13px; font-weight: 600; margin: 0; color: #cbd5e1; }
+.print-info {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255,255,255,0.05);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 12px;
+    color: #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.print-info p { margin: 0; }
+
+/* ==========================================
+   PASTEL BUTONLAR & ROZETLER (BADGES)
+   ========================================== */
+.btn-pastel-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;}
+.btn-pastel-green:hover { background: #10b981; color: white; }
+.btn-pastel-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;}
+.btn-pastel-red:hover { background: #ef4444; color: white; }
+.btn-pastel-gray { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid #64748b; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;}
+.btn-pastel-gray:hover { background: #64748b; color: white; }
+
+.badge {
+    display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-align: center; min-width: 40px;
+}
+.badge-high { background: #dcfce7; color: #15803d; } /* Uçuk Yeşil */
+.badge-mid { background: #fef08a; color: #713f12; }  /* Uçuk Sarı */
+.badge-low { background: #fee2e2; color: #b91c1c; }  /* Uçuk Kırmızı */
+.badge-neutral { background: rgba(255,255,255,0.1); color: #cbd5e1; } /* Nötr Gri */
