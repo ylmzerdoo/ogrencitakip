@@ -142,17 +142,6 @@ function getScaleBadge(score) {
     return `<span class="badge badge-low">%${num}</span>`;
 }
 
-function toggleTeacherActionsCard() {
-    const container = document.getElementById('teacher-actions-container');
-    const icon = document.getElementById('teacher-actions-toggle-icon');
-    if (!container || !icon) return;
-    if (container.style.display === 'none' || !container.style.display) {
-        container.style.display = 'block'; icon.style.transform = 'rotate(180deg)';
-    } else {
-        container.style.display = 'none'; icon.style.transform = 'rotate(0deg)';
-    }
-}
-
 function restoreStateFromSession() {
     const savedState = sessionStorage.getItem('fen_app_state');
     if (savedState) {
@@ -802,8 +791,9 @@ function loadBranchTabContent(tabType, grade, branchName) {
                     <tbody>${rows || '<tr><td colspan="5" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
                 </table>
             </div>
-            <div style="display:flex; gap:8px; margin-top:10px;">
+            <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
                 <button onclick="exportTableToWord('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#2563eb; width:auto; padding:6px 12px; font-size:11px;">📥 Word İndir</button>
+                <button onclick="exportTableToPDF('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#dc2626; width:auto; padding:6px 12px; font-size:11px;">📄 PDF İndir</button>
             </div>`;
     } else if (tabType === 'quizzes') {
         contentArea.innerHTML = `
@@ -899,6 +889,125 @@ function exportReportToWord(filename) {
     const htmlFooter = "</div></body></html>";
     const blob = new Blob(['\ufeff' + htmlHeader + combinedContent + htmlFooter], { type: 'application/msword' });
     saveAs(blob, filename + ".doc");
+}
+
+function exportTableToPDF(elementId, filename) {
+    const element = document.getElementById(elementId);
+    if (!element) { alert('İçerik bulunamadı!'); return; }
+    
+    const clone = element.cloneNode(true);
+    const originalInputs = element.querySelectorAll('input');
+    const clonedInputs = clone.querySelectorAll('input');
+    
+    for (let i = 0; i < originalInputs.length; i++) {
+        const span = document.createElement('span');
+        span.innerText = originalInputs[i].value || '-';
+        span.style.color = '#000';
+        span.style.fontWeight = 'bold';
+        clonedInputs[i].parentNode.replaceChild(span, clonedInputs[i]);
+    }
+
+    const buttons = clone.querySelectorAll('button');
+    buttons.forEach(b => b.remove());
+
+    const tableEl = clone.querySelector('table');
+    const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
+    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Analiz');
+
+    const wrapper = document.createElement('div');
+    wrapper.style.background = '#ffffff';
+    wrapper.style.color = '#000000';
+    wrapper.style.padding = '5px';
+    wrapper.style.margin = '0px';
+    wrapper.style.width = '100%';
+    wrapper.style.fontFamily = "'Times New Roman', Times, serif";
+    
+    const customStyle = document.createElement('style');
+    customStyle.innerHTML = `
+        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
+        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+        h2, h3, p, span, th, td { font-family: 'Times New Roman', Times, serif !important; }
+        .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
+        .print-header h2 { font-size: 12px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 9px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
+        tr { page-break-inside: avoid !important; page-break-after: auto !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word; }
+        th { background-color: #e0e0e0 !important; font-weight: bold !important; }
+        td:nth-child(2) { text-align: left !important; }
+        .badge { border: none !important; font-weight: bold; background: transparent !important; }
+    `;
+    
+    wrapper.appendChild(customStyle);
+    wrapper.appendChild(clone);
+
+    const opt = {
+        margin:       [4, 4, 4, 4],
+        filename:     filename + '.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: isWideTable ? 'landscape' : 'portrait', compress: true }
+    };
+    
+    html2pdf().from(wrapper).set(opt).save();
+}
+
+function exportFullReportToPDF(filename) {
+    const part1 = document.getElementById('report-printable-area');
+    const part2 = document.getElementById('report-page-2');
+    if (!part1) { alert('İçerik bulunamadı!'); return; }
+
+    const wrapper = document.createElement('div');
+    wrapper.style.background = '#ffffff';
+    wrapper.style.color = '#000000';
+    wrapper.style.padding = '5px';
+    wrapper.style.margin = '0px';
+    wrapper.style.width = '100%';
+    wrapper.style.fontFamily = "'Times New Roman', Times, serif";
+
+    const customStyle = document.createElement('style');
+    customStyle.innerHTML = `
+        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
+        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+        h2, h3, h4, p, span, th, td, li { font-family: 'Times New Roman', Times, serif !important; color: #000 !important; }
+        .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
+        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 8.5px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
+        tr { page-break-inside: avoid !important; page-break-after: auto !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word; }
+        th { background-color: #e0e0e0 !important; font-weight: bold !important; }
+        td:nth-child(2) { text-align: left !important; }
+        .report-box { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px !important; background: #fff !important; }
+        h4 { font-size: 9px !important; font-weight: bold !important; margin: 6px 0 4px 0 !important; }
+        ul { margin: 4px 0 6px 15px !important; padding: 0 !important; }
+        li { margin-bottom: 3px !important; font-size: 8px !important; text-align: left !important; }
+        .badge { border: none !important; font-weight: bold; background: transparent !important; }
+    `;
+
+    wrapper.appendChild(customStyle);
+    wrapper.appendChild(part1.cloneNode(true));
+    
+    const pageBreak = document.createElement('div');
+    pageBreak.style.pageBreakBefore = 'always';
+    pageBreak.style.marginTop = '15px';
+    wrapper.appendChild(pageBreak);
+
+    wrapper.appendChild(part2.cloneNode(true));
+
+    const opt = {
+        margin:       [4, 4, 4, 4],
+        filename:     filename + '.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+    };
+    
+    html2pdf().from(wrapper).set(opt).save();
 }
 
 function openBulkStudentModal(grade, branchName) {
@@ -1019,6 +1128,7 @@ function renderQuizTable(grade, branchName) {
         <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
             <button onclick="saveQuizScores('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:8px 14px;">Notları Kaydet</button>
             <button onclick="exportTableToWord('quiz-printable-area', '${branchName}_Quiz_Sonuclari')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
+            <button onclick="exportTableToPDF('quiz-printable-area', '${branchName}_Quiz_Sonuclari')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
         </div>`;
 }
 
@@ -1184,8 +1294,9 @@ function renderGroupedActivityTable(grade, branchName) {
                     </table>
                 </div>
             </div>
-            <div style="display:flex; gap:8px; margin-top:12px;">
+            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
                 <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
+                <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
             </div>`;
         return;
     }
@@ -1233,6 +1344,7 @@ function renderGroupedActivityTable(grade, branchName) {
         <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
             <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px;">Puanları Kaydet</button>
             <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
+            <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
         </div>`;
 }
 
@@ -1432,8 +1544,9 @@ async function renderReportData(grade, branchName) {
             </div>
         </div>
 
-        <div style="display:flex; gap:8px; margin-top:12px;">
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
             <button onclick="exportReportToWord('${branchName}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
+            <button onclick="exportFullReportToPDF('${branchName}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
         </div>`;
 }
 
@@ -1536,7 +1649,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
         <section class="dashboard-content" style="max-width: 700px; margin: 0 auto;">
             ${badgeHtml}
 
-            <!-- TÜM KARNE VE TABLOLARI KAPSIYAN ANA ALAN (WORD İNDİRME İÇİN TEK PARÇA) -->
             <div id="student-full-printable-area" class="print-area" style="background: rgba(30,41,59,0.7); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
                 <div class="print-header">
                     <h2>ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
@@ -1552,7 +1664,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                     </div>
                 </div>
 
-                <!-- TABLO 1: QUİZLER -->
                 <div style="margin-bottom: 15px;">
                     <h4 style="font-size: 14px; margin-bottom: 8px; color: #f8fafc;">📝 Quiz Sonuçlarım</h4>
                     <div class="table-responsive">
@@ -1563,7 +1674,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                     </div>
                 </div>
 
-                <!-- TABLO 2: ETKİNLİKLER -->
                 <div>
                     <h4 style="font-size: 14px; margin-bottom: 8px; color: #f8fafc;">🧪 Etkinlik Ortalamalarım</h4>
                     <div class="table-responsive">
@@ -1575,8 +1685,9 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 </div>
             </div>
 
-            <div style="display:flex; justify-content:center; margin: 20px 0;">
+            <div style="display:flex; justify-content:center; gap:10px; margin: 20px 0; flex-wrap:wrap;">
                 <button onclick="exportTableToWord('student-full-printable-area', '${student.name.replace(/\s+/g, '_')}_Genel_Karne')" class="auth-btn" style="background:#2563eb; width:auto; padding:10px 18px;">📥 Karnemi Word İndir</button>
+                <button onclick="exportTableToPDF('student-full-printable-area', '${student.name.replace(/\s+/g, '_')}_Genel_Karne')" class="auth-btn" style="background:#dc2626; width:auto; padding:10px 18px;">📄 Karnemi PDF İndir</button>
             </div>
         </section>
     `;
