@@ -912,29 +912,30 @@ function exportTableToPDF(elementId, filename) {
 
     const tableEl = clone.querySelector('table');
     const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
-    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Analiz');
+    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Analiz') || filename.includes('Tum_Olcekler');
 
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
     wrapper.style.color = '#000000';
-    wrapper.style.padding = '5px';
+    wrapper.style.padding = '10px';
     wrapper.style.margin = '0px';
     wrapper.style.width = '100%';
+    wrapper.style.boxSizing = 'border-box';
     wrapper.style.fontFamily = "'Times New Roman', Times, serif";
     
     const customStyle = document.createElement('style');
     customStyle.innerHTML = `
-        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
-        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+        * { color: #000 !important; background: #fff !important; box-shadow: none !important; box-sizing: border-box !important; }
+        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; }
         h2, h3, p, span, th, td { font-family: 'Times New Roman', Times, serif !important; }
         .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
-        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
-        .print-header h2 { font-size: 12px; font-weight: bold; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 9px; font-weight: bold; margin: 0; }
-        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 6px; margin-bottom: 8px; text-align: center; }
+        .print-header h2 { font-size: 13px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 10px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 6px; margin-bottom: 8px; font-size: 9px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: auto !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word; }
+        th, td { border: 1px solid #000 !important; padding: 5px 6px !important; font-size: 9px !important; text-align: center; background: #fff !important; word-break: break-word; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
@@ -947,7 +948,7 @@ function exportTableToPDF(elementId, filename) {
         margin:       [4, 4, 4, 4],
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: document.body.scrollWidth },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: isWideTable ? 'landscape' : 'portrait', compress: true }
     };
     
@@ -962,30 +963,31 @@ function exportFullReportToPDF(filename) {
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
     wrapper.style.color = '#000000';
-    wrapper.style.padding = '5px';
+    wrapper.style.padding = '10px';
     wrapper.style.margin = '0px';
     wrapper.style.width = '100%';
+    wrapper.style.boxSizing = 'border-box';
     wrapper.style.fontFamily = "'Times New Roman', Times, serif";
 
     const customStyle = document.createElement('style');
     customStyle.innerHTML = `
-        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
-        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+        * { color: #000 !important; background: #fff !important; box-shadow: none !important; box-sizing: border-box !important; }
+        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; }
         h2, h3, h4, p, span, th, td, li { font-family: 'Times New Roman', Times, serif !important; color: #000 !important; }
         .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
-        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
-        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 8.5px; font-weight: bold; margin: 0; }
-        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 6px; margin-bottom: 8px; text-align: center; }
+        .print-header h2 { font-size: 13px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 10px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 6px; margin-bottom: 8px; font-size: 9px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: auto !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word; }
+        th, td { border: 1px solid #000 !important; padding: 5px 6px !important; font-size: 9px !important; text-align: center; background: #fff !important; word-break: break-word; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
-        .report-box { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px !important; background: #fff !important; }
-        h4 { font-size: 9px !important; font-weight: bold !important; margin: 6px 0 4px 0 !important; }
+        .report-box { border: 1px solid #000 !important; padding: 12px !important; margin-top: 12px !important; background: #fff !important; }
+        h4 { font-size: 11px !important; font-weight: bold !important; margin: 8px 0 4px 0 !important; }
         ul { margin: 4px 0 6px 15px !important; padding: 0 !important; }
-        li { margin-bottom: 3px !important; font-size: 8px !important; text-align: left !important; }
+        li { margin-bottom: 3px !important; font-size: 9.5px !important; text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
     `;
 
@@ -1003,7 +1005,7 @@ function exportFullReportToPDF(filename) {
         margin:       [4, 4, 4, 4],
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: document.body.scrollWidth },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
     };
     
