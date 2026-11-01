@@ -785,15 +785,27 @@ function loadBranchTabContent(tabType, grade, branchName) {
                     <button onclick="addStudentModal('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:6px 10px; background:#2563eb; font-size:11px;">+ Öğrenci</button>
                 </div>
             </div>
-            <div class="table-responsive">
-                <table class="data-table" id="export-target-table">
-                    <thead><tr><th style="width: 10%;">No</th><th style="width: 45%;">Ad Soyad</th><th>Artı</th><th>Eksi</th><th>İşlem</th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
-                </table>
+            
+            <div id="student-printable-area" class="print-area">
+                <div class="print-header">
+                    <h2>ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                    <h3>${grade}. SINIF (${branchName}) - ÖĞRENCİ LİSTESİ</h3>
+                </div>
+                <div class="print-info">
+                    <p><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                    <p><b>Toplam Öğrenci:</b> ${students.length}</p>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="export-target-table">
+                        <thead><tr><th style="width: 10%;">No</th><th style="width: 55%;">Ad Soyad</th><th style="width: 15%;">Artı</th><th style="width: 15%;">Eksi</th><th style="display:none;" class="print-hide-col">İşlem</th></tr></thead>
+                        <tbody>${rows || '<tr><td colspan="5" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
+                    </table>
+                </div>
             </div>
-            <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-                <button onclick="exportTableToWord('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#2563eb; width:auto; padding:6px 12px; font-size:11px;">📥 Word İndir</button>
-                <button onclick="exportTableToPDF('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#dc2626; width:auto; padding:6px 12px; font-size:11px;">📄 PDF İndir</button>
+
+            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+                <button onclick="exportTableToWord('student-printable-area', '${branchName.replace('/', '_')}_Ogrenci_Listesi')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
+                <button onclick="exportTableToPDF('student-printable-area', '${branchName.replace('/', '_')}_Ogrenci_Listesi')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
             </div>`;
     } else if (tabType === 'quizzes') {
         contentArea.innerHTML = `
@@ -841,18 +853,20 @@ function exportTableToWord(elementId, filename) {
         clonedInputs[i].parentNode.replaceChild(span, clonedInputs[i]);
     }
 
+    const buttons = clone.querySelectorAll('button');
+    buttons.forEach(b => b.remove());
+
     const styles = `<style>
         @page Section1 { size: 21.0cm 29.7cm; margin: 1.5cm; }
         div.Section1 { page: Section1; }
         body { font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.4; background: #fff !important; }
         .print-area, .print-header, .print-info { background: #fff !important; color: #000 !important; border-color: #000 !important; }
         .print-header h2, .print-header h3, .print-info p { color: #000 !important; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: auto !important; }
+        th, td { border: 1px solid #000 !important; padding: 5px 6px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; word-break: break-word; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .badge { color: #000 !important; background: transparent !important; } 
-        button { display: none !important; }
     </style>`;
 
     const htmlHeader = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Rapor</title>${styles}</head><body><div class="Section1">`;
@@ -872,8 +886,8 @@ function exportReportToWord(filename) {
         body { font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.4; background: #fff !important; }
         .print-area, .print-header, .print-info, .report-box { background: #fff !important; color: #000 !important; border-color: #000 !important; }
         .print-header h2, .print-header h3, .print-info p { color: #000 !important; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: auto !important; }
+        th, td { border: 1px solid #000 !important; padding: 5px 6px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; word-break: break-word; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .page-break { page-break-before: always; mso-break-type: page-break; clear: both; display: block; }
@@ -910,10 +924,6 @@ function exportTableToPDF(elementId, filename) {
     const buttons = clone.querySelectorAll('button');
     buttons.forEach(b => b.remove());
 
-    const tableEl = clone.querySelector('table');
-    const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
-    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Analiz') || filename.includes('Tum_Olcekler');
-
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
     wrapper.style.color = '#000000';
@@ -933,9 +943,9 @@ function exportTableToPDF(elementId, filename) {
         .print-header h2 { font-size: 13px; font-weight: bold; margin: 0 0 2px 0; }
         .print-header h3 { font-size: 10px; font-weight: bold; margin: 0; }
         .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 6px; margin-bottom: 8px; font-size: 9px; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: auto !important; }
-        tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 5px 6px !important; font-size: 9px !important; text-align: center; background: #fff !important; word-break: break-word; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; word-wrap: break-word !important; }
+        tr { page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: auto !important; }
+        th, td { border: 1px solid #000 !important; padding: 5px 6px !important; font-size: 9px !important; text-align: center; background: #fff !important; word-break: break-word !important; white-space: normal !important; overflow-wrap: break-word !important; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
@@ -949,7 +959,7 @@ function exportTableToPDF(elementId, filename) {
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: document.body.scrollWidth },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: isWideTable ? 'landscape' : 'portrait', compress: true }
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
     };
     
     html2pdf().from(wrapper).set(opt).save();
@@ -979,9 +989,9 @@ function exportFullReportToPDF(filename) {
         .print-header h2 { font-size: 13px; font-weight: bold; margin: 0 0 2px 0; }
         .print-header h3 { font-size: 10px; font-weight: bold; margin: 0; }
         .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 6px; margin-bottom: 8px; font-size: 9px; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: auto !important; }
-        tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 5px 6px !important; font-size: 9px !important; text-align: center; background: #fff !important; word-break: break-word; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; word-wrap: break-word !important; }
+        tr { page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: auto !important; }
+        th, td { border: 1px solid #000 !important; padding: 5px 6px !important; font-size: 9px !important; text-align: center; background: #fff !important; word-break: break-word !important; white-space: normal !important; overflow-wrap: break-word !important; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .report-box { border: 1px solid #000 !important; padding: 12px !important; margin-top: 12px !important; background: #fff !important; }
@@ -996,6 +1006,7 @@ function exportFullReportToPDF(filename) {
     
     const pageBreak = document.createElement('div');
     pageBreak.style.pageBreakBefore = 'always';
+    pageBreak.style.breakBefore = 'page';
     pageBreak.style.marginTop = '15px';
     wrapper.appendChild(pageBreak);
 
@@ -1129,8 +1140,8 @@ function renderQuizTable(grade, branchName) {
         </div>
         <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
             <button onclick="saveQuizScores('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:8px 14px;">Notları Kaydet</button>
-            <button onclick="exportTableToWord('quiz-printable-area', '${branchName}_Quiz_Sonuclari')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
-            <button onclick="exportTableToPDF('quiz-printable-area', '${branchName}_Quiz_Sonuclari')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
+            <button onclick="exportTableToWord('quiz-printable-area', '${branchName.replace('/', '_')}_Quiz_Sonuclari')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
+            <button onclick="exportTableToPDF('quiz-printable-area', '${branchName.replace('/', '_')}_Quiz_Sonuclari')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
         </div>`;
 }
 
@@ -1297,8 +1308,8 @@ function renderGroupedActivityTable(grade, branchName) {
                 </div>
             </div>
             <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-                <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
-                <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
+                <button onclick="exportTableToWord('activity-printable-area', '${branchName.replace('/', '_')}_Olcek')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
+                <button onclick="exportTableToPDF('activity-printable-area', '${branchName.replace('/', '_')}_Olcek')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
             </div>`;
         return;
     }
@@ -1345,8 +1356,8 @@ function renderGroupedActivityTable(grade, branchName) {
         </div>
         <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
             <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px;">Puanları Kaydet</button>
-            <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
-            <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
+            <button onclick="exportTableToWord('activity-printable-area', '${branchName.replace('/', '_')}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
+            <button onclick="exportTableToPDF('activity-printable-area', '${branchName.replace('/', '_')}_Tum_Olcekler')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
         </div>`;
 }
 
@@ -1546,9 +1557,9 @@ async function renderReportData(grade, branchName) {
             </div>
         </div>
 
-        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-            <button onclick="exportReportToWord('${branchName}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
-            <button onclick="exportFullReportToPDF('${branchName}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
+        <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">
+            <button onclick="exportReportToWord('${branchName.replace('/', '_')}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
+            <button onclick="exportFullReportToPDF('${branchName.replace('/', '_')}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
         </div>`;
 }
 
