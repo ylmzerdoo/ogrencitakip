@@ -686,7 +686,7 @@ function renderGradeManagementView(grade, push = true) {
 
     detailPanel.innerHTML = `
         <header class="teacher-header" style="position: relative; z-index: 20;">
-            <div class="header-brand"><span class="brand-icon">📚</span><h1>${grade}. SINIFLAR</h1></div>
+            <div class="header-brand"><span class="brand-icon">📚</span><h1 style="font-size: 17px; line-height: 1.3; word-break: break-word;">${grade}. SINIFLAR</h1></div>
             <div>
                 <button onclick="renderTeacherPanelView(true)" class="logout-btn" style="background:#3b82f6; margin-right:6px; position:relative; z-index:25;">Geri Dön</button>
                 <button onclick="logout()" class="logout-btn" style="position:relative; z-index:25;">Çıkış</button>
@@ -718,7 +718,7 @@ function renderBranchMenuView(grade, branchName, push = true) {
 
     detailPanel.innerHTML = `
         <header class="teacher-header" style="position: relative; z-index: 20;">
-            <div class="header-brand"><h1>${grade}. Sınıf - ${branchName}</h1></div>
+            <div class="header-brand"><h1 style="font-size: 17px; line-height: 1.3; word-break: break-word;">${grade}. Sınıf - ${branchName}</h1></div>
             <div>
                 <button onclick="openGradeManagement('${grade}', true)" class="logout-btn" style="background:#3b82f6; margin-right:6px; position: relative; z-index: 25;">Geri</button>
                 <button onclick="logout()" class="logout-btn" style="position: relative; z-index: 25;">Çıkış</button>
@@ -757,7 +757,7 @@ function renderBranchDetailView(grade, branchName, tab = 'students', push = true
 
     detailPanel.innerHTML = `
         <header class="teacher-header" style="position: relative; z-index: 20;">
-            <div class="header-brand"><h1>${grade}. Sınıf - ${branchName}</h1></div>
+            <div class="header-brand"><h1 style="font-size: 17px; line-height: 1.3; word-break: break-word;">${grade}. Sınıf - ${branchName}</h1></div>
             <div>
                 <button onclick="openBranchMenu('${grade}', '${branchName}', true)" class="logout-btn" style="background:#3b82f6; margin-right:6px; position: relative; z-index: 25;">Menü</button>
                 <button onclick="logout()" class="logout-btn" style="position: relative; z-index: 25;">Çıkış</button>
@@ -867,7 +867,6 @@ function exportTableToWord(elementId, filename) {
     
     const clone = element.cloneNode(true);
     
-    // Convert inputs to spans
     const originalInputs = element.querySelectorAll('input');
     const clonedInputs = clone.querySelectorAll('input');
     for (let i = 0; i < originalInputs.length; i++) {
@@ -878,7 +877,6 @@ function exportTableToWord(elementId, filename) {
         clonedInputs[i].parentNode.replaceChild(span, clonedInputs[i]);
     }
 
-    // Convert pill boxes to clean numbers for Word print view
     const pillBoxes = clone.querySelectorAll('.score-pill-box');
     pillBoxes.forEach(box => {
         const valSpan = box.querySelector('.score-text-val');
@@ -975,7 +973,6 @@ function exportTableToPDF(elementId, filename) {
         clonedInputs[i].parentNode.replaceChild(span, clonedInputs[i]);
     }
 
-    // Convert pill boxes to clean text for PDF
     const pillBoxes = clone.querySelectorAll('.score-pill-box');
     pillBoxes.forEach(box => {
         const valSpan = box.querySelector('.score-text-val');
@@ -1718,13 +1715,13 @@ function renderStudentPanelView(grade, branch, student, push = true) {
     else if (quizCount > 0) generalAvg = avgQuiz;
     else if (scaleCount > 0) generalAvg = avgScale;
 
-    let badgeHtml = generalAvg >= 85 ? 
+    let badgeHtml = generalAvg >= 85 ?  
         `<div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 12px; border-radius: 10px; color: white; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);"><span style="font-size: 24px;">🏆</span><h3 style="margin: 4px 0 2px; font-size: 15px;">Fen Bilimleri Yıldızı</h3></div>` :
         generalAvg >= 70 ? `<div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 12px; border-radius: 10px; color: white; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);"><span style="font-size: 24px;">⭐</span><h3 style="margin: 4px 0 2px; font-size: 15px;">Süper Başarı</h3></div>` : '';
 
     studentPanel.innerHTML = `
         <header class="teacher-header" style="position: relative; z-index: 20;">
-            <div class="header-brand"><h1>${student.name} (${branch})</h1></div>
+            <div class="header-brand"><h1 style="font-size: 17px; line-height: 1.3; word-break: break-word;">${student.name} (${branch})</h1></div>
             <div><button type="button" onclick="logoutStudent()" class="logout-btn" style="position: relative; z-index: 25; cursor: pointer;">Çıkış</button></div>
         </header>
         <section class="dashboard-content" style="max-width: 700px; margin: 0 auto; position: relative; z-index: 10;">
@@ -1732,16 +1729,28 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
             <div id="student-full-printable-area" class="print-area" style="background: rgba(30,41,59,0.7); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
                 <div class="print-header">
-                    <h2>ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                    <h3>ÖĞRENCİ GELİŞİM VE GENEL KARNE RAPORU</h3>
+                    <h2 style="font-size: 17px; line-height: 1.3; word-break: break-word; font-weight: bold; margin: 0 0 4px 0;">ERDOĞAN YILMAZ FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                    <h3 style="font-size: 14px; line-height: 1.3; word-break: break-word; font-weight: normal; margin: 0;">ÖĞRENCİ GELİŞİM VE GENEL KARNE RAPORU</h3>
                 </div>
-                <div class="print-info" style="margin-bottom: 15px;">
+                <div class="print-info" style="margin-bottom: 15px; margin-top: 10px;">
                     <p><b>Adı:</b> ${student.name}</p>
                     <p><b>No / Şube:</b> ${student.no} | ${grade}. Sınıf - ${branch}</p>
                     <p><b>Quiz Ort:</b> ${quizCount > 0 ? avgQuiz + ' Puan' : '-'}</p>
                     <p><b>Etkinlik Ort:</b> ${scaleCount > 0 ? '%' + avgScale : '-'}</p>
                     <div style="font-size: 14px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; display:flex; align-items:center; gap:8px;">
                         <b>Genel Puan:</b> ${getScoreBadge(generalAvg)}
+                    </div>
+                </div>
+
+                <!-- ÖĞRENCİ PANELİ ARTI / EKSİ ÖZET KUTULARI -->
+                <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+                    <div style="padding: 6px 12px; flex: 1; justify-content: center; display: flex; align-items: center; background: rgba(5, 150, 105, 0.2); border: 1px solid rgba(5, 150, 105, 0.5); border-radius: 20px; gap: 6px;">
+                        <span style="font-size: 12px; color: #34d399; font-weight: 600;">Toplam Artı:</span>
+                        <span style="font-weight: bold; color: #34d399; font-size: 14px;">${student.plus || 0}</span>
+                    </div>
+                    <div style="padding: 6px 12px; flex: 1; justify-content: center; display: flex; align-items: center; background: rgba(220, 38, 38, 0.2); border: 1px solid rgba(220, 38, 38, 0.5); border-radius: 20px; gap: 6px;">
+                        <span style="font-size: 12px; color: #f87171; font-weight: 600;">Toplam Eksi:</span>
+                        <span style="font-weight: bold; color: #f87171; font-size: 14px;">${student.minus || 0}</span>
                     </div>
                 </div>
 
