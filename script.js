@@ -933,7 +933,7 @@ function exportTableToPDF(elementId, filename) {
 
     const tableEl = clone.querySelector('table');
     const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
-    const isWideTable = colCount > 3 || filename.includes('Olcek') || filename.includes('Tum_Olcekler') || filename.includes('Analiz');
+    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Tum_Olcekler') || filename.includes('Analiz');
 
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
@@ -956,7 +956,7 @@ function exportTableToPDF(elementId, filename) {
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
         thead { display: table-header-group; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
@@ -966,7 +966,7 @@ function exportTableToPDF(elementId, filename) {
     wrapper.appendChild(clone);
 
     const opt = {
-        margin:       [5, 5, 5, 5],
+        margin:       [4, 4, 4, 4],
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
