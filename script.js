@@ -859,7 +859,7 @@ function exportTableToWord(elementId, filename) {
         .print-area, .print-header, .print-info { background: #fff !important; color: #000 !important; border-color: #000 !important; }
         .print-header h2, .print-header h3, .print-info p { color: #000 !important; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; }
+        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; word-break: break-word !important; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .badge { color: #000 !important; background: transparent !important; } 
@@ -884,7 +884,7 @@ function exportReportToWord(filename) {
         .print-area, .print-header, .print-info, .report-box { background: #fff !important; color: #000 !important; border-color: #000 !important; }
         .print-header h2, .print-header h3, .print-info p { color: #000 !important; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; }
+        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; word-break: break-word !important; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .page-break { page-break-before: always; mso-break-type: page-break; clear: both; display: block; }
@@ -921,10 +921,6 @@ function exportTableToPDF(elementId, filename) {
     const buttons = clone.querySelectorAll('button');
     buttons.forEach(b => b.remove());
 
-    const tableEl = clone.querySelector('table');
-    const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
-    const isWideTable = colCount > 3 || filename.includes('Olcek') || filename.includes('Analiz');
-
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
     wrapper.style.color = '#000000';
@@ -945,9 +941,10 @@ function exportTableToPDF(elementId, filename) {
         .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word !important; overflow-wrap: break-word !important; }
+        th, td { border: 1px solid #000 !important; padding: 4px 3px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word !important; overflow-wrap: break-word !important; white-space: normal !important; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; text-align: center !important; }
-        td:nth-child(2) { text-align: left !important; }
+        td:nth-child(1) { width: 6% !important; }
+        td:nth-child(2) { width: 22% !important; text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
     `;
     
@@ -959,7 +956,7 @@ function exportTableToPDF(elementId, filename) {
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: isWideTable ? 'landscape' : 'portrait', compress: true }
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } // Word gibi dikey A4
     };
     
     html2pdf().from(wrapper).set(opt).save();
@@ -990,9 +987,8 @@ function exportFullReportToPDF(filename) {
         .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word !important; overflow-wrap: break-word !important; }
+        th, td { border: 1px solid #000 !important; padding: 4px 3px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word !important; overflow-wrap: break-word !important; white-space: normal !important; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; text-align: center !important; }
-        td:nth-child(2) { text-align: left !important; }
         .report-box { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px !important; background: #fff !important; }
         h4 { font-size: 9px !important; font-weight: bold !important; margin: 6px 0 4px 0 !important; }
         ul { margin: 4px 0 6px 15px !important; padding: 0 !important; }
@@ -1015,7 +1011,7 @@ function exportFullReportToPDF(filename) {
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true }
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
     };
     
     html2pdf().from(wrapper).set(opt).save();
@@ -1259,7 +1255,7 @@ function renderGroupedActivityTable(grade, branchName) {
         const criteria = scaleObj.criteria || ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'];
         const scaleType = scaleObj.scale_type || '1-4';
 
-        let headerTh = '<th style="width: 6%;">No</th><th style="width: 18%;">Ad Soyad</th>';
+        let headerTh = '<th style="width: 6%;">No</th><th style="width: 20%;">Ad Soyad</th>';
         criteria.forEach(c => { headerTh += `<th>${c}</th>`; });
         headerTh += '<th style="width: 8%;">Başarı</th>';
 
