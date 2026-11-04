@@ -2,15 +2,7 @@ const SUPABASE_URL = 'https://vaocsboltekfjknovpih.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_kctB4Az-JC9la65xOcLHmg_1n9XAufj';
 
 let supabaseClient = null;
-if (SUPABASE_URL) { 
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true
-        }
-    }); 
-}
+if (SUPABASE_URL) { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
 
 let fenData = {
     '5': { units: [], activities: [], branches: {} },
@@ -127,20 +119,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         teacherEmailInput.addEventListener('keydown', handleEnterKey);
         teacherPasswordInput.addEventListener('keydown', handleEnterKey);
     }
+
+    // Ders İşlemleri ve Yönetim tıklama işlevselliği
+    const actionCard = document.querySelector('.dashboard-content .grade-card, [onclick*="toggleActionDropdown"], .teacher-panel-dropdown, .action-dropdown-card') || document.querySelector('section.dashboard-content > div:first-child');
+    // Güvenli bağlama için öğretmen panelindeki üst yönetim kartını bulup tıklama event'i ekleyelim:
+    setupTeacherActionToggle();
+
     restoreStateFromSession();
 });
 
-function toggleTeacherActionsCard() {
-    const container = document.getElementById('teacher-actions-container');
-    const icon = document.getElementById('teacher-actions-toggle-icon');
-    if (!container || !icon) return;
-    if (container.style.display === 'none' || !container.style.display) {
-        container.style.display = 'block';
-        icon.style.transform = 'rotate(180deg)';
-    } else {
-        container.style.display = 'none';
-        icon.style.transform = 'rotate(0deg)';
+function setupTeacherActionToggle() {
+    // Tüm olası seçicileri kontrol ederek "Ders İşlemleri ve Yönetim" paneline tıklama özelliği kazandıralım
+    const headers = document.querySelectorAll('div, section');
+    headers.forEach(el => {
+        if (el.innerText && el.innerText.includes('Ders İşlemleri ve Yönetim')) {
+            el.style.cursor = 'pointer';
+            el.onclick = function() {
+                toggleTeacherActionsMenu(this);
+            };
+        }
+    });
+}
+
+function toggleTeacherActionsMenu(container) {
+    let menuId = 'teacher-actions-dropdown-menu';
+    let existingMenu = document.getElementById(menuId);
+    if (existingMenu) {
+        existingMenu.style.display = existingMenu.style.display === 'none' ? 'block' : 'none';
+        return;
     }
+
+    const menu = document.createElement('div');
+    menu.id = menuId;
+    menu.style.cssText = 'background: rgba(15,23,42,0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; margin-top: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; backdrop-filter: blur(10px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100;';
+    
+    menu.innerHTML = `
+        <button onclick="globalAddUnit()" class="auth-btn" style="background:#2563eb; padding:8px 12px; font-size:13px; text-align:left;">➕ Yeni Ünite Ekle</button>
+        <button onclick="globalAddSection()" class="auth-btn" style="background:#059669; padding:8px 12px; font-size:13px; text-align:left;">➕ Yeni Bölüm Ekle</button>
+        <button onclick="globalAddActivity()" class="auth-btn" style="background:#7c3aed; padding:8px 12px; font-size:13px; text-align:left;">📊 Excel Ölçek Entegrasyonu</button>
+        <button onclick="globalAddReportTemplate()" class="auth-btn" style="background:#d97706; padding:8px 12px; font-size:13px; text-align:left;">📝 Resmi Rapor Şablonu Ekle</button>
+        <button onclick="globalDeleteManagement()" class="auth-btn" style="background:#dc2626; padding:8px 12px; font-size:13px; text-align:left;">🗑️ İçerik Silme / Yönetim</button>
+    `;
+
+    container.appendChild(menu);
 }
 
 function getScoreBadge(score) {
@@ -212,12 +233,12 @@ async function teacherLogin(push = true) {
     if (!email || !password) { alert('Lütfen e-posta ve şifrenizi girin.'); return; }
     try {
         if (supabaseClient) {
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) { alert('Giriş Başarısız: E-posta veya şifre hatalı! (' + error.message + ')'); return; }
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) { alert('Giriş Başarısız: E-posta veya şifre hatalı!'); return; }
         }
         await loadAllDataFromSupabase();
         renderTeacherPanelView(push);
-    } catch (err) { alert('Giriş sırasında bir hata oluştu: ' + err.message); }
+    } catch (err) { alert('Giriş sırasında bir hata oluştu.'); }
 }
 
 function renderTeacherPanelView(push = true) {
@@ -230,6 +251,7 @@ function renderTeacherPanelView(push = true) {
     document.getElementById('teacher-panel').style.display = 'flex';
     window.scrollTo({ top: 0, behavior: 'smooth' });
     closeModal();
+    setTimeout(setupTeacherActionToggle, 100);
 }
 
 async function logout() {
@@ -682,7 +704,7 @@ function renderGradeManagementView(grade, push = true) {
     Object.keys(branches).forEach(bName => {
         const studentCount = branches[bName].length;
         branchCards += `
-            <div class="grade-card" style="border-top-color: #f26b5b; position: relative;">
+            <div class="grade-card" style="border-top-color: #3b82f6; position: relative;">
                 <div onclick="openBranchMenu('${grade}', '${bName}')" style="cursor: pointer;">
                     <h3>${bName} Şubesi</h3>
                     <p>${studentCount} Öğrenci Kayıtlı</p>
@@ -696,7 +718,7 @@ function renderGradeManagementView(grade, push = true) {
         <header class="teacher-header">
             <div class="header-brand"><span class="brand-icon">📚</span><h1>${grade}. SINIFLAR</h1></div>
             <div>
-                <button onclick="renderTeacherPanelView(true)" class="logout-btn" style="background:#f26b5b; margin-right:6px;">Geri Dön</button>
+                <button onclick="renderTeacherPanelView(true)" class="logout-btn" style="background:#3b82f6; margin-right:6px;">Geri Dön</button>
                 <button onclick="logout()" class="logout-btn">Çıkış</button>
             </div>
         </header>
@@ -706,7 +728,7 @@ function renderGradeManagementView(grade, push = true) {
             </div>
             <h3 style="font-size:15px; margin-bottom:10px;">Şubeler</h3>
             <div class="grade-cards-grid">
-                ${branchCards || '<p style="color:#cbd5e1; font-size:12px;">Henüz şube eklenmemiş.</p>'}
+                ${branchCards || '<p style="color:#94a3b8; font-size:12px;">Henüz şube eklenmemiş.</p>'}
             </div>
         </section>`;
 }
@@ -728,13 +750,13 @@ function renderBranchMenuView(grade, branchName, push = true) {
         <header class="teacher-header">
             <div class="header-brand"><h1>${grade}. Sınıf - ${branchName}</h1></div>
             <div>
-                <button onclick="openGradeManagement('${grade}', true)" class="logout-btn" style="background:#f26b5b; margin-right:6px;">Geri</button>
+                <button onclick="openGradeManagement('${grade}', true)" class="logout-btn" style="background:#3b82f6; margin-right:6px;">Geri</button>
                 <button onclick="logout()" class="logout-btn">Çıkış</button>
             </div>
         </header>
         <section class="dashboard-content">
             <div class="grade-cards-grid">
-                <div class="grade-card" onclick="openBranchDetail('${grade}', '${branchName}', 'students', true)" style="border-top-color: #f26b5b;">
+                <div class="grade-card" onclick="openBranchDetail('${grade}', '${branchName}', 'students', true)" style="border-top-color: #3b82f6;">
                     <div style="font-size: 24px; margin-bottom: 6px;">👥</div><h3>Sınıf Listesi & Artı/Eksi</h3><span class="card-action">Git &rarr;</span>
                 </div>
                 <div class="grade-card" onclick="openBranchDetail('${grade}', '${branchName}', 'quizzes', true)" style="border-top-color: #8b5cf6;">
@@ -767,12 +789,12 @@ function renderBranchDetailView(grade, branchName, tab = 'students', push = true
         <header class="teacher-header">
             <div class="header-brand"><h1>${grade}. Sınıf - ${branchName}</h1></div>
             <div>
-                <button onclick="openBranchMenu('${grade}', '${branchName}', true)" class="logout-btn" style="background:#f26b5b; margin-right:6px;">Menü</button>
+                <button onclick="openBranchMenu('${grade}', '${branchName}', true)" class="logout-btn" style="background:#3b82f6; margin-right:6px;">Menü</button>
                 <button onclick="logout()" class="logout-btn">Çıkış</button>
             </div>
         </header>
         <section class="dashboard-content">
-            <div id="branch-tab-content" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(10px); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);"></div>
+            <div id="branch-tab-content" style="background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);"></div>
         </section>`;
     
     loadBranchTabContent(tab, grade, branchName);
@@ -803,7 +825,7 @@ function loadBranchTabContent(tabType, grade, branchName) {
                 <h3 style="color:#f8fafc; font-size:15px; margin:0;">Öğrenci Listesi</h3>
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
                     <button onclick="openBulkStudentModal('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:6px 10px; background:#059669; font-size:11px;">📋 e-Okul Yapıştır</button>
-                    <button onclick="addStudentModal('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:6px 10px; background:#f26b5b; font-size:11px;">+ Öğrenci</button>
+                    <button onclick="addStudentModal('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:6px 10px; background:#2563eb; font-size:11px;">+ Öğrenci</button>
                 </div>
             </div>
             <div class="table-responsive">
@@ -813,13 +835,13 @@ function loadBranchTabContent(tabType, grade, branchName) {
                 </table>
             </div>
             <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-                <button onclick="exportTableToWord('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#f26b5b; width:auto; padding:6px 12px; font-size:11px;">📥 Word İndir</button>
+                <button onclick="exportTableToWord('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#2563eb; width:auto; padding:6px 12px; font-size:11px;">📥 Word İndir</button>
                 <button onclick="exportTableToPDF('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#dc2626; width:auto; padding:6px 12px; font-size:11px;">📄 PDF İndir</button>
             </div>`;
     } else if (tabType === 'quizzes') {
         contentArea.innerHTML = `
             <h3 style="color:#f8fafc; font-size:15px; margin-bottom:4px;">📝 Quiz Sonuçları</h3>
-            <p style="color: #cbd5e1; margin-top: 0; font-size: 11px;">Ünite ve bölüm seçerek not girin (0-100 veya G yazabilirsiniz).</p>
+            <p style="color: #94a3b8; margin-top: 0; font-size: 11px;">Ünite ve bölüm seçerek not girin (0-100 veya G yazabilirsiniz).</p>
             <div style="display: flex; gap: 8px; margin-top: 10px; flex-direction: column;">
                 <select id="quiz-unit-sel" class="auth-input" onchange="loadSectionsForQuiz(this.value, '${grade}', '${branchName}')">${unitOptions}</select>
                 <select id="quiz-section-select" class="auth-input" onchange="renderQuizTable('${grade}', '${branchName}')"><option value="">-- Önce Ünite Seçin --</option></select>
@@ -869,7 +891,7 @@ function exportTableToWord(elementId, filename) {
         .print-area, .print-header, .print-info { background: #fff !important; color: #000 !important; border-color: #000 !important; }
         .print-header h2, .print-header h3, .print-info p { color: #000 !important; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; white-space: normal !important; word-break: break-word; }
+        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .badge { color: #000 !important; background: transparent !important; } 
@@ -894,7 +916,7 @@ function exportReportToWord(filename) {
         .print-area, .print-header, .print-info, .report-box { background: #fff !important; color: #000 !important; border-color: #000 !important; }
         .print-header h2, .print-header h3, .print-info p { color: #000 !important; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; white-space: normal !important; word-break: break-word; }
+        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .page-break { page-break-before: always; mso-break-type: page-break; clear: both; display: block; }
@@ -933,7 +955,7 @@ function exportTableToPDF(elementId, filename) {
 
     const tableEl = clone.querySelector('table');
     const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
-    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Tum_Olcekler') || filename.includes('Analiz');
+    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Analiz');
 
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
@@ -945,18 +967,17 @@ function exportTableToPDF(elementId, filename) {
     
     const customStyle = document.createElement('style');
     customStyle.innerHTML = `
-        * { color: #000 !important; background: #fff !important; box-shadow: none !important; -webkit-print-color-adjust: exact; }
+        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
         body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
         h2, h3, p, span, th, td { font-family: 'Times New Roman', Times, serif !important; }
         .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
         .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
-        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h2 { font-size: 12px; font-weight: bold; margin: 0 0 2px 0; }
         .print-header h3 { font-size: 9px; font-weight: bold; margin: 0; }
         .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        thead { display: table-header-group; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
@@ -991,41 +1012,38 @@ function exportFullReportToPDF(filename) {
 
     const customStyle = document.createElement('style');
     customStyle.innerHTML = `
-        * { color: #000 !important; background: #fff !important; box-shadow: none !important; -webkit-print-color-adjust: exact; }
+        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
         body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
         h2, h3, h4, p, span, th, td, li { font-family: 'Times New Roman', Times, serif !important; color: #000 !important; }
         .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
         .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
         .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 9px; font-weight: bold; margin: 0; }
+        .print-header h3 { font-size: 8.5px; font-weight: bold; margin: 0; }
         .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
-        .report-box { border: 1px solid #000 !important; padding: 8px !important; margin-top: 8px !important; background: #fff !important; page-break-inside: avoid !important; }
-        h4 { font-size: 9px !important; font-weight: bold !important; margin: 6px 0 3px 0 !important; }
-        ul { margin: 3px 0 5px 15px !important; padding: 0 !important; }
-        li { margin-bottom: 3px !important; font-size: 8px !important; text-align: left !important; page-break-inside: avoid; }
+        .report-box { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px !important; background: #fff !important; }
+        h4 { font-size: 9px !important; font-weight: bold !important; margin: 6px 0 4px 0 !important; }
+        ul { margin: 4px 0 6px 15px !important; padding: 0 !important; }
+        li { margin-bottom: 3px !important; font-size: 8px !important; text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
     `;
-
-    wrapper.style.display = 'flex';
-    wrapper.style.flexDirection = 'column';
-    wrapper.style.gap = '20px';
 
     wrapper.appendChild(customStyle);
     wrapper.appendChild(part1.cloneNode(true));
     
     const pageBreak = document.createElement('div');
     pageBreak.style.pageBreakBefore = 'always';
+    pageBreak.style.marginTop = '15px';
     wrapper.appendChild(pageBreak);
 
     wrapper.appendChild(part2.cloneNode(true));
 
     const opt = {
-        margin:       [5, 5, 5, 5],
+        margin:       [4, 4, 4, 4],
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
@@ -1119,7 +1137,7 @@ function renderQuizTable(grade, branchName) {
     const container = document.getElementById('quiz-table-container');
     if (!container) return;
 
-    if (!unitName || !secName) { container.innerHTML = '<p style="color:#cbd5e1; font-size:12px;">Lütfen ünite ve bölüm seçin.</p>'; return; }
+    if (!unitName || !secName) { container.innerHTML = '<p style="color:#94a3b8; font-size:12px;">Lütfen ünite ve bölüm seçin.</p>'; return; }
 
     const students = fenData[grade]?.branches[branchName] || [];
     let rows = '';
@@ -1136,7 +1154,7 @@ function renderQuizTable(grade, branchName) {
     container.innerHTML = `
         <div id="quiz-printable-area" class="print-area">
             <div class="print-header">
-                <h2>FENOMENAL DİJİTAL EĞİTİM PORTALI</h2>
+                <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
                 <h3>${grade}. SINIF (${branchName}) - QUİZ DEĞERLENDİRME RAPORU</h3>
             </div>
             <div class="print-info">
@@ -1258,12 +1276,12 @@ function renderGroupedActivityTable(grade, branchName) {
     const container = document.getElementById('activity-table-container');
     if (!container) return;
 
-    if (!baseActName) { container.innerHTML = '<p style="color:#cbd5e1; font-size:12px;">Lütfen etkinlik seçin.</p>'; return; }
+    if (!baseActName) { container.innerHTML = '<p style="color:#94a3b8; font-size:12px;">Lütfen etkinlik seçin.</p>'; return; }
 
     const allActs = fenData[grade].activities || [];
     const subScales = allActs.filter(a => a.unit === unitName && a.section === secName && (a.name === baseActName || a.name.startsWith(baseActName + ' -')));
 
-    if (subScales.length === 0) { container.innerHTML = '<p style="color:#cbd5e1; font-size:12px;">Ölçek bulunamadı.</p>'; return; }
+    if (subScales.length === 0) { container.innerHTML = '<p style="color:#94a3b8; font-size:12px;">Ölçek bulunamadı.</p>'; return; }
     const students = fenData[grade]?.branches[branchName] || [];
 
     if (selectedScaleName && selectedScaleName !== '-- TÜM ÖLÇEKLER --') {
@@ -1304,7 +1322,7 @@ function renderGroupedActivityTable(grade, branchName) {
         container.innerHTML = `
             <div id="activity-printable-area" class="print-area">
                 <div class="print-header">
-                    <h2>FENOMENAL DİJİTAL EĞİTİM PORTALI</h2>
+                    <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
                     <h3>${grade}. SINIF (${branchName}) - TEKİL ÖLÇEK RAPORU</h3>
                 </div>
                 <div class="print-info">
@@ -1352,7 +1370,7 @@ function renderGroupedActivityTable(grade, branchName) {
     container.innerHTML = `
         <div id="activity-printable-area" class="print-area">
             <div class="print-header">
-                <h2>FENOMENAL DİJİTAL EĞİTİM PORTALI</h2>
+                <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
                 <h3>${grade}. SINIF (${branchName}) - TÜM ÖLÇEKLER RAPORU</h3>
             </div>
             <div class="print-info">
@@ -1461,7 +1479,7 @@ async function renderReportData(grade, branchName) {
     const container = document.getElementById('report-result-container');
     if (!container) return;
 
-    if (!unitName || !secName) { container.innerHTML = '<p style="color:#cbd5e1; font-size:12px;">Lütfen ünite ve bölüm seçin.</p>'; return; }
+    if (!unitName || !secName) { container.innerHTML = '<p style="color:#94a3b8; font-size:12px;">Lütfen ünite ve bölüm seçin.</p>'; return; }
 
     let customReportText = "Bu bölüm için henüz resmi rapor şablonu eklenmemiş.";
     if (supabaseClient) {
@@ -1541,7 +1559,7 @@ async function renderReportData(grade, branchName) {
     container.innerHTML = `
         <div id="report-printable-area" class="print-area">
             <div class="print-header">
-                <h2>FENOMENAL DİJİTAL EĞİTİM PORTALI</h2>
+                <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
                 <h3>${grade}. SINIF (${branchName}) - ÜNİTE VE BÖLÜM ANALİZİ & KARNE RAPORU</h3>
             </div>
             <div class="print-info">
@@ -1628,7 +1646,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 let qKey = `${u.name}_${sec}`;
                 if (student.quiz && student.quiz[qKey] !== undefined && student.quiz[qKey] !== '') {
                     let score = student.quiz[qKey];
-                    quizRows += `<tr><td style="word-break: break-word; white-space: normal !important;"><b>${u.name}</b> / ${sec}</td><td style="text-align: center;">${getScoreBadge(score)}</td></tr>`;
+                    quizRows += `<tr><td style="word-break: break-word; white-space: normal;"><b>${u.name}</b> / ${sec}</td><td style="text-align: center; white-space: nowrap;">${getScoreBadge(score)}</td></tr>`;
                     if (score !== 'G') { totalQuizScore += parseFloat(score); quizCount++; }
                 }
             });
@@ -1650,7 +1668,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 });
                 if (secScoreCount > 0) {
                     let secAvg = Math.round(secScoreSum / secScoreCount);
-                    scaleRows += `<tr><td style="word-break: break-word; white-space: normal !important;"><b>${u.name}</b> / ${sec}</td><td style="text-align: center;">${getScaleBadge(secAvg)}</td></tr>`;
+                    scaleRows += `<tr><td style="word-break: break-word; white-space: normal;"><b>${u.name}</b> / ${sec}</td><td style="text-align: center; white-space: nowrap;">${getScaleBadge(secAvg)}</td></tr>`;
                     totalScaleScore += secAvg; scaleCount++;
                 }
             });
@@ -1663,8 +1681,8 @@ function renderStudentPanelView(grade, branch, student, push = true) {
     else if (scaleCount > 0) generalAvg = avgScale;
 
     let badgeHtml = generalAvg >= 85 ? 
-        `<div style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #fbbf24; padding: 14px; border-radius: 12px; color: #f8fafc; text-align: center; margin-bottom: 15px; box-shadow: 0 6px 20px rgba(251,191,36,0.3);"><span style="font-size: 26px;">🏆</span><h3 style="margin: 4px 0 2px; font-size: 16px; color: #fbbf24; font-weight: 700;">Fen Bilimleri Yıldızı</h3><p style="margin: 0; font-size: 11px; color: #cbd5e1;">Harika bir performans sergiledin!</p></div>` :
-        generalAvg >= 70 ? `<div style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #f26b5b; padding: 14px; border-radius: 12px; color: #f8fafc; text-align: center; margin-bottom: 15px; box-shadow: 0 6px 20px rgba(242,107,91,0.3);"><span style="font-size: 26px;">⭐</span><h3 style="margin: 4px 0 2px; font-size: 16px; color: #f26b5b; font-weight: 700;">Süper Başarı</h3><p style="margin: 0; font-size: 11px; color: #cbd5e1;">Başarılı bir grafik çiziyorsun, tebrikler!</p></div>` : '';
+        `<div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 12px; border-radius: 10px; color: white; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);"><span style="font-size: 24px;">🏆</span><h3 style="margin: 4px 0 2px; font-size: 15px;">Fen Bilimleri Yıldızı</h3></div>` :
+        generalAvg >= 70 ? `<div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 12px; border-radius: 10px; color: white; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);"><span style="font-size: 24px;">⭐</span><h3 style="margin: 4px 0 2px; font-size: 15px;">Süper Başarı</h3></div>` : '';
 
     studentPanel.innerHTML = `
         <header class="teacher-header">
@@ -1674,15 +1692,15 @@ function renderStudentPanelView(grade, branch, student, push = true) {
         <section class="dashboard-content" style="max-width: 700px; margin: 0 auto;">
             ${badgeHtml}
 
-            <div id="student-full-printable-area" class="print-area" style="background: rgba(15,23,42,0.85); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+            <div id="student-full-printable-area" class="print-area" style="background: rgba(30,41,59,0.7); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
                 <div class="print-header">
-                    <h2>FENOMENAL DİJİTAL EĞİTİM PORTALI</h2>
+                    <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
                     <h3>ÖĞRENCİ GELİŞİM VE GENEL KARNE RAPORU</h3>
                 </div>
                 <div class="print-info" style="margin-bottom: 15px;">
                     <p><b>Adı:</b> ${student.name}</p>
                     <p><b>No / Şube:</b> ${student.no} | ${grade}. Sınıf - ${branch}</p>
-                    <p><b>Artı / Eksi Puanları:</b> 🟢 +${student.plus || 0} &nbsp;|&nbsp; 🔴 -${student.minus || 0}</p>
+                    <p><b>Artı Puanlar:</b> <span style="color:#10b981; font-weight:bold;">+${student.plus || 0}</span> | <b>Eksi Puanlar:</b> <span style="color:#ef4444; font-weight:bold;">-${student.minus || 0}</span></p>
                     <p><b>Quiz Ort:</b> ${quizCount > 0 ? avgQuiz + ' Puan' : '-'}</p>
                     <p><b>Etkinlik Ort:</b> ${scaleCount > 0 ? '%' + avgScale : '-'}</p>
                     <div style="font-size: 14px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; display:flex; align-items:center; gap:8px;">
@@ -1692,9 +1710,9 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
                 <div style="margin-bottom: 15px;">
                     <h4 style="font-size: 14px; margin-bottom: 8px; color: #f8fafc;">📝 Quiz Sonuçlarım</h4>
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="overflow-x: visible;">
                         <table class="data-table" style="table-layout: fixed; width: 100%;">
-                            <thead><tr><th style="width: 75%;">Ünite ve Bölüm</th><th style="width: 25%; text-align: center;">Not</th></tr></thead>
+                            <thead><tr><th style="width: 80%;">Ünite ve Bölüm</th><th style="width: 20%; text-align: center;">Not</th></tr></thead>
                             <tbody>${quizRows || '<tr><td colspan="2" style="text-align:center;">Quiz notu yok.</td></tr>'}</tbody>
                         </table>
                     </div>
@@ -1702,9 +1720,9 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
                 <div>
                     <h4 style="font-size: 14px; margin-bottom: 8px; color: #f8fafc;">🧪 Etkinlik Ortalamalarım</h4>
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="overflow-x: visible;">
                         <table class="data-table" style="table-layout: fixed; width: 100%;">
-                            <thead><tr><th style="width: 75%;">Ünite ve Bölüm</th><th style="width: 25%; text-align: center;">Ortalama</th></tr></thead>
+                            <thead><tr><th style="width: 80%;">Ünite ve Bölüm</th><th style="width: 20%; text-align: center;">Ortalama</th></tr></thead>
                             <tbody>${scaleRows || '<tr><td colspan="2" style="text-align:center;">Etkinlik yok.</td></tr>'}</tbody>
                         </table>
                     </div>
@@ -1712,7 +1730,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
             </div>
 
             <div style="display:flex; justify-content:center; gap:10px; margin: 20px 0; flex-wrap:wrap;">
-                <button onclick="exportTableToWord('student-full-printable-area', '${student.name.replace(/\s+/g, '_')}_Genel_Karne')" class="auth-btn" style="background:#f26b5b; width:auto; padding:10px 18px;">📥 Karnemi Word İndir</button>
+                <button onclick="exportTableToWord('student-full-printable-area', '${student.name.replace(/\s+/g, '_')}_Genel_Karne')" class="auth-btn" style="background:#2563eb; width:auto; padding:10px 18px;">📥 Karnemi Word İndir</button>
                 <button onclick="exportTableToPDF('student-full-printable-area', '${student.name.replace(/\s+/g, '_')}_Genel_Karne')" class="auth-btn" style="background:#dc2626; width:auto; padding:10px 18px;">📄 Karnemi PDF İndir</button>
             </div>
         </section>
