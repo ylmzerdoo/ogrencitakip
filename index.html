@@ -3,12 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <!-- SEO ve Arama Konsolu Anahtar Kelime Ayarları -->
-    <title>Erdoğan Yılmaz Fen Bilimleri | Fenomenal - Erdoğan Yılmaz Öğrenci Takip</title>
-    <meta name="description" content="Erdoğan Yılmaz Fen Bilimleri Fenomenal platformu; ortaokul öğrencileri için Erdoğan Yılmaz öğrenci takip sistemi, quiz sonuçları, etkinlik ölçekleri ve şube karne raporları."[cite: 16]>
-    <meta name="keywords" content="Erdoğan Yılmaz Fen Bilimleri, Fenomenal, Erdoğan Yılmaz Öğrenci Takip, Fen Bilimleri Portalı"[cite: 16]>
-
+    <title>FENOMENAL Fen Bilimleri - Dijital Eğitim Paneli</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
@@ -28,11 +23,9 @@
     <div id="auth-screen" class="auth-container">
         <div class="auth-card">
             <div style="text-align: center; margin-bottom: 20px;">
-                <!-- Doğru Logo Dosya Adı ve Hata Yakalama Eklendi -->
-                <img src="333987028_6159188460810661_5628455246978748101_n.jpg" alt="FENOMENAL Logo" style="width: 85px; height: 85px; border-radius: 50%; object-fit: cover; margin-bottom: 8px; border: 2px solid #f26b5b; box-shadow: 0 4px 15px rgba(242,107,91,0.3);" onerror="this.style.display='none'; document.getElementById('fallback-icon').style.display='block';">
-                <div id="fallback-icon" style="display:none; font-size: 32px; margin-bottom: 8px;">🚀 ⚛️ 🔬</div>
-                <h2 style="color: #f8fafc; font-size: 22px; font-weight: 700; margin-top: 4px;">FENOMENAL</h2>
-                <p style="color: #94a3b8; font-size: 11px;">Bilim hayatin rengi, Fenomenal hayatın enerjisi</p>
+                <span style="font-size: 32px;">🚀 ⚛️ 🔬</span>
+                <h2 style="color: #f8fafc; font-size: 20px; font-weight: 700; margin-top: 8px;">Fen Bilimleri Portalı</h2>
+                <p style="color: #94a3b8; font-size: 12px;">FENOMENAL</p>
             </div>
 
             <div class="auth-tabs">
@@ -81,7 +74,7 @@
         <section class="dashboard-content">
             <!-- DERS İŞLEMLERİ AÇILIR KARTI -->
             <div style="margin-bottom: 20px;">
-                <div class="grade-card" onclick="toggleTeacherActionsCard()" style="border-top-color: #f26b5b; text-align: left; padding: 18px; cursor: pointer;">
+                <div class="grade-card" onclick="toggleTeacherActionsCard()" style="border-top-color: #10b981; text-align: left; padding: 18px; cursor: pointer;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h3 style="font-size: 17px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; color: #f8fafc;">
@@ -89,13 +82,13 @@
                             </h3>
                             <p style="color: #94a3b8; font-size: 12px; margin: 0;">Ünite, bölüm, excel ölçek, rapor işlemleri</p>
                         </div>
-                        <span id="teacher-actions-toggle-icon" style="font-size: 16px; color: #f26b5b; transition: transform 0.3s;">▼</span>
+                        <span id="teacher-actions-toggle-icon" style="font-size: 16px; color: #38bdf8; transition: transform 0.3s;">▼</span>
                     </div>
                     
                     <div id="teacher-actions-container" style="display: none; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;" onclick="event.stopPropagation()">
                         <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
-                            <button onclick="globalAddUnit()" class="auth-btn" style="background: #f26b5b; padding: 10px; font-size: 13px;">+ Ünite Ekle</button>
-                            <button onclick="globalAddSection()" class="auth-btn" style="background: #e05543; padding: 10px; font-size: 13px;">+ Bölüm Ekle</button>
+                            <button onclick="globalAddUnit()" class="auth-btn" style="background: #3b82f6; padding: 10px; font-size: 13px;">+ Ünite Ekle</button>
+                            <button onclick="globalAddSection()" class="auth-btn" style="background: #2563eb; padding: 10px; font-size: 13px;">+ Bölüm Ekle</button>
                             <button onclick="globalAddActivity()" class="auth-btn" style="background: #8b5cf6; padding: 10px; font-size: 13px;">+ Excel Ölçek Ekle</button>
                             <button onclick="globalAddReportTemplate()" class="auth-btn" style="background: #059669; padding: 10px; font-size: 13px;">+ Rapor Şablonu</button>
                             <button onclick="globalDeleteManagement()" class="auth-btn" style="background: #d97706; padding: 10px; font-size: 13px;">🗑️ İçerik Sil</button>

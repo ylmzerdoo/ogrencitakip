@@ -119,50 +119,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         teacherEmailInput.addEventListener('keydown', handleEnterKey);
         teacherPasswordInput.addEventListener('keydown', handleEnterKey);
     }
-
-    // Ders İşlemleri ve Yönetim tıklama işlevselliği
-    const actionCard = document.querySelector('.dashboard-content .grade-card, [onclick*="toggleActionDropdown"], .teacher-panel-dropdown, .action-dropdown-card') || document.querySelector('section.dashboard-content > div:first-child');
-    // Güvenli bağlama için öğretmen panelindeki üst yönetim kartını bulup tıklama event'i ekleyelim:
-    setupTeacherActionToggle();
-
     restoreStateFromSession();
 });
-
-function setupTeacherActionToggle() {
-    // Tüm olası seçicileri kontrol ederek "Ders İşlemleri ve Yönetim" paneline tıklama özelliği kazandıralım
-    const headers = document.querySelectorAll('div, section');
-    headers.forEach(el => {
-        if (el.innerText && el.innerText.includes('Ders İşlemleri ve Yönetim')) {
-            el.style.cursor = 'pointer';
-            el.onclick = function() {
-                toggleTeacherActionsMenu(this);
-            };
-        }
-    });
-}
-
-function toggleTeacherActionsMenu(container) {
-    let menuId = 'teacher-actions-dropdown-menu';
-    let existingMenu = document.getElementById(menuId);
-    if (existingMenu) {
-        existingMenu.style.display = existingMenu.style.display === 'none' ? 'block' : 'none';
-        return;
-    }
-
-    const menu = document.createElement('div');
-    menu.id = menuId;
-    menu.style.cssText = 'background: rgba(15,23,42,0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; margin-top: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; backdrop-filter: blur(10px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100;';
-    
-    menu.innerHTML = `
-        <button onclick="globalAddUnit()" class="auth-btn" style="background:#2563eb; padding:8px 12px; font-size:13px; text-align:left;">➕ Yeni Ünite Ekle</button>
-        <button onclick="globalAddSection()" class="auth-btn" style="background:#059669; padding:8px 12px; font-size:13px; text-align:left;">➕ Yeni Bölüm Ekle</button>
-        <button onclick="globalAddActivity()" class="auth-btn" style="background:#7c3aed; padding:8px 12px; font-size:13px; text-align:left;">📊 Excel Ölçek Entegrasyonu</button>
-        <button onclick="globalAddReportTemplate()" class="auth-btn" style="background:#d97706; padding:8px 12px; font-size:13px; text-align:left;">📝 Resmi Rapor Şablonu Ekle</button>
-        <button onclick="globalDeleteManagement()" class="auth-btn" style="background:#dc2626; padding:8px 12px; font-size:13px; text-align:left;">🗑️ İçerik Silme / Yönetim</button>
-    `;
-
-    container.appendChild(menu);
-}
 
 function getScoreBadge(score) {
     if (score === 'G') return `<span class="badge badge-neutral">G</span>`;
@@ -241,6 +199,17 @@ async function teacherLogin(push = true) {
     } catch (err) { alert('Giriş sırasında bir hata oluştu.'); }
 }
 
+function toggleTeacherActionsCard() {
+    const container = document.getElementById('teacher-actions-container');
+    const icon = document.getElementById('teacher-actions-toggle-icon');
+
+    if (!container || !icon) return;
+
+    const isOpen = container.style.display !== 'none';
+    container.style.display = isOpen ? 'none' : 'block';
+    icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
 function renderTeacherPanelView(push = true) {
     const state = { type: 'teacher' };
     sessionStorage.setItem('fen_app_state', JSON.stringify(state));
@@ -251,7 +220,6 @@ function renderTeacherPanelView(push = true) {
     document.getElementById('teacher-panel').style.display = 'flex';
     window.scrollTo({ top: 0, behavior: 'smooth' });
     closeModal();
-    setTimeout(setupTeacherActionToggle, 100);
 }
 
 async function logout() {
@@ -1646,7 +1614,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 let qKey = `${u.name}_${sec}`;
                 if (student.quiz && student.quiz[qKey] !== undefined && student.quiz[qKey] !== '') {
                     let score = student.quiz[qKey];
-                    quizRows += `<tr><td style="word-break: break-word; white-space: normal;"><b>${u.name}</b> / ${sec}</td><td style="text-align: center; white-space: nowrap;">${getScoreBadge(score)}</td></tr>`;
+                    quizRows += `<tr><td><b>${u.name}</b> / ${sec}</td><td>${getScoreBadge(score)}</td></tr>`;
                     if (score !== 'G') { totalQuizScore += parseFloat(score); quizCount++; }
                 }
             });
@@ -1668,7 +1636,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 });
                 if (secScoreCount > 0) {
                     let secAvg = Math.round(secScoreSum / secScoreCount);
-                    scaleRows += `<tr><td style="word-break: break-word; white-space: normal;"><b>${u.name}</b> / ${sec}</td><td style="text-align: center; white-space: nowrap;">${getScaleBadge(secAvg)}</td></tr>`;
+                    scaleRows += `<tr><td><b>${u.name}</b> / ${sec}</td><td>${getScaleBadge(secAvg)}</td></tr>`;
                     totalScaleScore += secAvg; scaleCount++;
                 }
             });
@@ -1700,7 +1668,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 <div class="print-info" style="margin-bottom: 15px;">
                     <p><b>Adı:</b> ${student.name}</p>
                     <p><b>No / Şube:</b> ${student.no} | ${grade}. Sınıf - ${branch}</p>
-                    <p><b>Artı Puanlar:</b> <span style="color:#10b981; font-weight:bold;">+${student.plus || 0}</span> | <b>Eksi Puanlar:</b> <span style="color:#ef4444; font-weight:bold;">-${student.minus || 0}</span></p>
                     <p><b>Quiz Ort:</b> ${quizCount > 0 ? avgQuiz + ' Puan' : '-'}</p>
                     <p><b>Etkinlik Ort:</b> ${scaleCount > 0 ? '%' + avgScale : '-'}</p>
                     <div style="font-size: 14px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; display:flex; align-items:center; gap:8px;">
@@ -1710,9 +1677,9 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
                 <div style="margin-bottom: 15px;">
                     <h4 style="font-size: 14px; margin-bottom: 8px; color: #f8fafc;">📝 Quiz Sonuçlarım</h4>
-                    <div class="table-responsive" style="overflow-x: visible;">
-                        <table class="data-table" style="table-layout: fixed; width: 100%;">
-                            <thead><tr><th style="width: 80%;">Ünite ve Bölüm</th><th style="width: 20%; text-align: center;">Not</th></tr></thead>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead><tr><th>Ünite ve Bölüm</th><th>Not</th></tr></thead>
                             <tbody>${quizRows || '<tr><td colspan="2" style="text-align:center;">Quiz notu yok.</td></tr>'}</tbody>
                         </table>
                     </div>
@@ -1720,9 +1687,9 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
                 <div>
                     <h4 style="font-size: 14px; margin-bottom: 8px; color: #f8fafc;">🧪 Etkinlik Ortalamalarım</h4>
-                    <div class="table-responsive" style="overflow-x: visible;">
-                        <table class="data-table" style="table-layout: fixed; width: 100%;">
-                            <thead><tr><th style="width: 80%;">Ünite ve Bölüm</th><th style="width: 20%; text-align: center;">Ortalama</th></tr></thead>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead><tr><th>Ünite ve Bölüm</th><th>Ortalama</th></tr></thead>
                             <tbody>${scaleRows || '<tr><td colspan="2" style="text-align:center;">Etkinlik yok.</td></tr>'}</tbody>
                         </table>
                     </div>
@@ -1736,3 +1703,57 @@ function renderStudentPanelView(grade, branch, student, push = true) {
         </section>
     `;
 }
+// Öğrenci panelinde güncel artı/eksi puanlarını göster.
+(function () {
+    const originalRenderStudentPanelView = window.renderStudentPanelView;
+
+    if (typeof originalRenderStudentPanelView === 'function') {
+        window.renderStudentPanelView = function (grade, branch, student, push = true) {
+            originalRenderStudentPanelView(grade, branch, student, push);
+
+            const latestStudent =
+                window.fenData?.[grade]?.branches?.[branch]
+                    ?.find(s => String(s.no) === String(student.no)) || student;
+
+            const printInfo = document.querySelector(
+                '#student-full-printable-area .print-info'
+            );
+            if (!printInfo) return;
+
+            // Yeniden çizimde aynı satırların tekrarlanmasını önle.
+            printInfo.querySelectorAll('.student-point-row').forEach(row => row.remove());
+
+            const generalScoreRow = printInfo.querySelector('div');
+            const plusRow = document.createElement('p');
+            plusRow.className = 'student-point-row';
+            plusRow.innerHTML = '<b>Artı Puan:</b> ';
+            plusRow.append(document.createTextNode(String(latestStudent.plus ?? 0)));
+
+            const minusRow = document.createElement('p');
+            minusRow.className = 'student-point-row';
+            minusRow.innerHTML = '<b>Eksi Puan:</b> ';
+            minusRow.append(document.createTextNode(String(latestStudent.minus ?? 0)));
+
+            if (generalScoreRow) {
+                printInfo.insertBefore(plusRow, generalScoreRow);
+                printInfo.insertBefore(minusRow, generalScoreRow);
+            } else {
+                printInfo.append(plusRow, minusRow);
+            }
+        };
+    }
+
+    // index.html'deki Ders İşlemleri kartının açılıp kapanması.
+    window.toggleTeacherActionsCard = function () {
+        const container = document.getElementById('teacher-actions-container');
+        const icon = document.getElementById('teacher-actions-toggle-icon');
+        if (!container) return;
+
+        const isOpen = getComputedStyle(container).display !== 'none';
+        container.style.display = isOpen ? 'none' : 'block';
+
+        if (icon) {
+            icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+    };
+})();
