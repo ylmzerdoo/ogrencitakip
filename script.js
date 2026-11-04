@@ -202,9 +202,7 @@ async function teacherLogin(push = true) {
 function toggleTeacherActionsCard() {
     const container = document.getElementById('teacher-actions-container');
     const icon = document.getElementById('teacher-actions-toggle-icon');
-
     if (!container || !icon) return;
-
     const isOpen = container.style.display !== 'none';
     container.style.display = isOpen ? 'none' : 'block';
     icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
@@ -261,6 +259,7 @@ function openModal(title, htmlContent, onConfirm) {
     } else { confirmBtn.style.display = 'none'; }
     modal.style.display = 'flex';
 }
+
 function closeModal() {
     const modal = document.getElementById('app-modal');
     if (modal) modal.style.display = 'none';
@@ -306,7 +305,6 @@ function globalAddUnit() {
         const inputEl = document.getElementById('modal-text');
         const unitName = inputEl.value.trim();
         if (!unitName) return;
-
         if (supabaseClient) {
             await supabaseClient.from('units_sections').insert([{ grade: grade, unit_name: unitName, section_name: 'Genel' }]);
         }
@@ -332,7 +330,6 @@ function globalAddSection() {
         const sectionInput = document.getElementById('modal-section');
         const section = sectionInput.value.trim();
         if (!unitName || !section) { alert('Lütfen ünite seçin ve bölüm adı yazın.'); return; }
-
         if (supabaseClient) {
             await supabaseClient.from('units_sections').insert([{ grade: grade, unit_name: unitName, section_name: section }]);
         }
@@ -364,23 +361,19 @@ function globalAddReportTemplate() {
         <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Rapor Metni:</label>
         <textarea id="rep-modal-text" class="auth-input" style="height:120px; font-size:12px; font-family:monospace;" placeholder="Rapor metni..."></textarea>
     `;
-
     openModal("Resmi Rapor Şablonu Ekle", content, async () => {
         const grade = document.getElementById('rep-modal-grade').value;
         const unitName = document.getElementById('rep-modal-unit').value;
         const secName = document.getElementById('rep-modal-section').value;
         const textInput = document.getElementById('rep-modal-text');
         const reportText = textInput.value.trim();
-
         if (!unitName || !secName || !reportText) { alert('Lütfen tüm alanları doldurun!'); return; }
-
         if (supabaseClient) {
             const { error } = await supabaseClient.from('report_templates').insert([{
                 grade: grade, unit_name: unitName, section_name: secName, report_text: reportText
             }]);
             if (error) { alert('Hata: ' + error.message); return; }
         }
-
         textInput.value = ''; closeModal(); alert('Rapor şablonu kaydedildi!');
     });
     updateRepModalUnits('7');
@@ -417,14 +410,12 @@ function globalAddActivity() {
         <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Excel Dosyası (.xlsx):</label>
         <input type="file" id="modal-excel-file" class="auth-input" accept=".xlsx, .xls, .csv" style="margin-bottom:10px;">
     `;
-
     openModal("Excel Ölçek Entegrasyonu", content, () => {
         const grade = document.getElementById('modal-grade').value;
         const unit = document.getElementById('modal-unit').value;
         const section = document.getElementById('modal-section').value;
         const fileInput = document.getElementById('modal-excel-file');
         const file = fileInput.files[0];
-
         if (!unit || !section || !file) { alert('Lütfen ünite, bölüm seçin ve dosya yükleyin!'); return; }
 
         const reader = new FileReader();
@@ -437,7 +428,6 @@ function globalAddActivity() {
                 for (const sheetName of workbook.SheetNames) {
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
                     let currentScaleTitle = sheetName.trim();
                     let scaleType = '1-4'; 
                     let criteriaColumns = [];
@@ -450,13 +440,11 @@ function globalAddActivity() {
                                 if (cell.includes('RUBRİK') || cell.includes('1-4')) scaleType = '1-4';
                                 else if (cell.includes('KONTROL') || cell.includes('VAR')) scaleType = 'var-yok';
                                 else if (cell.includes('FORMU') || cell.includes('EVET')) scaleType = 'evet-hayir';
-
                                 if (cell.includes('RUBRİK') || cell.includes('FORMU') || cell.includes('LİSTESİ') || cell.includes('ÖLÇEĞİ')) {
                                     currentScaleTitle = `${sheetName.trim()} - ${cell.trim()}`;
                                 }
                             }
                         }
-
                         if (row.some(cell => cell && (cell.toString().includes('Okul No') || cell.toString().includes('Adı Soyadı')))) {
                             criteriaColumns = row.filter(cell => 
                                 cell && !cell.toString().includes('Okul No') && !cell.toString().includes('Adı Soyadı') && 
@@ -472,7 +460,6 @@ function globalAddActivity() {
                             }
                         }
                     }
-
                     if (importedCount === 0 && jsonRows.length > 0) {
                         await supabaseClient.from('activities').insert([{
                             grade: grade, unit_name: unit, section_name: section, activity_name: sheetName.trim(),
@@ -537,7 +524,6 @@ function globalDeleteManagement() {
             <select id="del-report-select" class="auth-input"><option value="">-- Rapor --</option></select>
         </div>
     `;
-
     openModal("İçerik Silme Yönetimi", content, async () => {
         const grade = document.getElementById('del-grade').value;
         const type = document.getElementById('del-type').value;
@@ -587,7 +573,6 @@ function globalDeleteManagement() {
             }
         }
     });
-
     updateDelUnits('6');
     toggleDelFields();
 }
@@ -616,7 +601,6 @@ function updateDelActivitiesAndReports() {
     const grade = document.getElementById('del-grade').value;
     const unitName = document.getElementById('del-unit-select')?.value;
     const secName = document.getElementById('del-section-select')?.value;
-    
     const actSel = document.getElementById('del-activity-select');
     if (actSel) {
         actSel.innerHTML = '<option value="">-- Etkinlik --</option>';
@@ -639,7 +623,6 @@ function toggleDelFields() {
     const secCont = document.getElementById('del-section-container');
     const actCont = document.getElementById('del-activity-container');
     const repCont = document.getElementById('del-report-container');
-
     if (!unitCont || !secCont || !actCont || !repCont) return;
 
     if (type === 'unit') {
@@ -895,165 +878,274 @@ function exportReportToWord(filename) {
         .badge { color: #000 !important; background: transparent !important; }
     </style>`;
 
-    const combinedContent = `${part1.outerHTML}<br style="page-break-before: always; mso-break-type: page-break;" />${part2.innerHTML}`;
+    const combinedContent = `${part1.outerHTML}<br style="page-break-before: always; mso-break-type: page-break;" />${part2 ? part2.innerHTML : ''}`;
     const htmlHeader = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Rapor</title>${styles}</head><body><div class="Section1">`;
     const htmlFooter = "</div></body></html>";
     const blob = new Blob(['\ufeff' + htmlHeader + combinedContent + htmlFooter], { type: 'application/msword' });
     saveAs(blob, filename + ".doc");
 }
 
-/* ==============================================================================
-   GÜNCEL PDF İNDİRME MOTORU 1 (ÖLÇEKLER VE GENEL TABLOLAR İÇİN)
-============================================================================== */
-function exportTableToPDF(elementId, filename) {
-    const element = document.getElementById(elementId);
-    if (!element) { alert('İçerik bulunamadı!'); return; }
-    
-    const clone = element.cloneNode(true);
-    const originalInputs = element.querySelectorAll('input');
-    const clonedInputs = clone.querySelectorAll('input');
-    
-    for (let i = 0; i < originalInputs.length; i++) {
-        const span = document.createElement('span');
-        span.innerText = originalInputs[i].value || '-';
-        span.style.color = '#000';
-        span.style.fontWeight = 'bold';
-        clonedInputs[i].parentNode.replaceChild(span, clonedInputs[i]);
-    }
-
-    const buttons = clone.querySelectorAll('button');
-    buttons.forEach(b => b.remove());
-
-    const tableEl = clone.querySelector('table');
-    const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
-    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Analiz');
-
-    const wrapper = document.createElement('div');
-    wrapper.style.background = '#ffffff';
-    wrapper.style.color = '#000000';
-    wrapper.style.padding = '10px';
-    wrapper.style.margin = '0px';
-    
-    // SİHİRLİ DOKUNUŞ: Mobilde daralmaması için sanal bir A4 piksel genişliği zorluyoruz
-    wrapper.style.width = isWideTable ? '1122px' : '794px'; 
-    wrapper.style.fontFamily = "'Times New Roman', Times, serif";
-    
-    const customStyle = document.createElement('style');
-    customStyle.innerHTML = `
-        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
-        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-        .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
-        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 10px; text-align: center; }
-        .print-header h2 { font-size: 16px; font-weight: bold; margin: 0 0 4px 0; }
-        .print-header h3 { font-size: 13px; font-weight: bold; margin: 0; }
-        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 10px; margin-bottom: 10px; font-size: 12px; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
-        tr { page-break-inside: avoid !important; }
-        
-        /* Tüm hücrelerde yazıların zorunlu olarak alt alta kırılması (Word Mantığı) */
-        th, td { 
-            border: 1px solid #000 !important; 
-            padding: 6px 4px !important; 
-            font-size: 11px !important; 
-            text-align: center; 
-            background: #fff !important; 
-            white-space: normal !important; 
-            word-break: break-word !important; 
-            overflow-wrap: break-word !important; 
-        }
-        th { background-color: #e2e8f0 !important; font-weight: bold !important; }
-        
-        td:nth-child(1), th:nth-child(1) { width: 5% !important; }
-        td:nth-child(2), th:nth-child(2) { width: 20% !important; text-align: left !important; }
-        .badge { border: none !important; font-weight: bold; background: transparent !important; }
-    `;
-    
-    wrapper.appendChild(customStyle);
-    wrapper.appendChild(clone);
-
-    const opt = {
-        margin:       [5, 5, 5, 5],
-        filename:     filename + '.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false, windowWidth: isWideTable ? 1122 : 794 }, // Canvas'a zorunlu genişlik
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: isWideTable ? 'landscape' : 'portrait', compress: true }
-    };
-    
-    html2pdf().from(wrapper).set(opt).save();
+function getJsPDF() {
+    if (window.jspdf && window.jspdf.jsPDF) return window.jspdf.jsPDF;
+    if (window.jsPDF) return window.jsPDF;
+    return null;
 }
 
-/* ==============================================================================
-   GÜNCEL PDF İNDİRME MOTORU 2 (BÖLÜM RAPORLARI İÇİN)
-============================================================================== */
-function exportFullReportToPDF(filename) {
-    const part1 = document.getElementById('report-printable-area');
-    const part2 = document.getElementById('report-page-2');
-    if (!part1) { alert('İçerik bulunamadı!'); return; }
+async function exportTableToPDF(elementId, filename) {
+    const original = document.getElementById(elementId);
+    if (!original) {
+        alert('İçerik bulunamadı!');
+        return;
+    }
 
-    const wrapper = document.createElement('div');
-    wrapper.style.background = '#ffffff';
-    wrapper.style.color = '#000000';
-    wrapper.style.padding = '10px';
-    wrapper.style.margin = '0px';
-    
-    // Bölüm Raporları için Dikey (Portrait) A4 genişliğini sanal olarak veriyoruz
-    wrapper.style.width = '794px'; 
-    wrapper.style.fontFamily = "'Times New Roman', Times, serif";
+    const jsPDF = getJsPDF();
+    if (!jsPDF) {
+        alert('jsPDF kütüphanesi yüklenemedi!');
+        return;
+    }
 
-    const customStyle = document.createElement('style');
-    customStyle.innerHTML = `
-        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
-        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-        h2, h3, h4, p, span, th, td, li { font-family: 'Times New Roman', Times, serif !important; color: #000 !important; }
-        .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
-        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 6px; margin-bottom: 10px; text-align: center; }
-        .print-header h2 { font-size: 16px; font-weight: bold; margin: 0 0 4px 0; }
-        .print-header h3 { font-size: 13px; font-weight: bold; margin: 0; }
-        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 10px; margin-bottom: 10px; font-size: 12px; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 6px; table-layout: fixed !important; }
-        tr { page-break-inside: avoid !important; }
-        
-        /* Uzun metinler alt alta kırılacak */
-        th, td { 
-            border: 1px solid #000 !important; 
-            padding: 6px 4px !important; 
-            font-size: 11px !important; 
-            text-align: center; 
-            background: #fff !important; 
-            white-space: normal !important; 
-            word-break: break-word !important; 
-            overflow-wrap: break-word !important; 
+    const clone = original.cloneNode(true);
+
+    const origInputs = original.querySelectorAll('input');
+    const cloneInputs = clone.querySelectorAll('input');
+    origInputs.forEach((inp, i) => {
+        if (cloneInputs[i]) {
+            const span = document.createElement('span');
+            span.textContent = inp.value || '-';
+            span.style.cssText = 'color:#000;font-weight:bold;';
+            cloneInputs[i].parentNode.replaceChild(span, cloneInputs[i]);
         }
-        th { background-color: #e2e8f0 !important; font-weight: bold !important; }
-        td:nth-child(1), th:nth-child(1) { width: 5% !important; }
-        td:nth-child(2), th:nth-child(2) { width: 25% !important; text-align: left !important; }
-        
-        .report-box { border: 1px solid #000 !important; padding: 15px !important; margin-top: 15px !important; background: #fff !important; }
-        h4 { font-size: 14px !important; font-weight: bold !important; margin: 8px 0 6px 0 !important; }
-        ul { margin: 6px 0 8px 20px !important; padding: 0 !important; }
-        li { margin-bottom: 5px !important; font-size: 12px !important; text-align: left !important; }
-        .badge { border: none !important; font-weight: bold; background: transparent !important; }
+    });
+
+    clone.querySelectorAll('button').forEach(b => b.remove());
+
+    const table = clone.querySelector('table');
+    const colCount = table ? table.querySelectorAll('th').length : 0;
+    const isWide = colCount > 5 || filename.includes('Olcek') || filename.includes('Analiz') || filename.includes('Tum_Olcekler');
+
+    const container = document.createElement('div');
+    container.style.cssText = `
+        position: fixed; left: -10000px; top: 0;
+        width: ${isWide ? '1100px' : '794px'};
+        background: #ffffff; color: #000000;
+        padding: 30px; font-family: 'Times New Roman', Times, serif;
+        box-sizing: border-box; z-index: 99999;
     `;
 
-    wrapper.appendChild(customStyle);
-    wrapper.appendChild(part1.cloneNode(true));
-    
-    const pageBreak = document.createElement('div');
-    pageBreak.style.pageBreakBefore = 'always';
-    pageBreak.style.marginTop = '20px';
-    wrapper.appendChild(pageBreak);
+    const style = document.createElement('style');
+    style.textContent = `
+        * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+        table { width: 100% !important; border-collapse: collapse !important; }
+        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 11px !important; text-align: center; }
+        th { background: #f1f5f9 !important; font-weight: bold !important; }
+        td:nth-child(2), th:nth-child(2) { text-align: left !important; }
+        .badge { background: transparent !important; border: none !important; font-weight: bold; }
+        .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 12px; padding-bottom: 8px; }
+        .print-header h2 { font-size: 16px; margin: 0 0 4px 0; }
+        .print-header h3 { font-size: 13px; margin: 0; }
+        .print-info { border: 1px solid #666; padding: 10px; margin-bottom: 12px; font-size: 12px; background: #fafafa !important; }
+    `;
+    container.appendChild(style);
+    container.appendChild(clone);
+    document.body.appendChild(container);
 
-    wrapper.appendChild(part2.cloneNode(true));
+    await new Promise(r => setTimeout(r, 500));
 
-    const opt = {
-        margin:       [5, 5, 5, 5],
-        filename:     filename + '.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false, windowWidth: 794 }, // Canvas sanal genişliği
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
-    };
-    
-    html2pdf().from(wrapper).set(opt).save();
+    try {
+        const canvas = await html2canvas(container, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            logging: false
+        });
+
+        const pdf = new jsPDF({
+            orientation: isWide ? 'landscape' : 'portrait',
+            unit: 'mm',
+            format: 'a4',
+            compress: true
+        });
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+
+        const imgWidth = pageWidth - (margin * 2);
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        let finalHeight = imgHeight;
+        let finalWidth = imgWidth;
+
+        if (imgHeight > pageHeight - (margin * 2)) {
+            const scale = (pageHeight - (margin * 2)) / imgHeight;
+            finalHeight = pageHeight - (margin * 2);
+            finalWidth = imgWidth * scale;
+        }
+
+        const x = (pageWidth - finalWidth) / 2;
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', x, margin, finalWidth, finalHeight);
+        pdf.save(filename + '.pdf');
+
+    } catch (err) {
+        console.error('PDF hatası:', err);
+        alert('PDF oluşturulamadı: ' + err.message);
+    } finally {
+        if (document.body.contains(container)) document.body.removeChild(container);
+    }
+}
+
+async function exportFullReportToPDF(filename) {
+    const part1 = document.getElementById('report-printable-area');
+    const part2 = document.getElementById('report-page-2');
+
+    if (!part1) {
+        alert('İçerik bulunamadı!');
+        return;
+    }
+
+    const jsPDF = getJsPDF();
+    if (!jsPDF) {
+        alert('jsPDF kütüphanesi yüklenemedi!');
+        return;
+    }
+
+    const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 12;
+    const usableHeight = pageHeight - (margin * 2);
+
+    // ========== 1. SAYFA: TABLO ==========
+    const container1 = document.createElement('div');
+    container1.style.cssText = `
+        position: fixed; left: -10000px; top: 0; width: 794px;
+        background: #ffffff; color: #000000; padding: 28px;
+        font-family: 'Times New Roman', Times, serif;
+        box-sizing: border-box; z-index: 99999;
+    `;
+
+    const style1 = document.createElement('style');
+    style1.textContent = `
+        * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+        table { width: 100% !important; border-collapse: collapse !important; }
+        th, td { border: 1px solid #000 !important; padding: 5px 3px !important; font-size: 10.5px !important; text-align: center; }
+        th { background: #f1f5f9 !important; font-weight: bold !important; }
+        td:nth-child(2), th:nth-child(2) { text-align: left !important; }
+        .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 6px; }
+        .print-header h2 { font-size: 15px; margin: 0 0 3px 0; }
+        .print-header h3 { font-size: 12px; margin: 0; }
+        .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 10px; font-size: 11px; background: #fafafa !important; }
+        .badge { background: transparent !important; border: none !important; font-weight: bold; }
+    `;
+    container1.appendChild(style1);
+    container1.appendChild(part1.cloneNode(true));
+    document.body.appendChild(container1);
+
+    await new Promise(r => setTimeout(r, 400));
+
+    try {
+        const canvas1 = await html2canvas(container1, {
+            scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
+        });
+
+        const imgWidth = pageWidth - (margin * 2);
+        let imgHeight1 = (canvas1.height * imgWidth) / canvas1.width;
+
+        // Tablo tek sayfaya sığmazsa hafif küçült
+        if (imgHeight1 > usableHeight) {
+            const scale = usableHeight / imgHeight1;
+            imgHeight1 = usableHeight;
+            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgWidth * scale, imgHeight1);
+        } else {
+            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgWidth, imgHeight1);
+        }
+
+        // ========== 2. SAYFA: RAPOR METNİ ==========
+        if (part2) {
+            pdf.addPage();
+
+            const container2 = document.createElement('div');
+            container2.style.cssText = `
+                position: fixed; left: -10000px; top: 0; width: 794px;
+                background: #ffffff; color: #000000; padding: 28px;
+                font-family: 'Times New Roman', Times, serif;
+                box-sizing: border-box; z-index: 99999;
+            `;
+
+            const style2 = document.createElement('style');
+            style2.textContent = `
+                * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+                .report-box { border: 1px solid #000 !important; padding: 14px !important; margin-top: 6px !important; }
+                h4 { font-size: 13.5px !important; font-weight: bold !important; margin: 0 0 8px 0 !important; }
+                ul { margin: 6px 0 10px 18px !important; padding: 0 !important; }
+                li { margin-bottom: 4px !important; font-size: 11.5px !important; text-align: left !important; line-height: 1.4; }
+                p { font-size: 11.5px !important; line-height: 1.45 !important; margin: 4px 0; }
+                .badge { background: transparent !important; border: none !important; font-weight: bold; }
+            `;
+            container2.appendChild(style2);
+            container2.appendChild(part2.cloneNode(true));
+            document.body.appendChild(container2);
+
+            await new Promise(r => setTimeout(r, 400));
+
+            const canvas2 = await html2canvas(container2, {
+                scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
+            });
+
+            let imgHeight2 = (canvas2.height * imgWidth) / canvas2.width;
+            const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
+
+            // Rapor metni tek sayfaya sığmaya çalış
+            if (imgHeight2 <= usableHeight) {
+                // Tek sayfaya sığdı
+                pdf.addImage(imgData2, 'JPEG', margin, margin, imgWidth, imgHeight2);
+            } else {
+                // Sığmadı → hafif küçültüp tek sayfaya zorla (max %85'e kadar)
+                const maxScale = 0.85;
+                const neededScale = usableHeight / imgHeight2;
+                const finalScale = Math.max(neededScale, maxScale);
+
+                if (finalScale >= maxScale) {
+                    // Kabul edilebilir küçültme ile tek sayfaya sığdır
+                    const finalWidth = imgWidth * finalScale;
+                    const finalHeight = imgHeight2 * finalScale;
+                    const x = (pageWidth - finalWidth) / 2;
+                    pdf.addImage(imgData2, 'JPEG', x, margin, finalWidth, finalHeight);
+                } else {
+                    // Çok uzun → çoklu sayfa
+                    let heightLeft = imgHeight2;
+                    let position = margin;
+
+                    pdf.addImage(imgData2, 'JPEG', margin, position, imgWidth, imgHeight2);
+                    heightLeft -= usableHeight;
+
+                    while (heightLeft > 8) {
+                        position = heightLeft - imgHeight2 + margin;
+                        pdf.addPage();
+                        pdf.addImage(imgData2, 'JPEG', margin, position, imgWidth, imgHeight2);
+                        heightLeft -= usableHeight;
+                    }
+                }
+            }
+
+            document.body.removeChild(container2);
+        }
+
+        pdf.save(filename + '.pdf');
+
+    } catch (err) {
+        console.error('Rapor PDF hatası:', err);
+        alert('PDF oluşturulamadı: ' + err.message);
+    } finally {
+        if (document.body.contains(container1)) document.body.removeChild(container1);
+    }
 }
 
 function openBulkStudentModal(grade, branchName) {
@@ -1750,9 +1842,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 window.fenData?.[grade]?.branches?.[branch]
                     ?.find(s => String(s.no) === String(student.no)) || student;
 
-            const printInfo = document.querySelector(
-                '#student-full-printable-area .print-info'
-            );
+            const printInfo = document.querySelector('#student-full-printable-area .print-info');
             if (!printInfo) return;
 
             printInfo.querySelectorAll('.student-point-row').forEach(row => row.remove());
