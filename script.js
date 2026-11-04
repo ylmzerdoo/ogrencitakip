@@ -938,7 +938,7 @@ function exportTableToPDF(elementId, filename) {
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
     wrapper.style.color = '#000000';
-    wrapper.style.padding = '5px';
+    wrapper.style.padding = '2px';
     wrapper.style.margin = '0px';
     wrapper.style.width = '100%';
     wrapper.style.fontFamily = "'Times New Roman', Times, serif";
@@ -948,15 +948,15 @@ function exportTableToPDF(elementId, filename) {
         * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
         body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
         h2, h3, p, span, th, td { font-family: 'Times New Roman', Times, serif !important; }
-        .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; page-break-inside: avoid !important; }
-        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; page-break-inside: avoid; }
-        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 8.5px; font-weight: bold; margin: 0; }
-        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; page-break-inside: avoid; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
+        .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 3px; margin-bottom: 4px; text-align: center; }
+        .print-header h2 { font-size: 10px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 8px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 4px; margin-bottom: 4px; font-size: 7.5px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 2px; table-layout: fixed !important; page-break-inside: auto !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
         thead { display: table-header-group; }
-        th, td { border: 1px solid #000 !important; padding: 4px 5px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; page-break-inside: avoid !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
@@ -966,7 +966,7 @@ function exportTableToPDF(elementId, filename) {
     wrapper.appendChild(clone);
 
     const opt = {
-        margin:       [4, 4, 4, 4],
+        margin:       [2, 2, 2, 2],
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
@@ -984,7 +984,7 @@ function exportFullReportToPDF(filename) {
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
     wrapper.style.color = '#000000';
-    wrapper.style.padding = '5px';
+    wrapper.style.padding = '2px';
     wrapper.style.margin = '0px';
     wrapper.style.width = '100%';
     wrapper.style.fontFamily = "'Times New Roman', Times, serif";
@@ -994,20 +994,20 @@ function exportFullReportToPDF(filename) {
         * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
         body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
         h2, h3, h4, p, span, th, td, li { font-family: 'Times New Roman', Times, serif !important; color: #000 !important; }
-        .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; page-break-inside: avoid !important; }
-        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; page-break-inside: avoid; }
-        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 8.5px; font-weight: bold; margin: 0; }
-        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; page-break-inside: avoid; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
+        .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 3px; margin-bottom: 4px; text-align: center; }
+        .print-header h2 { font-size: 10px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 8px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 4px; margin-bottom: 4px; font-size: 7.5px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 2px; table-layout: fixed !important; page-break-inside: auto !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; page-break-inside: avoid !important; }
+        th, td { border: 1px solid #000 !important; padding: 2.5px 3px !important; font-size: 6.5px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
-        .report-box { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px !important; background: #fff !important; page-break-inside: avoid !important; }
-        h4 { font-size: 9px !important; font-weight: bold !important; margin: 6px 0 4px 0 !important; }
-        ul { margin: 4px 0 6px 15px !important; padding: 0 !important; }
-        li { margin-bottom: 3px !important; font-size: 8px !important; text-align: left !important; page-break-inside: avoid; }
+        .report-box { border: 1px solid #000 !important; padding: 6px !important; margin-top: 6px !important; background: #fff !important; page-break-inside: avoid !important; }
+        h4 { font-size: 8px !important; font-weight: bold !important; margin: 4px 0 2px 0 !important; }
+        ul { margin: 2px 0 4px 12px !important; padding: 0 !important; }
+        li { margin-bottom: 2px !important; font-size: 7.5px !important; text-align: left !important; page-break-inside: avoid; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
     `;
 
@@ -1016,13 +1016,13 @@ function exportFullReportToPDF(filename) {
     
     const pageBreak = document.createElement('div');
     pageBreak.style.pageBreakBefore = 'always';
-    pageBreak.style.marginTop = '15px';
+    pageBreak.style.marginTop = '10px';
     wrapper.appendChild(pageBreak);
 
     wrapper.appendChild(part2.cloneNode(true));
 
     const opt = {
-        margin:       [4, 4, 4, 4],
+        margin:       [2, 2, 2, 2],
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
@@ -1659,7 +1659,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
     else if (quizCount > 0) generalAvg = avgQuiz;
     else if (scaleCount > 0) generalAvg = avgScale;
 
-    // Güncellenmiş ve Turuncu Temada Belirgin Duran Şık Rozet Tasarımı
     let badgeHtml = generalAvg >= 85 ? 
         `<div style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #fbbf24; padding: 14px; border-radius: 12px; color: #f8fafc; text-align: center; margin-bottom: 15px; box-shadow: 0 6px 20px rgba(251,191,36,0.3);"><span style="font-size: 26px;">🏆</span><h3 style="margin: 4px 0 2px; font-size: 16px; color: #fbbf24; font-weight: 700;">Fen Bilimleri Yıldızı</h3><p style="margin: 0; font-size: 11px; color: #cbd5e1;">Harika bir performans sergiledin!</p></div>` :
         generalAvg >= 70 ? `<div style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #f26b5b; padding: 14px; border-radius: 12px; color: #f8fafc; text-align: center; margin-bottom: 15px; box-shadow: 0 6px 20px rgba(242,107,91,0.3);"><span style="font-size: 26px;">⭐</span><h3 style="margin: 4px 0 2px; font-size: 16px; color: #f26b5b; font-weight: 700;">Süper Başarı</h3><p style="margin: 0; font-size: 11px; color: #cbd5e1;">Başarılı bir grafik çiziyorsun, tebrikler!</p></div>` : '';
