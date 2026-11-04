@@ -764,7 +764,7 @@ function loadBranchTabContent(tabType, grade, branchName) {
         students.forEach((s, idx) => {
             rows += `<tr>
                 <td style="white-space:nowrap;">${s.no}</td>
-                <td style="white-space:nowrap; text-align:left;">${s.name}</td>
+                <td style="white-space:nowrap !important; text-align:left; min-width:130px;">${s.name}</td>
                 <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'plus', 1)" class="btn-pastel-green">+</button> <span style="font-weight:bold; margin-left:6px;">${s.plus}</span></td>
                 <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'minus', 1)" class="btn-pastel-red">-</button> <span style="font-weight:bold; margin-left:6px;">${s.minus}</span></td>
                 <td><button onclick="deleteStudent('${grade}', '${branchName}', ${idx})" class="btn-pastel-gray">Sil</button></td>
@@ -844,7 +844,7 @@ function exportTableToWord(elementId, filename) {
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
         th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; word-break: break-word !important; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
-        td:nth-child(2) { text-align: left !important; }
+        td:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
         .badge { color: #000 !important; background: transparent !important; } 
         button { display: none !important; }
     </style>`;
@@ -869,7 +869,7 @@ function exportReportToWord(filename) {
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
         th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; word-break: break-word !important; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
-        td:nth-child(2) { text-align: left !important; }
+        td:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
         .page-break { page-break-before: always; mso-break-type: page-break; clear: both; display: block; }
         .report-box { border: 1px solid #000; padding: 12px; margin-top: 15px; }
         ul { margin: 5px 0 10px 20px; padding: 0; color: #000 !important;}
@@ -922,18 +922,19 @@ async function exportTableToPDF(elementId, filename) {
 
     const table = clone.querySelector('table');
     const colCount = table ? table.querySelectorAll('th').length : 0;
-    const isWide = colCount > 6;
+    const isWide = colCount > 5;
 
+    // Container - geniş tablolar için çok daha geniş
     const container = document.createElement('div');
     container.style.cssText = `
         position: fixed;
         left: -9999px;
         top: 0;
-        width: ${isWide ? '1100px' : '794px'};
+        width: ${isWide ? '1500px' : '900px'};
         background: #ffffff;
         color: #000000;
-        padding: 20px;
-        font-family: Arial, sans-serif;
+        padding: 25px;
+        font-family: Arial, Helvetica, sans-serif;
         box-sizing: border-box;
         z-index: 99999;
     `;
@@ -955,8 +956,8 @@ async function exportTableToPDF(elementId, filename) {
         }
         th, td {
             border: 1px solid #333 !important;
-            padding: 6px 4px !important;
-            font-size: 11px !important;
+            padding: 8px 6px !important;
+            font-size: 12px !important;
             text-align: center !important;
             vertical-align: middle !important;
             white-space: normal !important;
@@ -967,31 +968,32 @@ async function exportTableToPDF(elementId, filename) {
         th {
             background: #e2e8f0 !important;
             font-weight: bold !important;
-            font-size: 10px !important;
+            font-size: 11px !important;
         }
         td:nth-child(2), th:nth-child(2) {
             text-align: left !important;
             white-space: nowrap !important;
+            min-width: 140px !important;
         }
         .badge {
             background: transparent !important;
             border: none !important;
             font-weight: bold;
-            font-size: 11px !important;
+            font-size: 12px !important;
         }
         .print-header {
             text-align: center;
             border-bottom: 2px solid #000;
-            margin-bottom: 10px;
-            padding-bottom: 6px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
         }
-        .print-header h2 { font-size: 16px; margin: 0 0 4px 0; }
-        .print-header h3 { font-size: 13px; margin: 0; }
+        .print-header h2 { font-size: 18px; margin: 0 0 4px 0; }
+        .print-header h3 { font-size: 14px; margin: 0; }
         .print-info {
             border: 1px solid #666;
-            padding: 8px;
-            margin-bottom: 10px;
-            font-size: 12px;
+            padding: 10px;
+            margin-bottom: 12px;
+            font-size: 13px;
             background: #f8fafc !important;
             text-align: left;
         }
@@ -1000,15 +1002,17 @@ async function exportTableToPDF(elementId, filename) {
     container.appendChild(clone);
     document.body.appendChild(container);
 
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 600));
 
     try {
         const canvas = await html2canvas(container, {
-            scale: 1.8,
+            scale: 2,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            logging: false
+            logging: false,
+            scrollX: 0,
+            scrollY: 0
         });
 
         const pdf = new jsPDF({
@@ -1022,20 +1026,23 @@ async function exportTableToPDF(elementId, filename) {
         const pageHeight = pdf.internal.pageSize.getHeight();
         const margin = 10;
 
-        const imgWidth = pageWidth - (margin * 2);
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const maxWidth = pageWidth - (margin * 2);
+        const maxHeight = pageHeight - (margin * 2);
 
-        let finalWidth = imgWidth;
-        let finalHeight = imgHeight;
+        let imgWidth = maxWidth;
+        let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        if (imgHeight > pageHeight - margin * 2) {
-            const ratio = (pageHeight - margin * 2) / imgHeight;
-            finalHeight = pageHeight - margin * 2;
-            finalWidth = imgWidth * ratio;
+        // Yükseklik aşarsa orantılı küçült (kırpma yok)
+        if (imgHeight > maxHeight) {
+            imgHeight = maxHeight;
+            imgWidth = (canvas.width * imgHeight) / canvas.height;
         }
 
-        const x = (pageWidth - finalWidth) / 2;
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', x, margin, finalWidth, finalHeight);
+        // Ortala
+        const x = (pageWidth - imgWidth) / 2;
+        const y = (pageHeight - imgHeight) / 2;
+
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.93), 'JPEG', x, y, imgWidth, imgHeight);
         pdf.save(filename + '.pdf');
 
     } catch (err) {
@@ -1078,9 +1085,9 @@ async function exportFullReportToPDF(filename) {
     // 1. SAYFA - TABLO
     const container1 = document.createElement('div');
     container1.style.cssText = `
-        position: fixed; left: -9999px; top: 0; width: 794px;
+        position: fixed; left: -9999px; top: 0; width: 900px;
         background: #ffffff; color: #000000; padding: 25px;
-        font-family: Arial, sans-serif;
+        font-family: Arial, Helvetica, sans-serif;
         box-sizing: border-box; z-index: 99999;
     `;
 
@@ -1088,13 +1095,13 @@ async function exportFullReportToPDF(filename) {
     style1.textContent = `
         * { color: #000 !important; background: transparent !important; box-shadow: none !important; writing-mode: horizontal-tb !important; transform: none !important; }
         table { width: 100% !important; border-collapse: collapse !important; }
-        th, td { border: 1px solid #333 !important; padding: 5px 3px !important; font-size: 10.5px !important; text-align: center; writing-mode: horizontal-tb !important; }
+        th, td { border: 1px solid #333 !important; padding: 6px 4px !important; font-size: 11px !important; text-align: center; writing-mode: horizontal-tb !important; }
         th { background: #e2e8f0 !important; font-weight: bold !important; }
         td:nth-child(2), th:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
         .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 6px; }
-        .print-header h2 { font-size: 15px; margin: 0 0 3px 0; }
-        .print-header h3 { font-size: 12px; margin: 0; }
-        .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 10px; font-size: 11px; background: #f8fafc !important; }
+        .print-header h2 { font-size: 16px; margin: 0 0 3px 0; }
+        .print-header h3 { font-size: 13px; margin: 0; }
+        .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 10px; font-size: 12px; background: #f8fafc !important; }
         .badge { background: transparent !important; border: none !important; font-weight: bold; }
     `;
     container1.appendChild(style1);
@@ -1105,7 +1112,7 @@ async function exportFullReportToPDF(filename) {
 
     try {
         const canvas1 = await html2canvas(container1, {
-            scale: 1.8, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
+            scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
         });
 
         const imgWidth = pageWidth - (margin * 2);
@@ -1114,9 +1121,9 @@ async function exportFullReportToPDF(filename) {
         if (imgHeight1 > usableHeight) {
             const scale = usableHeight / imgHeight1;
             imgHeight1 = usableHeight;
-            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgWidth * scale, imgHeight1);
+            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.93), 'JPEG', margin, margin, imgWidth * scale, imgHeight1);
         } else {
-            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgWidth, imgHeight1);
+            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.93), 'JPEG', margin, margin, imgWidth, imgHeight1);
         }
 
         // 2. SAYFA - RAPOR METNİ
@@ -1125,9 +1132,9 @@ async function exportFullReportToPDF(filename) {
 
             const container2 = document.createElement('div');
             container2.style.cssText = `
-                position: fixed; left: -9999px; top: 0; width: 794px;
+                position: fixed; left: -9999px; top: 0; width: 900px;
                 background: #ffffff; color: #000000; padding: 25px;
-                font-family: Arial, sans-serif;
+                font-family: Arial, Helvetica, sans-serif;
                 box-sizing: border-box; z-index: 99999;
             `;
 
@@ -1148,11 +1155,11 @@ async function exportFullReportToPDF(filename) {
             await new Promise(r => setTimeout(r, 400));
 
             const canvas2 = await html2canvas(container2, {
-                scale: 1.8, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
+                scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
             });
 
             let imgHeight2 = (canvas2.height * imgWidth) / canvas2.width;
-            const imgData2 = canvas2.toDataURL('image/jpeg', 0.92);
+            const imgData2 = canvas2.toDataURL('image/jpeg', 0.93);
 
             if (imgHeight2 <= usableHeight) {
                 pdf.addImage(imgData2, 'JPEG', margin, margin, imgWidth, imgHeight2);
@@ -1288,7 +1295,7 @@ function renderQuizTable(grade, branchName) {
         const currentScore = s.quiz?.[key] ?? '';
         rows += `<tr>
             <td style="text-align: center; white-space:nowrap;">${s.no}</td>
-            <td style="white-space:nowrap; text-align:left;">${s.name}</td>
+            <td style="white-space:nowrap !important; text-align:left; min-width:130px;">${s.name}</td>
             <td style="text-align: center;"><input type="text" id="quiz-score-${idx}" class="auth-input" style="padding: 6px; width: 70px; margin: 0 auto; text-align:center; background:rgba(15,23,42,0.8);" value="${currentScore}" placeholder="Not/G" autocomplete="off" oninput="validateScoreInput(this)"></td>
         </tr>`;
     });
@@ -1439,7 +1446,7 @@ function renderGroupedActivityTable(grade, branchName) {
 
         let rows = '';
         students.forEach((s) => {
-            let cols = `<td style="white-space:nowrap;">${s.no}</td><td style="white-space:nowrap; text-align:left;">${s.name}</td>`;
+            let cols = `<td style="white-space:nowrap;">${s.no}</td><td style="white-space:nowrap !important; text-align:left; min-width:130px;">${s.name}</td>`;
             let storedScale = s.scale?.[selectedScaleName];
             
             if (!storedScale || storedScale['totalScore'] === undefined) {
@@ -1489,7 +1496,7 @@ function renderGroupedActivityTable(grade, branchName) {
     // ========== TÜM ÖLÇEKLER ==========
     let headerTh = `
         <th style="min-width:42px; white-space:nowrap;">No</th>
-        <th style="min-width:120px; white-space:nowrap;">Ad Soyad</th>
+        <th style="min-width:130px; white-space:nowrap;">Ad Soyad</th>
         <th style="min-width:60px; white-space:nowrap;">⚡ Hızlı</th>
     `;
     
@@ -1504,7 +1511,7 @@ function renderGroupedActivityTable(grade, branchName) {
     students.forEach((s, sIdx) => {
         let cols = `
             <td style="white-space:nowrap;">${s.no}</td>
-            <td style="white-space:nowrap; text-align:left;">${s.name}</td>
+            <td style="white-space:nowrap !important; text-align:left; min-width:130px;">${s.name}</td>
         `;
         
         let firstSubName = subScales[0]?.name;
@@ -1685,7 +1692,7 @@ async function renderReportData(grade, branchName) {
             }
         }
 
-        let cols = `<td style="white-space:nowrap;">${s.no}</td><td style="white-space:nowrap; text-align:left;">${s.name}</td><td>${getScoreBadge(qDisplay)}</td>`;
+        let cols = `<td style="white-space:nowrap;">${s.no}</td><td style="white-space:nowrap !important; text-align:left; min-width:130px;">${s.name}</td><td>${getScoreBadge(qDisplay)}</td>`;
 
         let scaleScoreSum = 0; let scaleScoreCount = 0;
         sectionActivities.forEach(act => {
