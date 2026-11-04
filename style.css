@@ -101,26 +101,25 @@ html, body {
     width: 100% !important; 
     border-collapse: collapse; 
     background: #1e293b; 
-    table-layout: auto !important;
+    table-layout: fixed !important; /* Word mantığı: Sütunlar sabit oranlara göre bölünür */
 }
 .data-table th, .data-table td { 
-    padding: 10px 12px; 
+    padding: 8px 10px; 
     text-align: left; 
     border-bottom: 1px solid #334155; 
-    font-size: 12px; 
+    font-size: 11px; 
     color: #f8fafc; 
-    white-space: nowrap !important; 
+    white-space: normal !important; /* Kelimelerin alta kaymasını sağlar */
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
 }
 .data-table th { 
     background: #0f172a; 
     font-weight: 600; 
     color: #cbd5e1; 
     text-transform: uppercase; 
-    font-size: 11px; 
-}
-.data-table td:nth-child(2) {
-    white-space: normal !important; 
-    min-width: 130px;
+    font-size: 10px; 
+    text-align: center;
 }
 .data-table tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.02); }
 .data-table tbody tr:nth-child(odd) { background-color: rgba(255,255,255,0.04); }
@@ -179,12 +178,12 @@ html, body {
 .badge-neutral { background: rgba(255,255,255,0.1); color: #cbd5e1; }
 
 /* ==========================================
-   PDF VE YAZDIRMA (PRINT) UYUMU
+   PDF VE YAZDIRMA (PRINT) UYUMU (WORD MANTIĞI)
    ========================================== */
 @media print {
     @page {
-        size: A4 landscape !important;
-        margin: 5mm;
+        size: A4 portrait !important; /* Word gibi dikey A4 kullanır */
+        margin: 8mm;
     }
 
     body {
@@ -206,9 +205,9 @@ html, body {
     .data-table th, .data-table td {
         white-space: normal !important;
         color: #000000 !important;
-        border-bottom: 1px solid #cbd5e1 !important;
-        font-size: 8px !important;
-        padding: 4px 4px !important;
+        border-bottom: 1px solid #94a3b8 !important;
+        font-size: 7.5px !important; /* Word'deki otomatik ölçeklendirme mantığı */
+        padding: 5px 4px !important;
         word-break: break-word !important;
         overflow-wrap: break-word !important;
     }
@@ -217,6 +216,7 @@ html, body {
         background: #e2e8f0 !important;
         color: #000 !important;
         text-align: center !important;
+        font-weight: bold !important;
     }
 
     .print-area {
