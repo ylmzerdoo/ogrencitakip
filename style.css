@@ -80,18 +80,28 @@ html, body {
 .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; }
 
 /* ==========================================
-   TABLO VE KAYDIRILABİLİR ALAN
+   TABLO VE MOBİL UYUMLU KAYDIRMA ALANI
    ========================================== */
 .table-responsive { 
-    width: 100%; max-width: 100%; overflow-x: auto !important; -webkit-overflow-scrolling: touch; 
-    margin-bottom: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); box-sizing: border-box; display: block;
+    width: 100% !important; 
+    max-width: 100% !important; 
+    overflow-x: auto !important; 
+    -webkit-overflow-scrolling: touch; 
+    margin-bottom: 12px; 
+    border-radius: 10px; 
+    border: 1px solid rgba(255,255,255,0.08); 
+    box-sizing: border-box; 
+    display: block;
 }
-.table-responsive::-webkit-scrollbar { height: 8px; }
+.table-responsive::-webkit-scrollbar { height: 6px; }
 .table-responsive::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 4px; }
 .table-responsive::-webkit-scrollbar-thumb { background: #f26b5b; border-radius: 4px; }
 
 .data-table { 
-    width: 100% !important; border-collapse: collapse; background: #1e293b; table-layout: auto;
+    width: 100% !important; 
+    border-collapse: collapse; 
+    background: #1e293b; 
+    table-layout: auto !important;
 }
 .data-table th, .data-table td { 
     padding: 10px 12px; 
@@ -99,11 +109,18 @@ html, body {
     border-bottom: 1px solid #334155; 
     font-size: 12px; 
     color: #f8fafc; 
-    white-space: normal !important;
-    word-break: break-word;
+    white-space: nowrap !important; /* Mobilde sütunların dikey kırılmasını engeller, kaydırma çubuğu açar */
 }
 .data-table th { 
-    background: #0f172a; font-weight: 600; color: #cbd5e1; text-transform: uppercase; font-size: 11px; 
+    background: #0f172a; 
+    font-weight: 600; 
+    color: #cbd5e1; 
+    text-transform: uppercase; 
+    font-size: 11px; 
+}
+.data-table td:nth-child(2) {
+    white-space: normal !important; /* Ad Soyad sütununun gerektiğinde normal durması için */
+    min-width: 130px;
 }
 .data-table tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.02); }
 .data-table tbody tr:nth-child(odd) { background-color: rgba(255,255,255,0.04); }
@@ -114,26 +131,28 @@ html, body {
    ========================================== */
 .print-area {
     background: rgba(15, 23, 42, 0.8);
-    padding: 20px;
+    padding: 15px;
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.08);
     margin-bottom: 15px;
+    width: 100%;
+    overflow-x: hidden;
 }
 .print-header {
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding-bottom: 12px;
-    margin-bottom: 15px;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
 }
-.print-header h2 { font-size: 15px; font-weight: 700; margin: 0 0 4px 0; color: #f8fafc; }
-.print-header h3 { font-size: 13px; font-weight: 600; margin: 0; color: #cbd5e1; }
+.print-header h2 { font-size: 14px; font-weight: 700; margin: 0 0 4px 0; color: #f8fafc; }
+.print-header h3 { font-size: 12px; font-weight: 600; margin: 0; color: #cbd5e1; }
 .print-info {
     background: rgba(15, 23, 42, 0.4);
     border: 1px solid rgba(255,255,255,0.05);
-    padding: 12px;
+    padding: 10px;
     border-radius: 8px;
-    margin-bottom: 15px;
-    font-size: 12px;
+    margin-bottom: 12px;
+    font-size: 11px;
     color: #e2e8f0;
     display: flex;
     flex-direction: column;
