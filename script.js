@@ -933,30 +933,30 @@ function exportTableToPDF(elementId, filename) {
 
     const tableEl = clone.querySelector('table');
     const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
-    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Analiz');
+    const isWideTable = colCount > 3 || filename.includes('Olcek') || filename.includes('Tum_Olcekler') || filename.includes('Analiz');
 
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
     wrapper.style.color = '#000000';
-    wrapper.style.padding = '2px';
+    wrapper.style.padding = '5px';
     wrapper.style.margin = '0px';
     wrapper.style.width = '100%';
     wrapper.style.fontFamily = "'Times New Roman', Times, serif";
     
     const customStyle = document.createElement('style');
     customStyle.innerHTML = `
-        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
+        * { color: #000 !important; background: #fff !important; box-shadow: none !important; -webkit-print-color-adjust: exact; }
         body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
         h2, h3, p, span, th, td { font-family: 'Times New Roman', Times, serif !important; }
         .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
-        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 3px; margin-bottom: 4px; text-align: center; }
-        .print-header h2 { font-size: 10px; font-weight: bold; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 8px; font-weight: bold; margin: 0; }
-        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 4px; margin-bottom: 4px; font-size: 7.5px; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 2px; table-layout: fixed !important; page-break-inside: auto !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
+        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 9px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
         thead { display: table-header-group; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
@@ -966,7 +966,7 @@ function exportTableToPDF(elementId, filename) {
     wrapper.appendChild(clone);
 
     const opt = {
-        margin:       [2, 2, 2, 2],
+        margin:       [5, 5, 5, 5],
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
@@ -984,45 +984,48 @@ function exportFullReportToPDF(filename) {
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
     wrapper.style.color = '#000000';
-    wrapper.style.padding = '2px';
+    wrapper.style.padding = '5px';
     wrapper.style.margin = '0px';
     wrapper.style.width = '100%';
     wrapper.style.fontFamily = "'Times New Roman', Times, serif";
 
     const customStyle = document.createElement('style');
     customStyle.innerHTML = `
-        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
+        * { color: #000 !important; background: #fff !important; box-shadow: none !important; -webkit-print-color-adjust: exact; }
         body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
         h2, h3, h4, p, span, th, td, li { font-family: 'Times New Roman', Times, serif !important; color: #000 !important; }
         .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
-        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 3px; margin-bottom: 4px; text-align: center; }
-        .print-header h2 { font-size: 10px; font-weight: bold; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 8px; font-weight: bold; margin: 0; }
-        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 4px; margin-bottom: 4px; font-size: 7.5px; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 2px; table-layout: fixed !important; page-break-inside: auto !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
+        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 9px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 2.5px 3px !important; font-size: 6.5px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word; white-space: normal !important; }
         th { background-color: #e0e0e0 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; }
-        .report-box { border: 1px solid #000 !important; padding: 6px !important; margin-top: 6px !important; background: #fff !important; page-break-inside: avoid !important; }
-        h4 { font-size: 8px !important; font-weight: bold !important; margin: 4px 0 2px 0 !important; }
-        ul { margin: 2px 0 4px 12px !important; padding: 0 !important; }
-        li { margin-bottom: 2px !important; font-size: 7.5px !important; text-align: left !important; page-break-inside: avoid; }
+        .report-box { border: 1px solid #000 !important; padding: 8px !important; margin-top: 8px !important; background: #fff !important; page-break-inside: avoid !important; }
+        h4 { font-size: 9px !important; font-weight: bold !important; margin: 6px 0 3px 0 !important; }
+        ul { margin: 3px 0 5px 15px !important; padding: 0 !important; }
+        li { margin-bottom: 3px !important; font-size: 8px !important; text-align: left !important; page-break-inside: avoid; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
     `;
+
+    wrapper.style.display = 'flex';
+    wrapper.style.flexDirection = 'column';
+    wrapper.style.gap = '20px';
 
     wrapper.appendChild(customStyle);
     wrapper.appendChild(part1.cloneNode(true));
     
     const pageBreak = document.createElement('div');
     pageBreak.style.pageBreakBefore = 'always';
-    pageBreak.style.marginTop = '10px';
     wrapper.appendChild(pageBreak);
 
     wrapper.appendChild(part2.cloneNode(true));
 
     const opt = {
-        margin:       [2, 2, 2, 2],
+        margin:       [5, 5, 5, 5],
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
