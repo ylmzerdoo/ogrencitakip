@@ -179,24 +179,23 @@ html, body {
 .badge-neutral { background: rgba(255,255,255,0.1); color: #cbd5e1; }
 
 /* ==========================================
-   PDF VE YAZDIRMA (PRINT) UYumluluğu
+   PDF VE YAZDIRMA (PRINT) UYUMU
    ========================================== */
 @media print {
     @page {
-        size: A4 portrait;
-        margin: 8mm;
+        size: A4 landscape !important;
+        margin: 5mm;
     }
 
     body {
         background: #ffffff !important;
         color: #000000 !important;
-        zoom: 85%; /* İçeriği kağıda sığacak oranla küçültür */
     }
 
-    /* Yazdırma esnasında scroll alanlarını düzleştir ve taşmaları önle */
     .table-responsive {
         overflow: visible !important;
         border: none !important;
+        width: 100% !important;
     }
 
     .data-table {
@@ -205,16 +204,19 @@ html, body {
     }
 
     .data-table th, .data-table td {
-        white-space: normal !important; /* Yazıların yazdırma esnasında alt alta düzgün kırılmasını sağlar */
+        white-space: normal !important;
         color: #000000 !important;
-        border-bottom: 1px solid #ccc !important;
-        font-size: 10px !important;
-        padding: 6px !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        font-size: 8px !important;
+        padding: 4px 4px !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
     }
 
     .data-table th {
         background: #e2e8f0 !important;
         color: #000 !important;
+        text-align: center !important;
     }
 
     .print-area {
@@ -222,6 +224,7 @@ html, body {
         border: none !important;
         padding: 0 !important;
         color: #000 !important;
+        width: 100% !important;
     }
 
     .print-header h2, .print-header h3 {
