@@ -763,8 +763,8 @@ function loadBranchTabContent(tabType, grade, branchName) {
         let rows = '';
         students.forEach((s, idx) => {
             rows += `<tr>
-                <td>${s.no}</td>
-                <td>${s.name}</td>
+                <td style="white-space:nowrap;">${s.no}</td>
+                <td style="white-space:nowrap; text-align:left;">${s.name}</td>
                 <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'plus', 1)" class="btn-pastel-green">+</button> <span style="font-weight:bold; margin-left:6px;">${s.plus}</span></td>
                 <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'minus', 1)" class="btn-pastel-red">-</button> <span style="font-weight:bold; margin-left:6px;">${s.minus}</span></td>
                 <td><button onclick="deleteStudent('${grade}', '${branchName}', ${idx})" class="btn-pastel-gray">Sil</button></td>
@@ -779,9 +779,9 @@ function loadBranchTabContent(tabType, grade, branchName) {
                     <button onclick="addStudentModal('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:6px 10px; background:#2563eb; font-size:11px;">+ Öğrenci</button>
                 </div>
             </div>
-            <div class="table-responsive" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-                <table class="data-table" id="export-target-table" style="min-width:500px;">
-                    <thead><tr><th style="width: 10%;">No</th><th style="width: 45%;">Ad Soyad</th><th>Artı</th><th>Eksi</th><th>İşlem</th></tr></thead>
+            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                <table class="data-table" id="export-target-table" style="min-width:480px;">
+                    <thead><tr><th>No</th><th>Ad Soyad</th><th>Artı</th><th>Eksi</th><th>İşlem</th></tr></thead>
                     <tbody>${rows || '<tr><td colspan="5" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
                 </table>
             </div>
@@ -906,6 +906,7 @@ async function exportTableToPDF(elementId, filename) {
 
     const clone = original.cloneNode(true);
 
+    // Input → span
     const origInputs = original.querySelectorAll('input');
     const cloneInputs = clone.querySelectorAll('input');
     origInputs.forEach((inp, i) => {
@@ -921,57 +922,89 @@ async function exportTableToPDF(elementId, filename) {
 
     const table = clone.querySelector('table');
     const colCount = table ? table.querySelectorAll('th').length : 0;
-    const isWide = colCount > 5 || 
-                   filename.includes('Olcek') || 
-                   filename.includes('Analiz') || 
-                   filename.includes('Tum_Olcekler') ||
-                   filename.includes('Tekil');
-
-    const containerWidth = isWide ? '1200px' : '800px';
+    const isWide = colCount > 6;
 
     const container = document.createElement('div');
     container.style.cssText = `
-        position: fixed; left: -10000px; top: 0;
-        width: ${containerWidth};
-        background: #ffffff; color: #000000;
-        padding: 25px; font-family: 'Times New Roman', Times, serif;
-        box-sizing: border-box; z-index: 99999;
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: ${isWide ? '1100px' : '794px'};
+        background: #ffffff;
+        color: #000000;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+        z-index: 99999;
     `;
 
     const style = document.createElement('style');
     style.textContent = `
-        * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
-        table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; }
+        * {
+            color: #000 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            writing-mode: horizontal-tb !important;
+            text-orientation: mixed !important;
+            transform: none !important;
+        }
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            table-layout: auto !important;
+        }
         th, td {
-            border: 1px solid #000 !important;
-            padding: 7px 5px !important;
-            font-size: ${isWide ? '12px' : '13px'} !important;
+            border: 1px solid #333 !important;
+            padding: 6px 4px !important;
+            font-size: 11px !important;
             text-align: center !important;
             vertical-align: middle !important;
-            word-break: break-word !important;
             white-space: normal !important;
+            word-break: break-word !important;
+            writing-mode: horizontal-tb !important;
+            transform: none !important;
         }
         th {
-            background: #f1f5f9 !important;
+            background: #e2e8f0 !important;
             font-weight: bold !important;
-            font-size: ${isWide ? '11px' : '12px'} !important;
+            font-size: 10px !important;
         }
-        td:nth-child(2), th:nth-child(2) { text-align: left !important; }
-        .badge { background: transparent !important; border: none !important; font-weight: bold; font-size: 12px !important; }
-        .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 12px; padding-bottom: 8px; }
-        .print-header h2 { font-size: 17px; margin: 0 0 4px 0; }
-        .print-header h3 { font-size: 14px; margin: 0; }
-        .print-info { border: 1px solid #666; padding: 10px; margin-bottom: 12px; font-size: 13px; background: #fafafa !important; text-align: left; }
+        td:nth-child(2), th:nth-child(2) {
+            text-align: left !important;
+            white-space: nowrap !important;
+        }
+        .badge {
+            background: transparent !important;
+            border: none !important;
+            font-weight: bold;
+            font-size: 11px !important;
+        }
+        .print-header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+        }
+        .print-header h2 { font-size: 16px; margin: 0 0 4px 0; }
+        .print-header h3 { font-size: 13px; margin: 0; }
+        .print-info {
+            border: 1px solid #666;
+            padding: 8px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            background: #f8fafc !important;
+            text-align: left;
+        }
     `;
     container.appendChild(style);
     container.appendChild(clone);
     document.body.appendChild(container);
 
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 500));
 
     try {
         const canvas = await html2canvas(container, {
-            scale: 2,
+            scale: 1.8,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
@@ -987,18 +1020,18 @@ async function exportTableToPDF(elementId, filename) {
 
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 8;
+        const margin = 10;
 
         const imgWidth = pageWidth - (margin * 2);
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        let finalHeight = imgHeight;
         let finalWidth = imgWidth;
+        let finalHeight = imgHeight;
 
-        if (imgHeight > pageHeight - (margin * 2)) {
-            const scale = (pageHeight - (margin * 2)) / imgHeight;
-            finalHeight = pageHeight - (margin * 2);
-            finalWidth = imgWidth * scale;
+        if (imgHeight > pageHeight - margin * 2) {
+            const ratio = (pageHeight - margin * 2) / imgHeight;
+            finalHeight = pageHeight - margin * 2;
+            finalWidth = imgWidth * ratio;
         }
 
         const x = (pageWidth - finalWidth) / 2;
@@ -1006,10 +1039,12 @@ async function exportTableToPDF(elementId, filename) {
         pdf.save(filename + '.pdf');
 
     } catch (err) {
-        console.error('PDF hatası:', err);
+        console.error(err);
         alert('PDF oluşturulamadı: ' + err.message);
     } finally {
-        if (document.body.contains(container)) document.body.removeChild(container);
+        if (document.body.contains(container)) {
+            document.body.removeChild(container);
+        }
     }
 }
 
@@ -1043,23 +1078,23 @@ async function exportFullReportToPDF(filename) {
     // 1. SAYFA - TABLO
     const container1 = document.createElement('div');
     container1.style.cssText = `
-        position: fixed; left: -10000px; top: 0; width: 794px;
-        background: #ffffff; color: #000000; padding: 28px;
-        font-family: 'Times New Roman', Times, serif;
+        position: fixed; left: -9999px; top: 0; width: 794px;
+        background: #ffffff; color: #000000; padding: 25px;
+        font-family: Arial, sans-serif;
         box-sizing: border-box; z-index: 99999;
     `;
 
     const style1 = document.createElement('style');
     style1.textContent = `
-        * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+        * { color: #000 !important; background: transparent !important; box-shadow: none !important; writing-mode: horizontal-tb !important; transform: none !important; }
         table { width: 100% !important; border-collapse: collapse !important; }
-        th, td { border: 1px solid #000 !important; padding: 5px 3px !important; font-size: 10.5px !important; text-align: center; }
-        th { background: #f1f5f9 !important; font-weight: bold !important; }
-        td:nth-child(2), th:nth-child(2) { text-align: left !important; }
+        th, td { border: 1px solid #333 !important; padding: 5px 3px !important; font-size: 10.5px !important; text-align: center; writing-mode: horizontal-tb !important; }
+        th { background: #e2e8f0 !important; font-weight: bold !important; }
+        td:nth-child(2), th:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
         .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 6px; }
         .print-header h2 { font-size: 15px; margin: 0 0 3px 0; }
         .print-header h3 { font-size: 12px; margin: 0; }
-        .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 10px; font-size: 11px; background: #fafafa !important; }
+        .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 10px; font-size: 11px; background: #f8fafc !important; }
         .badge { background: transparent !important; border: none !important; font-weight: bold; }
     `;
     container1.appendChild(style1);
@@ -1070,7 +1105,7 @@ async function exportFullReportToPDF(filename) {
 
     try {
         const canvas1 = await html2canvas(container1, {
-            scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
+            scale: 1.8, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
         });
 
         const imgWidth = pageWidth - (margin * 2);
@@ -1079,9 +1114,9 @@ async function exportFullReportToPDF(filename) {
         if (imgHeight1 > usableHeight) {
             const scale = usableHeight / imgHeight1;
             imgHeight1 = usableHeight;
-            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgWidth * scale, imgHeight1);
+            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgWidth * scale, imgHeight1);
         } else {
-            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgWidth, imgHeight1);
+            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgWidth, imgHeight1);
         }
 
         // 2. SAYFA - RAPOR METNİ
@@ -1090,15 +1125,15 @@ async function exportFullReportToPDF(filename) {
 
             const container2 = document.createElement('div');
             container2.style.cssText = `
-                position: fixed; left: -10000px; top: 0; width: 794px;
-                background: #ffffff; color: #000000; padding: 28px;
-                font-family: 'Times New Roman', Times, serif;
+                position: fixed; left: -9999px; top: 0; width: 794px;
+                background: #ffffff; color: #000000; padding: 25px;
+                font-family: Arial, sans-serif;
                 box-sizing: border-box; z-index: 99999;
             `;
 
             const style2 = document.createElement('style');
             style2.textContent = `
-                * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+                * { color: #000 !important; background: transparent !important; box-shadow: none !important; writing-mode: horizontal-tb !important; }
                 .report-box { border: 1px solid #000 !important; padding: 14px !important; margin-top: 6px !important; }
                 h4 { font-size: 13.5px !important; font-weight: bold !important; margin: 0 0 8px 0 !important; }
                 ul { margin: 6px 0 10px 18px !important; padding: 0 !important; }
@@ -1113,16 +1148,16 @@ async function exportFullReportToPDF(filename) {
             await new Promise(r => setTimeout(r, 400));
 
             const canvas2 = await html2canvas(container2, {
-                scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
+                scale: 1.8, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
             });
 
             let imgHeight2 = (canvas2.height * imgWidth) / canvas2.width;
-            const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
+            const imgData2 = canvas2.toDataURL('image/jpeg', 0.92);
 
             if (imgHeight2 <= usableHeight) {
                 pdf.addImage(imgData2, 'JPEG', margin, margin, imgWidth, imgHeight2);
             } else {
-                const maxScale = 0.85;
+                const maxScale = 0.82;
                 const neededScale = usableHeight / imgHeight2;
                 const finalScale = Math.max(neededScale, maxScale);
 
@@ -1252,8 +1287,8 @@ function renderQuizTable(grade, branchName) {
         const key = `${unitName}_${secName}`;
         const currentScore = s.quiz?.[key] ?? '';
         rows += `<tr>
-            <td style="text-align: center;">${s.no}</td>
-            <td>${s.name}</td>
+            <td style="text-align: center; white-space:nowrap;">${s.no}</td>
+            <td style="white-space:nowrap; text-align:left;">${s.name}</td>
             <td style="text-align: center;"><input type="text" id="quiz-score-${idx}" class="auth-input" style="padding: 6px; width: 70px; margin: 0 auto; text-align:center; background:rgba(15,23,42,0.8);" value="${currentScore}" placeholder="Not/G" autocomplete="off" oninput="validateScoreInput(this)"></td>
         </tr>`;
     });
@@ -1268,7 +1303,7 @@ function renderQuizTable(grade, branchName) {
                 <p><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
                 <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
             </div>
-            <div class="table-responsive" style="overflow-x:auto;">
+            <div style="overflow-x:auto;">
                 <table class="data-table" id="export-quiz-table">
                     <thead><tr><th style="text-align: center; width: 15%;">NO</th><th style="text-align: left; width: 65%;">AD SOYAD</th><th style="text-align: center; width: 20%;">QUİZ NOTU</th></tr></thead>
                     <tbody>${rows || '<tr><td colspan="3" style="text-align:center;">Öğrenci yok.</td></tr>'}</tbody>
@@ -1398,13 +1433,13 @@ function renderGroupedActivityTable(grade, branchName) {
         const criteria = scaleObj.criteria || ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'];
         const scaleType = scaleObj.scale_type || '1-4';
 
-        let headerTh = '<th style="width: 6%;">No</th><th style="width: 20%;">Ad Soyad</th>';
-        criteria.forEach(c => { headerTh += `<th>${c}</th>`; });
-        headerTh += '<th style="width: 8%;">Başarı</th>';
+        let headerTh = '<th style="white-space:nowrap;">No</th><th style="white-space:nowrap;">Ad Soyad</th>';
+        criteria.forEach(c => { headerTh += `<th style="font-size:11px;">${c}</th>`; });
+        headerTh += '<th style="white-space:nowrap;">Başarı</th>';
 
         let rows = '';
         students.forEach((s) => {
-            let cols = `<td>${s.no}</td><td>${s.name}</td>`;
+            let cols = `<td style="white-space:nowrap;">${s.no}</td><td style="white-space:nowrap; text-align:left;">${s.name}</td>`;
             let storedScale = s.scale?.[selectedScaleName];
             
             if (!storedScale || storedScale['totalScore'] === undefined) {
@@ -1437,8 +1472,8 @@ function renderGroupedActivityTable(grade, branchName) {
                     <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
                     <p><b>Ölçek Adı:</b> ${scaleObj.name}</p>
                 </div>
-                <div class="table-responsive" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-                    <table class="data-table" id="export-activity-table" style="min-width:700px;">
+                <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                    <table class="data-table" id="export-activity-table" style="min-width:650px;">
                         <thead><tr>${headerTh}</tr></thead>
                         <tbody>${rows}</tbody>
                     </table>
@@ -1451,23 +1486,40 @@ function renderGroupedActivityTable(grade, branchName) {
         return;
     }
 
-    // Tüm Ölçekler görünümü
-    let headerTh = '<th style="min-width:40px;">No</th><th style="min-width:120px;">Ad Soyad</th><th style="min-width:70px;">⚡ Hızlı</th>';
+    // ========== TÜM ÖLÇEKLER ==========
+    let headerTh = `
+        <th style="min-width:42px; white-space:nowrap;">No</th>
+        <th style="min-width:120px; white-space:nowrap;">Ad Soyad</th>
+        <th style="min-width:60px; white-space:nowrap;">⚡ Hızlı</th>
+    `;
+    
     subScales.forEach(scale => {
         let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
         if (!shortName) shortName = scale.name;
-        // Çok uzunsa kısalt
-        if (shortName.length > 18) shortName = shortName.substring(0, 16) + '..';
-        headerTh += `<th style="min-width:70px; font-size:11px;">${shortName}</th>`;
+        if (shortName.length > 13) shortName = shortName.substring(0, 11) + '..';
+        headerTh += `<th style="min-width:65px; font-size:11px; white-space:normal; line-height:1.2;">${shortName}</th>`;
     });
 
     let rows = '';
     students.forEach((s, sIdx) => {
-        let cols = `<td>${s.no}</td><td style="white-space:nowrap;">${s.name}</td>`;
+        let cols = `
+            <td style="white-space:nowrap;">${s.no}</td>
+            <td style="white-space:nowrap; text-align:left;">${s.name}</td>
+        `;
+        
         let firstSubName = subScales[0]?.name;
-        let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined) ? s.scale[firstSubName]['totalScore'] : '';
+        let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined) 
+            ? s.scale[firstSubName]['totalScore'] : '';
 
-        cols += `<td><input type="text" id="group-quick-input-${sIdx}" class="auth-input" style="padding:6px; width:60px; text-align:center; background:rgba(15,23,42,0.8); margin:0 auto; display:block;" value="${existingQuickVal}" placeholder="85/G" autocomplete="off" oninput="validateScoreInput(this); autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})"></td>`;
+        cols += `<td>
+            <input type="text" id="group-quick-input-${sIdx}" 
+                class="auth-input" 
+                style="padding:5px; width:52px; text-align:center; background:rgba(15,23,42,0.8); margin:0 auto; display:block;" 
+                value="${existingQuickVal}" 
+                placeholder="85" 
+                autocomplete="off" 
+                oninput="validateScoreInput(this); autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})">
+        </td>`;
 
         subScales.forEach((scale, scaleIdx) => {
             let hasScore = s.scale?.[scale.name] && s.scale[scale.name]['totalScore'] !== undefined && s.scale[scale.name]['totalScore'] !== '';
@@ -1487,8 +1539,8 @@ function renderGroupedActivityTable(grade, branchName) {
                 <p><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
                 <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
             </div>
-            <div class="table-responsive" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-                <table class="data-table" id="export-activity-table" style="min-width:${Math.max(600, 200 + subScales.length * 80)}px;">
+            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%;">
+                <table class="data-table" id="export-activity-table" style="min-width:${Math.max(520, 170 + subScales.length * 70)}px; table-layout:auto;">
                     <thead><tr>${headerTh}</tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
@@ -1498,7 +1550,8 @@ function renderGroupedActivityTable(grade, branchName) {
             <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px;">Puanları Kaydet</button>
             <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
             <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
-        </div>`;
+        </div>
+    `;
 }
 
 function autoApplyScoreToSubScales(sIdx, baseActName, subScalesCount) {
@@ -1616,7 +1669,7 @@ async function renderReportData(grade, branchName) {
     const allActs = fenData[grade]?.activities || [];
     const sectionActivities = allActs.filter(a => a.unit === unitName && a.section === secName);
 
-    let headerTh = '<th>No</th><th>Ad Soyad</th><th>Quiz</th><th>Ölçek</th><th>Genel</th>';
+    let headerTh = '<th style="white-space:nowrap;">No</th><th style="white-space:nowrap;">Ad Soyad</th><th>Quiz</th><th>Ölçek</th><th>Genel</th>';
     let allGradesForStats = []; let allScaleScoresForStats = []; let allQuizScoresForStats = []; let rows = '';
 
     students.forEach((s) => {
@@ -1632,7 +1685,7 @@ async function renderReportData(grade, branchName) {
             }
         }
 
-        let cols = `<td>${s.no}</td><td>${s.name}</td><td>${getScoreBadge(qDisplay)}</td>`;
+        let cols = `<td style="white-space:nowrap;">${s.no}</td><td style="white-space:nowrap; text-align:left;">${s.name}</td><td>${getScoreBadge(qDisplay)}</td>`;
 
         let scaleScoreSum = 0; let scaleScoreCount = 0;
         sectionActivities.forEach(act => {
@@ -1677,7 +1730,7 @@ async function renderReportData(grade, branchName) {
                 <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
                 <p><b>Mevcut:</b> ${students.length} Öğrenci | <b>Quiz Ort.:</b> ${classQuizAvg} | <b>Ölçek Ort.:</b> ${classScaleAvg}</p>
             </div>
-            <div class="table-responsive" style="overflow-x:auto;">
+            <div style="overflow-x:auto;">
                 <table class="data-table" id="export-report-table">
                     <thead><tr>${headerTh}</tr></thead>
                     <tbody>${rows || '<tr><td colspan="5" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
@@ -1819,7 +1872,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
                 <div style="margin-bottom: 15px;">
                     <h4 style="font-size: 14px; margin-bottom: 8px; color: #f8fafc;">📝 Quiz Sonuçlarım</h4>
-                    <div class="table-responsive">
+                    <div style="overflow-x:auto;">
                         <table class="data-table">
                             <thead><tr><th>Ünite ve Bölüm</th><th>Not</th></tr></thead>
                             <tbody>${quizRows || '<tr><td colspan="2" style="text-align:center;">Quiz notu yok.</td></tr>'}</tbody>
@@ -1829,7 +1882,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
                 <div>
                     <h4 style="font-size: 14px; margin-bottom: 8px; color: #f8fafc;">🧪 Etkinlik Ortalamalarım</h4>
-                    <div class="table-responsive">
+                    <div style="overflow-x:auto;">
                         <table class="data-table">
                             <thead><tr><th>Ünite ve Bölüm</th><th>Ortalama</th></tr></thead>
                             <tbody>${scaleRows || '<tr><td colspan="2" style="text-align:center;">Etkinlik yok.</td></tr>'}</tbody>
