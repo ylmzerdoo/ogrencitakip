@@ -923,7 +923,7 @@ function exportTableToPDF(elementId, filename) {
 
     const tableEl = clone.querySelector('table');
     const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
-    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Analiz');
+    const isWideTable = colCount > 3 || filename.includes('Olcek') || filename.includes('Analiz');
 
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
@@ -940,13 +940,13 @@ function exportTableToPDF(elementId, filename) {
         h2, h3, p, span, th, td { font-family: 'Times New Roman', Times, serif !important; }
         .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
         .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
-        .print-header h2 { font-size: 12px; font-weight: bold; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 9px; font-weight: bold; margin: 0; }
+        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 8.5px; font-weight: bold; margin: 0; }
         .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word; }
-        th { background-color: #e0e0e0 !important; font-weight: bold !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word !important; overflow-wrap: break-word !important; }
+        th { background-color: #e0e0e0 !important; font-weight: bold !important; text-align: center !important; }
         td:nth-child(2) { text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
     `;
@@ -990,8 +990,8 @@ function exportFullReportToPDF(filename) {
         .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
         tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word; }
-        th { background-color: #e0e0e0 !important; font-weight: bold !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word !important; overflow-wrap: break-word !important; }
+        th { background-color: #e0e0e0 !important; font-weight: bold !important; text-align: center !important; }
         td:nth-child(2) { text-align: left !important; }
         .report-box { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px !important; background: #fff !important; }
         h4 { font-size: 9px !important; font-weight: bold !important; margin: 6px 0 4px 0 !important; }
@@ -1015,7 +1015,7 @@ function exportFullReportToPDF(filename) {
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true }
     };
     
     html2pdf().from(wrapper).set(opt).save();
@@ -1259,9 +1259,9 @@ function renderGroupedActivityTable(grade, branchName) {
         const criteria = scaleObj.criteria || ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'];
         const scaleType = scaleObj.scale_type || '1-4';
 
-        let headerTh = '<th>No</th><th>Ad Soyad</th>';
+        let headerTh = '<th style="width: 6%;">No</th><th style="width: 18%;">Ad Soyad</th>';
         criteria.forEach(c => { headerTh += `<th>${c}</th>`; });
-        headerTh += '<th>Başarı</th>';
+        headerTh += '<th style="width: 8%;">Başarı</th>';
 
         let rows = '';
         students.forEach((s) => {
@@ -1703,7 +1703,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
         </section>
     `;
 }
-// Öğrenci panelinde güncel artı/eksi puanlarını göster.
+
 (function () {
     const originalRenderStudentPanelView = window.renderStudentPanelView;
 
@@ -1720,7 +1720,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
             );
             if (!printInfo) return;
 
-            // Yeniden çizimde aynı satırların tekrarlanmasını önle.
             printInfo.querySelectorAll('.student-point-row').forEach(row => row.remove());
 
             const generalScoreRow = printInfo.querySelector('div');
@@ -1743,7 +1742,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
         };
     }
 
-    // index.html'deki Ders İşlemleri kartının açılıp kapanması.
     window.toggleTeacherActionsCard = function () {
         const container = document.getElementById('teacher-actions-container');
         const icon = document.getElementById('teacher-actions-toggle-icon');
