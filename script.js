@@ -902,6 +902,9 @@ function exportReportToWord(filename) {
     saveAs(blob, filename + ".doc");
 }
 
+/* ==============================================================================
+   GÜNCEL PDF İNDİRME MOTORU 1 (ÖLÇEKLER VE GENEL TABLOLAR İÇİN)
+============================================================================== */
 function exportTableToPDF(elementId, filename) {
     const element = document.getElementById(elementId);
     if (!element) { alert('İçerik bulunamadı!'); return; }
@@ -921,30 +924,47 @@ function exportTableToPDF(elementId, filename) {
     const buttons = clone.querySelectorAll('button');
     buttons.forEach(b => b.remove());
 
+    const tableEl = clone.querySelector('table');
+    const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
+    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Analiz');
+
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
     wrapper.style.color = '#000000';
-    wrapper.style.padding = '5px';
+    wrapper.style.padding = '10px';
     wrapper.style.margin = '0px';
-    wrapper.style.width = '100%';
+    
+    // SİHİRLİ DOKUNUŞ: Mobilde daralmaması için sanal bir A4 piksel genişliği zorluyoruz
+    wrapper.style.width = isWideTable ? '1122px' : '794px'; 
     wrapper.style.fontFamily = "'Times New Roman', Times, serif";
     
     const customStyle = document.createElement('style');
     customStyle.innerHTML = `
         * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
         body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-        h2, h3, p, span, th, td { font-family: 'Times New Roman', Times, serif !important; }
         .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
-        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
-        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 8.5px; font-weight: bold; margin: 0; }
-        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 10px; text-align: center; }
+        .print-header h2 { font-size: 16px; font-weight: bold; margin: 0 0 4px 0; }
+        .print-header h3 { font-size: 13px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 10px; margin-bottom: 10px; font-size: 12px; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
-        tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 4px 3px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word !important; overflow-wrap: break-word !important; white-space: normal !important; }
-        th { background-color: #e0e0e0 !important; font-weight: bold !important; text-align: center !important; }
-        td:nth-child(1) { width: 6% !important; }
-        td:nth-child(2) { width: 22% !important; text-align: left !important; }
+        tr { page-break-inside: avoid !important; }
+        
+        /* Tüm hücrelerde yazıların zorunlu olarak alt alta kırılması (Word Mantığı) */
+        th, td { 
+            border: 1px solid #000 !important; 
+            padding: 6px 4px !important; 
+            font-size: 11px !important; 
+            text-align: center; 
+            background: #fff !important; 
+            white-space: normal !important; 
+            word-break: break-word !important; 
+            overflow-wrap: break-word !important; 
+        }
+        th { background-color: #e2e8f0 !important; font-weight: bold !important; }
+        
+        td:nth-child(1), th:nth-child(1) { width: 5% !important; }
+        td:nth-child(2), th:nth-child(2) { width: 20% !important; text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
     `;
     
@@ -952,16 +972,19 @@ function exportTableToPDF(elementId, filename) {
     wrapper.appendChild(clone);
 
     const opt = {
-        margin:       [4, 4, 4, 4],
+        margin:       [5, 5, 5, 5],
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } // Word gibi dikey A4
+        html2canvas:  { scale: 2, useCORS: true, logging: false, windowWidth: isWideTable ? 1122 : 794 }, // Canvas'a zorunlu genişlik
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: isWideTable ? 'landscape' : 'portrait', compress: true }
     };
     
     html2pdf().from(wrapper).set(opt).save();
 }
 
+/* ==============================================================================
+   GÜNCEL PDF İNDİRME MOTORU 2 (BÖLÜM RAPORLARI İÇİN)
+============================================================================== */
 function exportFullReportToPDF(filename) {
     const part1 = document.getElementById('report-printable-area');
     const part2 = document.getElementById('report-page-2');
@@ -970,9 +993,11 @@ function exportFullReportToPDF(filename) {
     const wrapper = document.createElement('div');
     wrapper.style.background = '#ffffff';
     wrapper.style.color = '#000000';
-    wrapper.style.padding = '5px';
+    wrapper.style.padding = '10px';
     wrapper.style.margin = '0px';
-    wrapper.style.width = '100%';
+    
+    // Bölüm Raporları için Dikey (Portrait) A4 genişliğini sanal olarak veriyoruz
+    wrapper.style.width = '794px'; 
     wrapper.style.fontFamily = "'Times New Roman', Times, serif";
 
     const customStyle = document.createElement('style');
@@ -981,18 +1006,32 @@ function exportFullReportToPDF(filename) {
         body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
         h2, h3, h4, p, span, th, td, li { font-family: 'Times New Roman', Times, serif !important; color: #000 !important; }
         .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
-        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
-        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 8.5px; font-weight: bold; margin: 0; }
-        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
-        tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-        th, td { border: 1px solid #000 !important; padding: 4px 3px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word !important; overflow-wrap: break-word !important; white-space: normal !important; }
-        th { background-color: #e0e0e0 !important; font-weight: bold !important; text-align: center !important; }
-        .report-box { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px !important; background: #fff !important; }
-        h4 { font-size: 9px !important; font-weight: bold !important; margin: 6px 0 4px 0 !important; }
-        ul { margin: 4px 0 6px 15px !important; padding: 0 !important; }
-        li { margin-bottom: 3px !important; font-size: 8px !important; text-align: left !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 6px; margin-bottom: 10px; text-align: center; }
+        .print-header h2 { font-size: 16px; font-weight: bold; margin: 0 0 4px 0; }
+        .print-header h3 { font-size: 13px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 10px; margin-bottom: 10px; font-size: 12px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 6px; table-layout: fixed !important; }
+        tr { page-break-inside: avoid !important; }
+        
+        /* Uzun metinler alt alta kırılacak */
+        th, td { 
+            border: 1px solid #000 !important; 
+            padding: 6px 4px !important; 
+            font-size: 11px !important; 
+            text-align: center; 
+            background: #fff !important; 
+            white-space: normal !important; 
+            word-break: break-word !important; 
+            overflow-wrap: break-word !important; 
+        }
+        th { background-color: #e2e8f0 !important; font-weight: bold !important; }
+        td:nth-child(1), th:nth-child(1) { width: 5% !important; }
+        td:nth-child(2), th:nth-child(2) { width: 25% !important; text-align: left !important; }
+        
+        .report-box { border: 1px solid #000 !important; padding: 15px !important; margin-top: 15px !important; background: #fff !important; }
+        h4 { font-size: 14px !important; font-weight: bold !important; margin: 8px 0 6px 0 !important; }
+        ul { margin: 6px 0 8px 20px !important; padding: 0 !important; }
+        li { margin-bottom: 5px !important; font-size: 12px !important; text-align: left !important; }
         .badge { border: none !important; font-weight: bold; background: transparent !important; }
     `;
 
@@ -1001,16 +1040,16 @@ function exportFullReportToPDF(filename) {
     
     const pageBreak = document.createElement('div');
     pageBreak.style.pageBreakBefore = 'always';
-    pageBreak.style.marginTop = '15px';
+    pageBreak.style.marginTop = '20px';
     wrapper.appendChild(pageBreak);
 
     wrapper.appendChild(part2.cloneNode(true));
 
     const opt = {
-        margin:       [4, 4, 4, 4],
+        margin:       [5, 5, 5, 5],
         filename:     filename + '.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false, windowWidth: 794 }, // Canvas sanal genişliği
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
     };
     
