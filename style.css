@@ -1,5 +1,5 @@
 /* ==========================================
-   MOBİL ÖNCELİKLİ STİL DOSYASI & TABLO DÜZENLERİ
+   FENOMENAL - MOBİL ÖNCELİKLİ TURUNCU STİL DOSYASI
    ========================================== */
 
 *, *::before, *::after {
@@ -14,7 +14,7 @@ html, body {
     margin: 0;
     padding: 0;
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%); 
+    background: linear-gradient(135deg, #f26b5b 0%, #e05543 50%, #c93b2b 100%); 
     color: #f8fafc; 
     min-height: 100vh; 
     display: flex; 
@@ -26,30 +26,30 @@ html, body {
 .auth-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; width: 100%; box-sizing: border-box; }
 
 .auth-card { 
-    background: rgba(255, 255, 255, 0.05); 
+    background: rgba(15, 23, 42, 0.85); 
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); 
     width: 100%; max-width: 400px; box-sizing: border-box;
 }
 
 .auth-tabs { display: flex; margin-bottom: 15px; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 3px; border: 1px solid rgba(255,255,255,0.05); width: 100%; }
-.auth-tab { flex: 1; padding: 8px; text-align: center; border: none; background: transparent; font-weight: 600; cursor: pointer; border-radius: 8px; color: #94a3b8; font-size: 12px; }
+.auth-tab { flex: 1; padding: 8px; text-align: center; border: none; background: transparent; font-weight: 600; cursor: pointer; border-radius: 8px; color: #cbd5e1; font-size: 12px; }
 .auth-tab.active { background: linear-gradient(135deg, #f26b5b 0%, #d95341 100%); color: white; box-shadow: 0 2px 10px rgba(242,107,91,0.4); }
 
 .auth-form { display: flex; flex-direction: column; gap: 10px; width: 100%; }
 .auth-input { 
     width: 100%; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.15); 
-    background: rgba(15, 23, 42, 0.7); color: white; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;
+    background: rgba(15, 23, 42, 0.9); color: white; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;
 }
-.auth-input:focus { border-color: #f26b5b; box-shadow: 0 0 8px rgba(242,107,91,0.3); }
+.auth-input:focus { border-color: #f26b5b; box-shadow: 0 0 8px rgba(242,107,91,0.4); }
 .auth-input option { background: #0f172a; color: white; }
 
 .auth-btn { width: 100%; padding: 11px; background: linear-gradient(135deg, #f26b5b 0%, #d95341 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; box-sizing: border-box; transition: opacity 0.2s;}
 .auth-btn:hover { opacity: 0.9; }
 
 .teacher-header { 
-    background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; width: 100%; box-sizing: border-box;
 }
@@ -64,7 +64,7 @@ html, body {
 @media screen and (min-width: 600px) { .grade-cards-grid { grid-template-columns: repeat(2, 1fr); } }
 
 .grade-card { 
-    background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); 
+    background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); 
     padding: 16px; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); text-align: center; cursor: pointer; 
     border-top: 4px solid #f26b5b; position: relative; overflow: hidden; width: 100%; box-sizing: border-box; transition: transform 0.2s;
 }
@@ -80,7 +80,7 @@ html, body {
 .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; }
 
 /* ==========================================
-   TABLO VE KAYDIRILABİLİR ALAN (SCROLLBAR)
+   TABLO VE KAYDIRILABİLİR ALAN
    ========================================== */
 .table-responsive { 
     width: 100%; max-width: 100%; overflow-x: auto !important; -webkit-overflow-scrolling: touch; 
@@ -88,24 +88,22 @@ html, body {
 }
 .table-responsive::-webkit-scrollbar { height: 8px; }
 .table-responsive::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 4px; }
-.table-responsive::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+.table-responsive::-webkit-scrollbar-thumb { background: #f26b5b; border-radius: 4px; }
 
 .data-table { 
     width: 100% !important; border-collapse: collapse; background: #1e293b; table-layout: auto;
 }
 .data-table th, .data-table td { 
-    padding: 12px 14px; 
+    padding: 10px 12px; 
     text-align: left; 
     border-bottom: 1px solid #334155; 
     font-size: 12px; 
     color: #f8fafc; 
-    white-space: nowrap;
-}
-.data-table td:nth-child(2), .data-table th:nth-child(2) {
-    white-space: normal !important; min-width: 130px; word-break: break-word;
+    white-space: normal !important;
+    word-break: break-word;
 }
 .data-table th { 
-    background: #0f172a; font-weight: 600; color: #94a3b8; text-transform: uppercase; font-size: 11px; 
+    background: #0f172a; font-weight: 600; color: #cbd5e1; text-transform: uppercase; font-size: 11px; 
 }
 .data-table tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.02); }
 .data-table tbody tr:nth-child(odd) { background-color: rgba(255,255,255,0.04); }
@@ -115,7 +113,7 @@ html, body {
    RAPOR/BASKI ALANI
    ========================================== */
 .print-area {
-    background: rgba(30, 41, 59, 0.6);
+    background: rgba(15, 23, 42, 0.8);
     padding: 20px;
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.08);
@@ -144,7 +142,7 @@ html, body {
 .print-info p { margin: 0; }
 
 /* ==========================================
-   PASTEL BUTONLAR & ROZETLER (BADGES)
+   PASTEL BUTONLAR & ROZETLER
    ========================================== */
 .btn-pastel-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;}
 .btn-pastel-green:hover { background: #10b981; color: white; }
