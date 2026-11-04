@@ -109,7 +109,7 @@ html, body {
     border-bottom: 1px solid #334155; 
     font-size: 12px; 
     color: #f8fafc; 
-    white-space: nowrap !important; /* Mobilde sütunların dikey kırılmasını engeller, kaydırma çubuğu açar */
+    white-space: nowrap !important; 
 }
 .data-table th { 
     background: #0f172a; 
@@ -119,7 +119,7 @@ html, body {
     font-size: 11px; 
 }
 .data-table td:nth-child(2) {
-    white-space: normal !important; /* Ad Soyad sütununun gerektiğinde normal durması için */
+    white-space: normal !important; 
     min-width: 130px;
 }
 .data-table tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.02); }
@@ -177,3 +177,60 @@ html, body {
 .badge-mid { background: #fef08a; color: #713f12; }  
 .badge-low { background: #fee2e2; color: #b91c1c; }  
 .badge-neutral { background: rgba(255,255,255,0.1); color: #cbd5e1; }
+
+/* ==========================================
+   PDF VE YAZDIRMA (PRINT) UYumluluğu
+   ========================================== */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 8mm;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        zoom: 85%; /* İçeriği kağıda sığacak oranla küçültür */
+    }
+
+    /* Yazdırma esnasında scroll alanlarını düzleştir ve taşmaları önle */
+    .table-responsive {
+        overflow: visible !important;
+        border: none !important;
+    }
+
+    .data-table {
+        width: 100% !important;
+        table-layout: fixed !important;
+    }
+
+    .data-table th, .data-table td {
+        white-space: normal !important; /* Yazıların yazdırma esnasında alt alta düzgün kırılmasını sağlar */
+        color: #000000 !important;
+        border-bottom: 1px solid #ccc !important;
+        font-size: 10px !important;
+        padding: 6px !important;
+    }
+
+    .data-table th {
+        background: #e2e8f0 !important;
+        color: #000 !important;
+    }
+
+    .print-area {
+        background: #ffffff !important;
+        border: none !important;
+        padding: 0 !important;
+        color: #000 !important;
+    }
+
+    .print-header h2, .print-header h3 {
+        color: #000 !important;
+    }
+
+    .print-info {
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #000 !important;
+    }
+}
