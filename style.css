@@ -80,36 +80,32 @@ html, body {
 .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; }
 
 /* ==========================================
-   TABLO VE MOBİL UYUMLU KAYDIRMA ALANI
+   TABLO VE MOBİL UYUMLU ESNEK YAPI (KAYDIRMASIZ)
    ========================================== */
 .table-responsive { 
     width: 100% !important; 
     max-width: 100% !important; 
-    overflow-x: auto !important; 
-    -webkit-overflow-scrolling: touch; 
+    overflow-x: hidden !important; /* Sağa sola kaydırmayı tamamen kapatır, ekrana sığdırır */
     margin-bottom: 12px; 
     border-radius: 10px; 
     border: 1px solid rgba(255,255,255,0.08); 
     box-sizing: border-box; 
     display: block;
 }
-.table-responsive::-webkit-scrollbar { height: 6px; }
-.table-responsive::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 4px; }
-.table-responsive::-webkit-scrollbar-thumb { background: #f26b5b; border-radius: 4px; }
 
 .data-table { 
     width: 100% !important; 
     border-collapse: collapse; 
     background: #1e293b; 
-    table-layout: fixed !important; /* Word mantığı: Sütunlar sabit oranlara göre bölünür */
+    table-layout: fixed !important; /* Sütunların ekrana orantılı olarak dağılmasını sağlar */
 }
 .data-table th, .data-table td { 
-    padding: 8px 10px; 
+    padding: 6px 4px; 
     text-align: left; 
     border-bottom: 1px solid #334155; 
-    font-size: 11px; 
+    font-size: 10px; /* Mobilde taşmayı önlemek için yazı boyutu optimize edildi */
     color: #f8fafc; 
-    white-space: normal !important; /* Kelimelerin alta kaymasını sağlar */
+    white-space: normal !important; 
     word-break: break-word !important;
     overflow-wrap: break-word !important;
 }
@@ -118,7 +114,7 @@ html, body {
     font-weight: 600; 
     color: #cbd5e1; 
     text-transform: uppercase; 
-    font-size: 10px; 
+    font-size: 9px; 
     text-align: center;
 }
 .data-table tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.02); }
@@ -130,7 +126,7 @@ html, body {
    ========================================== */
 .print-area {
     background: rgba(15, 23, 42, 0.8);
-    padding: 15px;
+    padding: 12px;
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.08);
     margin-bottom: 15px;
@@ -140,37 +136,34 @@ html, body {
 .print-header {
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding-bottom: 10px;
-    margin-bottom: 12px;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
 }
-.print-header h2 { font-size: 14px; font-weight: 700; margin: 0 0 4px 0; color: #f8fafc; }
-.print-header h3 { font-size: 12px; font-weight: 600; margin: 0; color: #cbd5e1; }
+.print-header h2 { font-size: 13px; font-weight: 700; margin: 0 0 3px 0; color: #f8fafc; }
+.print-header h3 { font-size: 11px; font-weight: 600; margin: 0; color: #cbd5e1; }
 .print-info {
     background: rgba(15, 23, 42, 0.4);
     border: 1px solid rgba(255,255,255,0.05);
-    padding: 10px;
+    padding: 8px;
     border-radius: 8px;
-    margin-bottom: 12px;
-    font-size: 11px;
+    margin-bottom: 10px;
+    font-size: 10px;
     color: #e2e8f0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
 }
 .print-info p { margin: 0; }
 
 /* ==========================================
    PASTEL BUTONLAR & ROZETLER
    ========================================== */
-.btn-pastel-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;}
-.btn-pastel-green:hover { background: #10b981; color: white; }
-.btn-pastel-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;}
-.btn-pastel-red:hover { background: #ef4444; color: white; }
-.btn-pastel-gray { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid #64748b; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;}
-.btn-pastel-gray:hover { background: #64748b; color: white; }
+.btn-pastel-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; padding: 3px 8px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 10px; }
+.btn-pastel-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; padding: 3px 8px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 10px; }
+.btn-pastel-gray { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid #64748b; padding: 3px 8px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 10px; }
 
 .badge {
-    display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-align: center; min-width: 40px;
+    display: inline-block; padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 700; text-align: center; min-width: 32px;
 }
 .badge-high { background: #dcfce7; color: #15803d; } 
 .badge-mid { background: #fef08a; color: #713f12; }  
@@ -178,12 +171,12 @@ html, body {
 .badge-neutral { background: rgba(255,255,255,0.1); color: #cbd5e1; }
 
 /* ==========================================
-   PDF VE YAZDIRMA (PRINT) UYUMU (WORD MANTIĞI)
+   PDF VE YAZDIRMA (PRINT) UYUMU
    ========================================== */
 @media print {
     @page {
-        size: A4 portrait !important; /* Word gibi dikey A4 kullanır */
-        margin: 8mm;
+        size: A4 portrait !important;
+        margin: 6mm;
     }
 
     body {
@@ -206,8 +199,8 @@ html, body {
         white-space: normal !important;
         color: #000000 !important;
         border-bottom: 1px solid #94a3b8 !important;
-        font-size: 7.5px !important; /* Word'deki otomatik ölçeklendirme mantığı */
-        padding: 5px 4px !important;
+        font-size: 7px !important;
+        padding: 4px 3px !important;
         word-break: break-word !important;
         overflow-wrap: break-word !important;
     }
