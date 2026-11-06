@@ -131,7 +131,7 @@ function getJsPDF() {
     return null;
 }
 
-// ====================== HISTORY (İLERİ / GERİ) ======================
+// ====================== HISTORY ======================
 function saveState(state) {
     sessionStorage.setItem('fen_app_state', JSON.stringify(state));
     history.pushState(state, '', '#' + (state.type || 'giris'));
@@ -1104,19 +1104,66 @@ function exportReportToWord(filename) {
     const part2 = document.getElementById('report-page2');
     if (!part1) return alert('İçerik bulunamadı!');
 
+    let reportHtml = '';
+    if (part2) {
+        const textDiv = part2.querySelector('div[style*="white-space"]') || part2.querySelector('div');
+        let rawText = textDiv ? (textDiv.innerText || textDiv.textContent) : '';
+        
+        const lines = rawText.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
+        
+        lines.forEach(line => {
+            if (line === line.toUpperCase() && line.length > 8 && !line.startsWith('•') && !line.startsWith('-') && !line.startsWith('*')) {
+                reportHtml += `<p style="margin:14px 0 6px 0; font-weight:bold; font-size:13pt;">${line}</p>`;
+            }
+            else if (line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
+                reportHtml += `<p style="margin:3px 0 3px 18px; font-size:11pt;">• ${line.replace(/^[•\-\*]\s*/, '')}</p>`;
+            }
+            else {
+                reportHtml += `<p style="margin:6px 0; font-size:11pt; text-align:justify;">${line}</p>`;
+            }
+        });
+    }
+
+    const badges = part2 ? part2.querySelectorAll('.badge') : [];
+    let distHtml = '';
+    if (badges.length >= 3) {
+        distHtml = `
+            <p style="margin-top:18px; font-size:11pt;">
+                <b>0-45:</b> ${badges[0].innerText.replace('0-45:','').trim()} &nbsp;&nbsp;
+                <b>45-70:</b> ${badges[1].innerText.replace('45-70:','').trim()} &nbsp;&nbsp;
+                <b>70-100:</b> ${badges[2].innerText.replace('70-100:','').trim()}
+            </p>`;
+    }
+
     const styles = `
         <style>
-            @page { size: A4; margin: 1.5cm; }
-            body { font-family: 'Times New Roman', Times, serif; color: #000; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { border: 1px solid #000; padding: 6px 4px; font-size: 11px; text-align: center; }
-            th { background: #f2f2f2; font-weight: bold; }
-            td:nth-child(2) { text-align: left; white-space: nowrap; }
+            @page { size: A4; margin: 1.8cm; }
+            body { font-family: 'Times New Roman', Times, serif; color: #000; font-size: 11pt; line-height: 1.45; }
+            table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+            th, td { border: 1px solid #000; padding: 6px 5px; font-size: 10.5pt; text-align: center; }
+            th { background: #f0f0f0; font-weight: bold; }
+            td:nth-child(2) { text-align: left; }
+            h2 { text-align: center; font-size: 14pt; margin: 0 0 4px 0; }
+            h3 { text-align: center; font-size: 12pt; margin: 0 0 12px 0; font-weight: normal; }
+            .info { border: 1px solid #444; padding: 8px 10px; margin-bottom: 14px; font-size: 10.5pt; }
             .page-break { page-break-before: always; }
         </style>`;
 
-    const content = part1.outerHTML + (part2 ? '<br class="page-break">' + part2.innerHTML : '');
-    const html = '<html><head><meta charset="utf-8"><title>Rapor</title>' + styles + '</head><body>' + content + '</body></html>';
+    const tableClone = part1.cloneNode(true);
+    tableClone.querySelectorAll('button').forEach(b => b.remove());
+
+    const html = `
+        <html>
+        <head><meta charset="utf-8"><title>Rapor</title>${styles}</head>
+        <body>
+            ${tableClone.innerHTML}
+            <br class="page-break">
+            <h2>📌 Bölüm Sonu Resmi Değerlendirme Raporu</h2>
+            ${reportHtml}
+            ${distHtml}
+        </body>
+        </html>`;
+
     const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
     saveAs(blob, filename + '.doc');
 }
@@ -1147,7 +1194,30 @@ async function exportTableToPDF(elementId, filename) {
     container.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + (isWide ? '1200px' : '850px') + ';background:#fff;color:#000;padding:20px;font-family:Arial,sans-serif;z-index:99999;';
     
     const style = document.createElement('style');
-    style.textContent = '*{color:#000!important;background:transparent!important;writing-mode:horizontal-tb!important;}table{width:100%!important;border-collapse:collapse!important;}th,td{border:1px solid #333!important;padding:6px 4px!important;font-size:11px!important;text-align:center;}th{background:#e2e8f0!important;font-weight:bold!important;}td:nth-child(2),th:nth-child(2){text-align:left!important;white-space:nowrap!important;}.badge{background:transparent!important;font-weight:bold;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:10px;padding-bottom:6px;}.print-header h2{font-size:15px;margin:0 0 3px;}.print-header h3{font-size:12px;margin:0;}.print-info{border:1px solid #666;padding:8px;margin-bottom:10px;font-size:11px;background:#f8fafc!important;line-height:1.4;}';
+    style.textContent = `
+        * { color: #000 !important; background: transparent !important; writing-mode: horizontal-tb !important; }
+        table { width: 100% !important; border-collapse: collapse !important; }
+        th, td { 
+            border: 1px solid #222 !important; 
+            padding: 7px 5px !important; 
+            font-size: 12px !important; 
+            text-align: center; 
+            color: #000 !important;
+            font-weight: 600 !important;
+        }
+        th { background: #e8e8e8 !important; font-weight: bold !important; }
+        td:nth-child(2), th:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
+        .badge, span { 
+            background: transparent !important; 
+            color: #000 !important; 
+            font-weight: 700 !important; 
+            font-size: 13px !important;
+        }
+        .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 6px; }
+        .print-header h2 { font-size: 15px; margin: 0 0 3px; color: #000 !important; }
+        .print-header h3 { font-size: 12px; margin: 0; color: #000 !important; }
+        .print-info { border: 1px solid #555; padding: 8px; margin-bottom: 10px; font-size: 11px; background: #f8f8f8 !important; line-height: 1.4; color: #000 !important; }
+    `;
     container.appendChild(style);
     container.appendChild(clone);
     document.body.appendChild(container);
@@ -1155,7 +1225,13 @@ async function exportTableToPDF(elementId, filename) {
     await new Promise(r => setTimeout(r, 400));
 
     try {
-        const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+        const canvas = await html2canvas(container, { 
+            scale: 2.5, 
+            useCORS: true, 
+            backgroundColor: '#ffffff', 
+            logging: false,
+            letterRendering: true
+        });
         const pdf = new jsPDF({ orientation: isWide ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
         const pw = pdf.internal.pageSize.getWidth();
         const ph = pdf.internal.pageSize.getHeight();
@@ -1168,7 +1244,7 @@ async function exportTableToPDF(elementId, filename) {
         }
         const x = (pw - imgW) / 2;
         const y = (ph - imgH) / 2;
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.93), 'JPEG', x, y, imgW, imgH);
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', x, y, imgW, imgH);
         pdf.save(filename + '.pdf');
     } catch (e) {
         console.error(e);
@@ -1194,19 +1270,19 @@ async function exportFullReportPDF(filename) {
 
     const c1 = document.createElement('div');
     c1.style.cssText = 'position:fixed;left:-9999px;width:850px;background:#fff;padding:20px;font-family:Arial;z-index:99999;';
-    c1.innerHTML = '<style>*{color:#000!important;background:transparent!important;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:5px;font-size:10px;text-align:center;}th{background:#e2e8f0;}td:nth-child(2){text-align:left;white-space:nowrap;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:8px;}.print-info{border:1px solid #666;padding:7px;margin-bottom:8px;font-size:10px;}</style>';
+    c1.innerHTML = '<style>*{color:#000!important;background:transparent!important;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:5px;font-size:10px;text-align:center;color:#000!important;font-weight:600;}th{background:#e2e8f0;}td:nth-child(2){text-align:left;white-space:nowrap;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:8px;}.print-info{border:1px solid #666;padding:7px;margin-bottom:8px;font-size:10px;}</style>';
     c1.appendChild(p1.cloneNode(true));
     document.body.appendChild(c1);
     await new Promise(r => setTimeout(r, 300));
 
-    const canvas1 = await html2canvas(c1, { scale: 2, backgroundColor: '#fff', logging: false });
+    const canvas1 = await html2canvas(c1, { scale: 2.5, backgroundColor: '#fff', logging: false, letterRendering: true });
     let imgW = pw - margin * 2;
     let imgH = (canvas1.height * imgW) / canvas1.width;
     if (imgH > usable) {
         const sc = usable / imgH;
-        pdf.addImage(canvas1.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW * sc, usable);
+        pdf.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW * sc, usable);
     } else {
-        pdf.addImage(canvas1.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, imgH);
+        pdf.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW, imgH);
     }
     document.body.removeChild(c1);
 
@@ -1218,13 +1294,13 @@ async function exportFullReportPDF(filename) {
         c2.appendChild(p2.cloneNode(true));
         document.body.appendChild(c2);
         await new Promise(r => setTimeout(r, 300));
-        const canvas2 = await html2canvas(c2, { scale: 2, backgroundColor: '#fff', logging: false });
+        const canvas2 = await html2canvas(c2, { scale: 2.5, backgroundColor: '#fff', logging: false, letterRendering: true });
         imgH = (canvas2.height * imgW) / canvas2.width;
         if (imgH > usable) {
             const sc = Math.min(0.85, usable / imgH);
-            pdf.addImage(canvas2.toDataURL('image/jpeg', 0.92), 'JPEG', (pw - imgW * sc) / 2, margin, imgW * sc, imgH * sc);
+            pdf.addImage(canvas2.toDataURL('image/jpeg', 0.95), 'JPEG', (pw - imgW * sc) / 2, margin, imgW * sc, imgH * sc);
         } else {
-            pdf.addImage(canvas2.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, imgH);
+            pdf.addImage(canvas2.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW, imgH);
         }
         document.body.removeChild(c2);
     }
@@ -1548,7 +1624,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
     const safeName = (student.name || 'Ogrenci').replace(/\s+/g, '_');
 
-    // ===== MOTİVASYON ROZETİ =====
+    // Motivasyon Rozeti
     let badgeTitle = '';
     let badgeEmoji = '';
     let badgeColor = '';
