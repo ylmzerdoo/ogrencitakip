@@ -764,8 +764,7 @@ function renderActivityTable(grade, branchName) {
 
         let head = '<th style="width:50px;">No</th><th style="min-width:140px; text-align:left;">Ad Soyad</th>';
         criteria.forEach((c) => {
-            const short = c.length > 11 ? c.substring(0,9) + '..' : c;
-            head += '<th style="min-width:55px; font-size:11px;">' + short + '</th>';
+            head += '<th style="min-width:65px; max-width:90px; font-size:10px; white-space:normal; word-break:break-word; line-height:1.25; vertical-align:middle;">' + c + '</th>';
         });
         head += '<th style="min-width:60px;">Toplam</th>';
 
@@ -795,7 +794,7 @@ function renderActivityTable(grade, branchName) {
                     <p><b>Ölçek:</b> ${scale.name}</p>
                 </div>
                 <div style="overflow-x:auto;">
-                    <table class="data-table" style="min-width:${180 + criteria.length * 60}px;">
+                    <table class="data-table" style="min-width:${180 + criteria.length * 70}px;">
                         <thead><tr>${head}</tr></thead>
                         <tbody>${body}</tbody>
                     </table>
@@ -1518,7 +1517,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
             const key = u.name + '_' + sec;
             if (student.quiz?.[key] !== undefined && student.quiz[key] !== '') {
                 const sc = student.quiz[key];
-                quizRows += '<tr><td>' + u.name + ' / ' + sec + '</td><td>' + getScoreBadge(sc) + '</td></tr>';
+                quizRows += '<tr><td style="text-align:left; line-height:1.35;"><b>' + u.name + '</b><br><span style="font-size:12px; color:#94a3b8;">' + sec + '</span></td><td>' + getScoreBadge(sc) + '</td></tr>';
                 if (sc !== 'G') { qSum += parseFloat(sc); qCnt++; }
             }
         });
@@ -1536,7 +1535,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
             });
             if (cnt) {
                 const avg = Math.round(sum / cnt);
-                scaleRows += '<tr><td>' + u.name + ' / ' + sec + '</td><td>' + getScaleBadge(avg) + '</td></tr>';
+                scaleRows += '<tr><td style="text-align:left; line-height:1.35;"><b>' + u.name + '</b><br><span style="font-size:12px; color:#94a3b8;">' + sec + '</span></td><td>' + getScaleBadge(avg) + '</td></tr>';
                 sSum += avg; sCnt++;
             }
         });
@@ -1548,6 +1547,43 @@ function renderStudentPanelView(grade, branch, student, push = true) {
     else if (sCnt) gen = sAvg;
 
     const safeName = (student.name || 'Ogrenci').replace(/\s+/g, '_');
+
+    // ===== MOTİVASYON ROZETİ =====
+    let badgeTitle = '';
+    let badgeEmoji = '';
+    let badgeColor = '';
+
+    if (gen >= 90) {
+        badgeTitle = 'Fen Yıldızı';
+        badgeEmoji = '🌟';
+        badgeColor = '#fbbf24';
+    } else if (gen >= 80) {
+        badgeTitle = 'Bilim Meraklısı';
+        badgeEmoji = '🔬';
+        badgeColor = '#34d399';
+    } else if (gen >= 70) {
+        badgeTitle = 'İyi Gidiyorsun';
+        badgeEmoji = '📘';
+        badgeColor = '#60a5fa';
+    } else if (gen >= 50) {
+        badgeTitle = 'Gelişiyor';
+        badgeEmoji = '💪';
+        badgeColor = '#a78bfa';
+    } else {
+        badgeTitle = 'Desteklenmeli';
+        badgeEmoji = '🌱';
+        badgeColor = '#f87171';
+    }
+
+    let plusBadge = '';
+    if (student.plus >= 5) {
+        plusBadge = `
+            <div style="margin-top:8px;">
+                <span style="display:inline-block; background:#166534; color:#86efac; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">
+                    ⭐ Aktif Katılımcı (+${student.plus})
+                </span>
+            </div>`;
+    }
 
     panel.innerHTML = `
         <header class="teacher-header">
@@ -1567,21 +1603,50 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                     <p><b>Ölçek Ort:</b> ${sCnt ? '%' + sAvg : '-'}</p>
                     <p><b>Genel:</b> ${getScoreBadge(gen)}</p>
                     <p><b>Artı / Eksi:</b> ${student.plus} / ${student.minus}</p>
+
+                    <div style="margin-top:12px;">
+                        <span style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.07); padding:7px 14px; border-radius:20px; border:1px solid ${badgeColor};">
+                            <span style="font-size:20px;">${badgeEmoji}</span>
+                            <span style="font-weight:600; color:${badgeColor}; font-size:14px;">${badgeTitle}</span>
+                        </span>
+                    </div>
+                    ${plusBadge}
                 </div>
-                <h4 style="margin:12px 0 6px; font-size:14px;">Quiz Sonuçları</h4>
+
+                <h4 style="margin:16px 0 6px; font-size:14px;">Quiz Sonuçları</h4>
                 <table class="data-table">
-                    <thead><tr><th>Ünite / Bölüm</th><th>Not</th></tr></thead>
-                    <tbody>${quizRows || '<tr><td colspan="2">Yok</td></tr>'}</tbody>
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">Ünite / Bölüm</th>
+                            <th>Not</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${quizRows || '<tr><td colspan="2">Yok</td></tr>'}
+                    </tbody>
                 </table>
-                <h4 style="margin:16px 0 6px; font-size:14px;">Ölçek Ortalamaları</h4>
+
+                <h4 style="margin:18px 0 6px; font-size:14px;">Ölçek Ortalamaları</h4>
                 <table class="data-table">
-                    <thead><tr><th>Ünite / Bölüm</th><th>Ort</th></tr></thead>
-                    <tbody>${scaleRows || '<tr><td colspan="2">Yok</td></tr>'}</tbody>
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">Ünite / Bölüm</th>
+                            <th>Ort</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${scaleRows || '<tr><td colspan="2">Yok</td></tr>'}
+                    </tbody>
                 </table>
             </div>
-            <div style="text-align:center; margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-                <button onclick="exportTableToWord('student-print', '${safeName}_Karne')" class="auth-btn" style="background:#2563eb; width:auto; padding:10px 18px;">📥 Word</button>
-                <button onclick="exportTableToPDF('student-print', '${safeName}_Karne')" class="auth-btn" style="background:#dc2626; width:auto; padding:10px 18px;">📄 PDF</button>
+
+            <div style="text-align:center; margin-top:18px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <button onclick="exportTableToWord('student-print', '${safeName}_Karne')" class="auth-btn" style="background:#2563eb; width:auto; padding:10px 18px;">
+                    📥 Word
+                </button>
+                <button onclick="exportTableToPDF('student-print', '${safeName}_Karne')" class="auth-btn" style="background:#dc2626; width:auto; padding:10px 18px;">
+                    📄 PDF
+                </button>
             </div>
         </section>`;
 }
@@ -1599,6 +1664,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') teacherLogin(); });
     });
 
-    // Sayfa yenilendiğinde veya geri gelindiğinde state'i geri yükle
     restoreStateFromSession();
 });
