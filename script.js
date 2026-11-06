@@ -202,7 +202,9 @@ async function teacherLogin(push = true) {
 function toggleTeacherActionsCard() {
     const container = document.getElementById('teacher-actions-container');
     const icon = document.getElementById('teacher-actions-toggle-icon');
+
     if (!container || !icon) return;
+
     const isOpen = container.style.display !== 'none';
     container.style.display = isOpen ? 'none' : 'block';
     icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
@@ -259,7 +261,6 @@ function openModal(title, htmlContent, onConfirm) {
     } else { confirmBtn.style.display = 'none'; }
     modal.style.display = 'flex';
 }
-
 function closeModal() {
     const modal = document.getElementById('app-modal');
     if (modal) modal.style.display = 'none';
@@ -305,6 +306,7 @@ function globalAddUnit() {
         const inputEl = document.getElementById('modal-text');
         const unitName = inputEl.value.trim();
         if (!unitName) return;
+
         if (supabaseClient) {
             await supabaseClient.from('units_sections').insert([{ grade: grade, unit_name: unitName, section_name: 'Genel' }]);
         }
@@ -330,6 +332,7 @@ function globalAddSection() {
         const sectionInput = document.getElementById('modal-section');
         const section = sectionInput.value.trim();
         if (!unitName || !section) { alert('Lütfen ünite seçin ve bölüm adı yazın.'); return; }
+
         if (supabaseClient) {
             await supabaseClient.from('units_sections').insert([{ grade: grade, unit_name: unitName, section_name: section }]);
         }
@@ -361,19 +364,23 @@ function globalAddReportTemplate() {
         <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Rapor Metni:</label>
         <textarea id="rep-modal-text" class="auth-input" style="height:120px; font-size:12px; font-family:monospace;" placeholder="Rapor metni..."></textarea>
     `;
+
     openModal("Resmi Rapor Şablonu Ekle", content, async () => {
         const grade = document.getElementById('rep-modal-grade').value;
         const unitName = document.getElementById('rep-modal-unit').value;
         const secName = document.getElementById('rep-modal-section').value;
         const textInput = document.getElementById('rep-modal-text');
         const reportText = textInput.value.trim();
+
         if (!unitName || !secName || !reportText) { alert('Lütfen tüm alanları doldurun!'); return; }
+
         if (supabaseClient) {
             const { error } = await supabaseClient.from('report_templates').insert([{
                 grade: grade, unit_name: unitName, section_name: secName, report_text: reportText
             }]);
             if (error) { alert('Hata: ' + error.message); return; }
         }
+
         textInput.value = ''; closeModal(); alert('Rapor şablonu kaydedildi!');
     });
     updateRepModalUnits('7');
@@ -410,12 +417,14 @@ function globalAddActivity() {
         <label style="display:block; margin-bottom:4px; font-weight:600; font-size:12px; color:#cbd5e1;">Excel Dosyası (.xlsx):</label>
         <input type="file" id="modal-excel-file" class="auth-input" accept=".xlsx, .xls, .csv" style="margin-bottom:10px;">
     `;
+
     openModal("Excel Ölçek Entegrasyonu", content, () => {
         const grade = document.getElementById('modal-grade').value;
         const unit = document.getElementById('modal-unit').value;
         const section = document.getElementById('modal-section').value;
         const fileInput = document.getElementById('modal-excel-file');
         const file = fileInput.files[0];
+
         if (!unit || !section || !file) { alert('Lütfen ünite, bölüm seçin ve dosya yükleyin!'); return; }
 
         const reader = new FileReader();
@@ -428,6 +437,7 @@ function globalAddActivity() {
                 for (const sheetName of workbook.SheetNames) {
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
                     let currentScaleTitle = sheetName.trim();
                     let scaleType = '1-4'; 
                     let criteriaColumns = [];
@@ -440,11 +450,13 @@ function globalAddActivity() {
                                 if (cell.includes('RUBRİK') || cell.includes('1-4')) scaleType = '1-4';
                                 else if (cell.includes('KONTROL') || cell.includes('VAR')) scaleType = 'var-yok';
                                 else if (cell.includes('FORMU') || cell.includes('EVET')) scaleType = 'evet-hayir';
+
                                 if (cell.includes('RUBRİK') || cell.includes('FORMU') || cell.includes('LİSTESİ') || cell.includes('ÖLÇEĞİ')) {
                                     currentScaleTitle = `${sheetName.trim()} - ${cell.trim()}`;
                                 }
                             }
                         }
+
                         if (row.some(cell => cell && (cell.toString().includes('Okul No') || cell.toString().includes('Adı Soyadı')))) {
                             criteriaColumns = row.filter(cell => 
                                 cell && !cell.toString().includes('Okul No') && !cell.toString().includes('Adı Soyadı') && 
@@ -460,6 +472,7 @@ function globalAddActivity() {
                             }
                         }
                     }
+
                     if (importedCount === 0 && jsonRows.length > 0) {
                         await supabaseClient.from('activities').insert([{
                             grade: grade, unit_name: unit, section_name: section, activity_name: sheetName.trim(),
@@ -524,6 +537,7 @@ function globalDeleteManagement() {
             <select id="del-report-select" class="auth-input"><option value="">-- Rapor --</option></select>
         </div>
     `;
+
     openModal("İçerik Silme Yönetimi", content, async () => {
         const grade = document.getElementById('del-grade').value;
         const type = document.getElementById('del-type').value;
@@ -573,6 +587,7 @@ function globalDeleteManagement() {
             }
         }
     });
+
     updateDelUnits('6');
     toggleDelFields();
 }
@@ -601,6 +616,7 @@ function updateDelActivitiesAndReports() {
     const grade = document.getElementById('del-grade').value;
     const unitName = document.getElementById('del-unit-select')?.value;
     const secName = document.getElementById('del-section-select')?.value;
+    
     const actSel = document.getElementById('del-activity-select');
     if (actSel) {
         actSel.innerHTML = '<option value="">-- Etkinlik --</option>';
@@ -623,6 +639,7 @@ function toggleDelFields() {
     const secCont = document.getElementById('del-section-container');
     const actCont = document.getElementById('del-activity-container');
     const repCont = document.getElementById('del-report-container');
+
     if (!unitCont || !secCont || !actCont || !repCont) return;
 
     if (type === 'unit') {
@@ -760,26 +777,15 @@ function loadBranchTabContent(tabType, grade, branchName) {
 
     if (tabType === 'students') {
         const students = fenData[grade]?.branches[branchName] || [];
-        let cardsHtml = '';
+        let rows = '';
         students.forEach((s, idx) => {
-            cardsHtml += `
-                <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
-                        <span style="font-size: 13px; font-weight: bold; color: #38bdf8;">No: ${s.no}</span>
-                        <button onclick="deleteStudent('${grade}', '${branchName}', ${idx})" class="btn-pastel-gray" style="padding: 2px 6px; font-size: 10px;">Sil</button>
-                    </div>
-                    <div style="font-size: 14px; font-weight: 600; color: #f8fafc; word-break: break-word;">${s.name}</div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;">
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'plus', 1)" class="btn-pastel-green" style="padding: 4px 10px;">+</button>
-                            <span style="font-size: 12px; color: #34d399; font-weight: bold;">Artı: ${s.plus}</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'minus', 1)" class="btn-pastel-red" style="padding: 4px 10px;">-</button>
-                            <span style="font-size: 12px; color: #f87171; font-weight: bold;">Eksi: ${s.minus}</span>
-                        </div>
-                    </div>
-                </div>`;
+            rows += `<tr>
+                <td>${s.no}</td>
+                <td>${s.name}</td>
+                <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'plus', 1)" class="btn-pastel-green">+</button> <span style="font-weight:bold; margin-left:6px;">${s.plus}</span></td>
+                <td><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'minus', 1)" class="btn-pastel-red">-</button> <span style="font-weight:bold; margin-left:6px;">${s.minus}</span></td>
+                <td><button onclick="deleteStudent('${grade}', '${branchName}', ${idx})" class="btn-pastel-gray">Sil</button></td>
+            </tr>`;
         });
 
         contentArea.innerHTML = `
@@ -790,8 +796,15 @@ function loadBranchTabContent(tabType, grade, branchName) {
                     <button onclick="addStudentModal('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:6px 10px; background:#2563eb; font-size:11px;">+ Öğrenci</button>
                 </div>
             </div>
-            <div style="display: flex; flex-direction: column; width: 100%;">
-                ${cardsHtml || '<p style="color:#94a3b8; font-size:12px; text-align:center;">Öğrenci bulunmuyor.</p>'}
+            <div class="table-responsive">
+                <table class="data-table" id="export-target-table">
+                    <thead><tr><th style="width: 10%;">No</th><th style="width: 45%;">Ad Soyad</th><th>Artı</th><th>Eksi</th><th>İşlem</th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                <button onclick="exportTableToWord('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#2563eb; width:auto; padding:6px 12px; font-size:11px;">📥 Word İndir</button>
+                <button onclick="exportTableToPDF('export-target-table', '${branchName}_Ogrenci_Listesi')" class="auth-btn" style="background:#dc2626; width:auto; padding:6px 12px; font-size:11px;">📄 PDF İndir</button>
             </div>`;
     } else if (tabType === 'quizzes') {
         contentArea.innerHTML = `
@@ -846,9 +859,9 @@ function exportTableToWord(elementId, filename) {
         .print-area, .print-header, .print-info { background: #fff !important; color: #000 !important; border-color: #000 !important; }
         .print-header h2, .print-header h3, .print-info p { color: #000 !important; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; word-break: break-word !important; }
+        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
-        td:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
+        td:nth-child(2) { text-align: left !important; }
         .badge { color: #000 !important; background: transparent !important; } 
         button { display: none !important; }
     </style>`;
@@ -871,9 +884,9 @@ function exportReportToWord(filename) {
         .print-area, .print-header, .print-info, .report-box { background: #fff !important; color: #000 !important; border-color: #000 !important; }
         .print-header h2, .print-header h3, .print-info p { color: #000 !important; }
         table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; word-break: break-word !important; }
+        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
-        td:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
+        td:nth-child(2) { text-align: left !important; }
         .page-break { page-break-before: always; mso-break-type: page-break; clear: both; display: block; }
         .report-box { border: 1px solid #000; padding: 12px; margin-top: 15px; }
         ul { margin: 5px 0 10px 20px; padding: 0; color: #000 !important;}
@@ -882,217 +895,130 @@ function exportReportToWord(filename) {
         .badge { color: #000 !important; background: transparent !important; }
     </style>`;
 
-    const combinedContent = `${part1.outerHTML}<br style="page-break-before: always; mso-break-type: page-break;" />${part2 ? part2.innerHTML : ''}`;
+    const combinedContent = `${part1.outerHTML}<br style="page-break-before: always; mso-break-type: page-break;" />${part2.innerHTML}`;
     const htmlHeader = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Rapor</title>${styles}</head><body><div class="Section1">`;
     const htmlFooter = "</div></body></html>";
     const blob = new Blob(['\ufeff' + htmlHeader + combinedContent + htmlFooter], { type: 'application/msword' });
     saveAs(blob, filename + ".doc");
 }
 
-function getJsPDF() {
-    if (window.jspdf && window.jspdf.jsPDF) return window.jspdf.jsPDF;
-    if (window.jsPDF) return window.jsPDF;
-    return null;
+function exportTableToPDF(elementId, filename) {
+    const element = document.getElementById(elementId);
+    if (!element) { alert('İçerik bulunamadı!'); return; }
+    
+    const clone = element.cloneNode(true);
+    const originalInputs = element.querySelectorAll('input');
+    const clonedInputs = clone.querySelectorAll('input');
+    
+    for (let i = 0; i < originalInputs.length; i++) {
+        const span = document.createElement('span');
+        span.innerText = originalInputs[i].value || '-';
+        span.style.color = '#000';
+        span.style.fontWeight = 'bold';
+        clonedInputs[i].parentNode.replaceChild(span, clonedInputs[i]);
+    }
+
+    const buttons = clone.querySelectorAll('button');
+    buttons.forEach(b => b.remove());
+
+    const tableEl = clone.querySelector('table');
+    const colCount = tableEl ? tableEl.querySelectorAll('tr th').length : 0;
+    const isWideTable = colCount > 4 || filename.includes('Olcek') || filename.includes('Analiz');
+
+    const wrapper = document.createElement('div');
+    wrapper.style.background = '#ffffff';
+    wrapper.style.color = '#000000';
+    wrapper.style.padding = '5px';
+    wrapper.style.margin = '0px';
+    wrapper.style.width = '100%';
+    wrapper.style.fontFamily = "'Times New Roman', Times, serif";
+    
+    const customStyle = document.createElement('style');
+    customStyle.innerHTML = `
+        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
+        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+        h2, h3, p, span, th, td { font-family: 'Times New Roman', Times, serif !important; }
+        .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
+        .print-header h2 { font-size: 12px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 9px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
+        tr { page-break-inside: avoid !important; page-break-after: auto !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7.5px !important; text-align: center; background: #fff !important; word-break: break-word; }
+        th { background-color: #e0e0e0 !important; font-weight: bold !important; }
+        td:nth-child(2) { text-align: left !important; }
+        .badge { border: none !important; font-weight: bold; background: transparent !important; }
+    `;
+    
+    wrapper.appendChild(customStyle);
+    wrapper.appendChild(clone);
+
+    const opt = {
+        margin:       [4, 4, 4, 4],
+        filename:     filename + '.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: isWideTable ? 'landscape' : 'portrait', compress: true }
+    };
+    
+    html2pdf().from(wrapper).set(opt).save();
 }
 
-async function exportTableToPDF(elementId, filename) {
-    const original = document.getElementById(elementId);
-    if (!original) {
-        alert('İçerik bulunamadı!');
-        return;
-    }
-
-    const jsPDF = getJsPDF();
-    if (!jsPDF) {
-        alert('jsPDF kütüphanesi yüklenemedi!');
-        return;
-    }
-
-    const clone = original.cloneNode(true);
-
-    const origInputs = original.querySelectorAll('input');
-    const cloneInputs = clone.querySelectorAll('input');
-    origInputs.forEach((inp, i) => {
-        if (cloneInputs[i]) {
-            const span = document.createElement('span');
-            span.textContent = inp.value || '-';
-            span.style.cssText = 'color:#000;font-weight:bold;';
-            cloneInputs[i].parentNode.replaceChild(span, cloneInputs[i]);
-        }
-    });
-
-    clone.querySelectorAll('button').forEach(b => b.remove());
-
-    const table = clone.querySelector('table');
-    const colCount = table ? table.querySelectorAll('th').length : 0;
-    const isWide = colCount > 5;
-
-    const container = document.createElement('div');
-    container.style.cssText = `
-        position: fixed;
-        left: -9999px;
-        top: 0;
-        width: 800px;
-        background: #ffffff;
-        color: #000000;
-        padding: 15px;
-        font-family: Arial, Helvetica, sans-serif;
-        box-sizing: border-box;
-        z-index: 99999;
-    `;
-
-    const style = document.createElement('style');
-    style.textContent = `
-        * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
-        table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
-        th, td { border: 1px solid #333 !important; padding: 5px 4px !important; font-size: 10px !important; text-align: center !important; vertical-align: middle !important; white-space: normal !important; word-break: break-word !important; }
-        th { background: #e2e8f0 !important; font-weight: bold !important; }
-        td:nth-child(2), th:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
-        .badge { background: transparent !important; border: none !important; font-weight: bold; }
-        .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 8px; padding-bottom: 5px; }
-        .print-header h2 { font-size: 15px; margin: 0 0 2px 0; }
-        .print-header h3 { font-size: 12px; margin: 0; }
-        .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 8px; font-size: 11px; background: #f8fafc !important; text-align: left; }
-    `;
-    container.appendChild(style);
-    container.appendChild(clone);
-    document.body.appendChild(container);
-
-    await new Promise(r => setTimeout(r, 500));
-
-    try {
-        const canvas = await html2canvas(container, {
-            scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, scrollX: 0, scrollY: 0
-        });
-
-        const pdf = new jsPDF({
-            orientation: isWide ? 'landscape' : 'portrait',
-            unit: 'mm',
-            format: 'a4',
-            compress: true
-        });
-
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10;
-
-        const maxWidth = pageWidth - (margin * 2);
-        const maxHeight = pageHeight - (margin * 2);
-
-        let imgWidth = maxWidth;
-        let imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        if (imgHeight > maxHeight) {
-            imgHeight = maxHeight;
-            imgWidth = (canvas.width * imgHeight) / canvas.height;
-        }
-
-        const x = (pageWidth - imgWidth) / 2;
-        const y = (pageHeight - imgHeight) / 2;
-
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.93), 'JPEG', x, y, imgWidth, imgHeight);
-        pdf.save(filename + '.pdf');
-
-    } catch (err) {
-        console.error(err);
-        alert('PDF oluşturulamadı: ' + err.message);
-    } finally {
-        if (document.body.contains(container)) {
-            document.body.removeChild(container);
-        }
-    }
-}
-
-async function exportFullReportToPDF(filename) {
+function exportFullReportToPDF(filename) {
     const part1 = document.getElementById('report-printable-area');
     const part2 = document.getElementById('report-page-2');
-
     if (!part1) { alert('İçerik bulunamadı!'); return; }
 
-    const jsPDF = getJsPDF();
-    if (!jsPDF) { alert('jsPDF kütüphanesi yüklenemedi!'); return; }
+    const wrapper = document.createElement('div');
+    wrapper.style.background = '#ffffff';
+    wrapper.style.color = '#000000';
+    wrapper.style.padding = '5px';
+    wrapper.style.margin = '0px';
+    wrapper.style.width = '100%';
+    wrapper.style.fontFamily = "'Times New Roman', Times, serif";
 
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 10;
-    const usableHeight = pageHeight - (margin * 2);
+    const customStyle = document.createElement('style');
+    customStyle.innerHTML = `
+        * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
+        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+        h2, h3, h4, p, span, th, td, li { font-family: 'Times New Roman', Times, serif !important; color: #000 !important; }
+        .print-area { background: #ffffff !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+        .print-header { border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 6px; text-align: center; }
+        .print-header h2 { font-size: 11px; font-weight: bold; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 8.5px; font-weight: bold; margin: 0; }
+        .print-info { background: #f5f5f5 !important; border: 1px solid #999 !important; padding: 5px; margin-bottom: 6px; font-size: 8px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 4px; table-layout: fixed !important; }
+        tr { page-break-inside: avoid !important; page-break-after: auto !important; }
+        th, td { border: 1px solid #000 !important; padding: 3px 4px !important; font-size: 7px !important; text-align: center; background: #fff !important; word-break: break-word; }
+        th { background-color: #e0e0e0 !important; font-weight: bold !important; }
+        td:nth-child(2) { text-align: left !important; }
+        .report-box { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px !important; background: #fff !important; }
+        h4 { font-size: 9px !important; font-weight: bold !important; margin: 6px 0 4px 0 !important; }
+        ul { margin: 4px 0 6px 15px !important; padding: 0 !important; }
+        li { margin-bottom: 3px !important; font-size: 8px !important; text-align: left !important; }
+        .badge { border: none !important; font-weight: bold; background: transparent !important; }
+    `;
 
-    const container1 = document.createElement('div');
-    container1.style.cssText = `position: fixed; left: -9999px; top: 0; width: 800px; background: #ffffff; color: #000000; padding: 15px; font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; z-index: 99999;`;
+    wrapper.appendChild(customStyle);
+    wrapper.appendChild(part1.cloneNode(true));
+    
+    const pageBreak = document.createElement('div');
+    pageBreak.style.pageBreakBefore = 'always';
+    pageBreak.style.marginTop = '15px';
+    wrapper.appendChild(pageBreak);
 
-    const style1 = document.createElement('style');
-    style1.textContent = `* { color: #000 !important; background: transparent !important; box-shadow: none !important; } table { width: 100% !important; border-collapse: collapse !important; } th, td { border: 1px solid #333 !important; padding: 5px 4px !important; font-size: 10px !important; text-align: center; } th { background: #e2e8f0 !important; font-weight: bold !important; } td:nth-child(2), th:nth-child(2) { text-align: left !important; white-space: nowrap !important; } .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 8px; padding-bottom: 5px; } .print-header h2 { font-size: 15px; margin: 0 0 2px 0; } .print-header h3 { font-size: 12px; margin: 0; } .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 8px; font-size: 11px; background: #f8fafc !important; } .badge { background: transparent !important; border: none !important; font-weight: bold; }`;
-    container1.appendChild(style1);
-    container1.appendChild(part1.cloneNode(true));
-    document.body.appendChild(container1);
+    wrapper.appendChild(part2.cloneNode(true));
 
-    await new Promise(r => setTimeout(r, 400));
-
-    try {
-        const canvas1 = await html2canvas(container1, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false });
-        const imgWidth = pageWidth - (margin * 2);
-        let imgHeight1 = (canvas1.height * imgWidth) / canvas1.width;
-
-        if (imgHeight1 > usableHeight) {
-            const scale = usableHeight / imgHeight1;
-            imgHeight1 = usableHeight;
-            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.93), 'JPEG', margin, margin, imgWidth * scale, imgHeight1);
-        } else {
-            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.93), 'JPEG', margin, margin, imgWidth, imgHeight1);
-        }
-
-        if (part2) {
-            pdf.addPage();
-            const container2 = document.createElement('div');
-            container2.style.cssText = `position: fixed; left: -9999px; top: 0; width: 800px; background: #ffffff; color: #000000; padding: 15px; font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; z-index: 99999;`;
-
-            const style2 = document.createElement('style');
-            style2.textContent = `* { color: #000 !important; background: transparent !important; box-shadow: none !important; } .report-box { border: 1px solid #000 !important; padding: 10px !important; margin-top: 5px !important; } h4 { font-size: 12px !important; font-weight: bold !important; margin: 0 0 6px 0 !important; } ul { margin: 4px 0 8px 16px !important; padding: 0 !important; } li { margin-bottom: 3px !important; font-size: 10.5px !important; text-align: left !important; line-height: 1.35; } p { font-size: 10.5px !important; line-height: 1.4 !important; margin: 3px 0; } .badge { background: transparent !important; border: none !important; font-weight: bold; }`;
-            container2.appendChild(style2);
-            container2.appendChild(part2.cloneNode(true));
-            document.body.appendChild(container2);
-
-            await new Promise(r => setTimeout(r, 400));
-
-            const canvas2 = await html2canvas(container2, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false });
-            let imgHeight2 = (canvas2.height * imgWidth) / canvas2.width;
-            const imgData2 = canvas2.toDataURL('image/jpeg', 0.93);
-
-            if (imgHeight2 <= usableHeight) {
-                pdf.addImage(imgData2, 'JPEG', margin, margin, imgWidth, imgHeight2);
-            } else {
-                const maxScale = 0.82;
-                const neededScale = usableHeight / imgHeight2;
-                const finalScale = Math.max(neededScale, maxScale);
-
-                if (finalScale >= maxScale) {
-                    const finalWidth = imgWidth * finalScale;
-                    const finalHeight = imgHeight2 * finalScale;
-                    const x = (pageWidth - finalWidth) / 2;
-                    pdf.addImage(imgData2, 'JPEG', x, margin, finalWidth, finalHeight);
-                } else {
-                    let heightLeft = imgHeight2;
-                    let position = margin;
-                    pdf.addImage(imgData2, 'JPEG', margin, position, imgWidth, imgHeight2);
-                    heightLeft -= usableHeight;
-                    while (heightLeft > 8) {
-                        position = heightLeft - imgHeight2 + margin;
-                        pdf.addPage();
-                        pdf.addImage(imgData2, 'JPEG', margin, position, imgWidth, imgHeight2);
-                        heightLeft -= usableHeight;
-                    }
-                }
-            }
-            document.body.removeChild(container2);
-        }
-        pdf.save(filename + '.pdf');
-    } catch (err) {
-        console.error('Rapor PDF hatası:', err);
-        alert('PDF oluşturulamadı: ' + err.message);
-    } finally {
-        if (document.body.contains(container1)) document.body.removeChild(container1);
-    }
+    const opt = {
+        margin:       [4, 4, 4, 4],
+        filename:     filename + '.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+    };
+    
+    html2pdf().from(wrapper).set(opt).save();
 }
 
 function openBulkStudentModal(grade, branchName) {
@@ -1187,9 +1113,9 @@ function renderQuizTable(grade, branchName) {
         const key = `${unitName}_${secName}`;
         const currentScore = s.quiz?.[key] ?? '';
         rows += `<tr>
-            <td style="text-align: center; white-space:nowrap;">${s.no}</td>
-            <td style="white-space:nowrap !important; text-align:left; min-width:110px;">${s.name}</td>
-            <td style="text-align: center;"><input type="text" id="quiz-score-${idx}" class="auth-input" style="padding: 4px; width: 55px; margin: 0 auto; text-align:center; background:rgba(15,23,42,0.8); font-size:11px;" value="${currentScore}" placeholder="Not/G" autocomplete="off" oninput="validateScoreInput(this)"></td>
+            <td style="text-align: center;">${s.no}</td>
+            <td>${s.name}</td>
+            <td style="text-align: center;"><input type="text" id="quiz-score-${idx}" class="auth-input" style="padding: 6px; width: 70px; margin: 0 auto; text-align:center; background:rgba(15,23,42,0.8);" value="${currentScore}" placeholder="Not/G" autocomplete="off" oninput="validateScoreInput(this)"></td>
         </tr>`;
     });
 
@@ -1205,7 +1131,7 @@ function renderQuizTable(grade, branchName) {
             </div>
             <div class="table-responsive">
                 <table class="data-table" id="export-quiz-table">
-                    <thead><tr><th style="width:15%;">NO</th><th style="width:65%;">AD SOYAD</th><th style="width:20%;">QUİZ NOTU</th></tr></thead>
+                    <thead><tr><th style="text-align: center; width: 15%;">NO</th><th style="text-align: left; width: 65%;">AD SOYAD</th><th style="text-align: center; width: 20%;">QUİZ NOTU</th></tr></thead>
                     <tbody>${rows || '<tr><td colspan="3" style="text-align:center;">Öğrenci yok.</td></tr>'}</tbody>
                 </table>
             </div>
@@ -1333,13 +1259,13 @@ function renderGroupedActivityTable(grade, branchName) {
         const criteria = scaleObj.criteria || ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'];
         const scaleType = scaleObj.scale_type || '1-4';
 
-        let headerTh = '<th style="width:10%;">No</th><th style="width:40%;">Ad Soyad</th>';
-        criteria.forEach(() => { headerTh += `<th>Krit</th>`; });
-        headerTh += '<th style="width:15%;">Başarı</th>';
+        let headerTh = '<th>No</th><th>Ad Soyad</th>';
+        criteria.forEach(c => { headerTh += `<th>${c}</th>`; });
+        headerTh += '<th>Başarı</th>';
 
         let rows = '';
         students.forEach((s) => {
-            let cols = `<td>${s.no}</td><td style="white-space:nowrap !important; text-align:left;">${s.name}</td>`;
+            let cols = `<td>${s.no}</td><td>${s.name}</td>`;
             let storedScale = s.scale?.[selectedScaleName];
             
             if (!storedScale || storedScale['totalScore'] === undefined) {
@@ -1386,39 +1312,20 @@ function renderGroupedActivityTable(grade, branchName) {
         return;
     }
 
-    let headerTh = `
-        <th style="width:12%;">No</th>
-        <th style="width:43%;">Ad Soyad</th>
-        <th style="width:20%;">⚡ Hızlı</th>
-    `;
-    
+    let headerTh = '<th>No</th><th>Ad Soyad</th><th>⚡ Hızlı Puan</th>';
     subScales.forEach(scale => {
         let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
         if (!shortName) shortName = scale.name;
-        if (shortName.length > 8) shortName = shortName.substring(0, 6) + '..';
-        headerTh += `<th style="font-size:9px;">${shortName}</th>`;
+        headerTh += `<th>${shortName}</th>`;
     });
 
     let rows = '';
     students.forEach((s, sIdx) => {
-        let cols = `
-            <td>${s.no}</td>
-            <td style="white-space:nowrap !important; text-align:left;">${s.name}</td>
-        `;
-        
+        let cols = `<td>${s.no}</td><td>${s.name}</td>`;
         let firstSubName = subScales[0]?.name;
-        let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined) 
-            ? s.scale[firstSubName]['totalScore'] : '';
+        let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined) ? s.scale[firstSubName]['totalScore'] : '';
 
-        cols += `<td>
-            <input type="text" id="group-quick-input-${sIdx}" 
-                class="auth-input" 
-                style="padding:3px; width:45px; text-align:center; background:rgba(15,23,42,0.8); margin:0 auto; display:block; font-size:10px;" 
-                value="${existingQuickVal}" 
-                placeholder="85" 
-                autocomplete="off" 
-                oninput="validateScoreInput(this); autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})">
-        </td>`;
+        cols += `<td><input type="text" id="group-quick-input-${sIdx}" class="auth-input" style="padding:6px; width:70px; text-align:center; background:rgba(15,23,42,0.8); margin:0 auto; display:block;" value="${existingQuickVal}" placeholder="85 / G" autocomplete="off" oninput="validateScoreInput(this); autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\\\'")}', ${subScales.length})"></td>`;
 
         subScales.forEach((scale, scaleIdx) => {
             let hasScore = s.scale?.[scale.name] && s.scale[scale.name]['totalScore'] !== undefined && s.scale[scale.name]['totalScore'] !== '';
@@ -1449,8 +1356,7 @@ function renderGroupedActivityTable(grade, branchName) {
             <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px;">Puanları Kaydet</button>
             <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
             <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
-        </div>
-    `;
+        </div>`;
 }
 
 function autoApplyScoreToSubScales(sIdx, baseActName, subScalesCount) {
@@ -1561,14 +1467,14 @@ async function renderReportData(grade, branchName) {
         formattedReportHtml = '<ul><li>' + formattedReportHtml + '</ul>';
         formattedReportHtml = formattedReportHtml.replace(/<ul>\s*<h4>/g, '<h4>').replace(/<\/ul>\s*<ul>/g, '');
     } else {
-        formattedReportHtml = `<p style="font-size: 11px; line-height: 1.5; margin: 0; white-space: pre-wrap;">${customReportText}</p>`;
+        formattedReportHtml = `<p style="font-size: 13px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${customReportText}</p>`;
     }
 
     const students = fenData[grade]?.branches[branchName] || [];
     const allActs = fenData[grade]?.activities || [];
     const sectionActivities = allActs.filter(a => a.unit === unitName && a.section === secName);
 
-    let headerTh = '<th style="width:12%;">No</th><th style="width:40%;">Ad Soyad</th><th style="width:16%;">Quiz</th><th style="width:16%;">Ölçek</th><th style="width:16%;">Genel</th>';
+    let headerTh = '<th>No</th><th>Ad Soyad</th><th>Quiz</th><th>Ölçek</th><th>Genel</th>';
     let allGradesForStats = []; let allScaleScoresForStats = []; let allQuizScoresForStats = []; let rows = '';
 
     students.forEach((s) => {
@@ -1584,7 +1490,7 @@ async function renderReportData(grade, branchName) {
             }
         }
 
-        let cols = `<td>${s.no}</td><td style="white-space:nowrap !important; text-align:left;">${s.name}</td><td>${getScoreBadge(qDisplay)}</td>`;
+        let cols = `<td>${s.no}</td><td>${s.name}</td><td>${getScoreBadge(qDisplay)}</td>`;
 
         let scaleScoreSum = 0; let scaleScoreCount = 0;
         sectionActivities.forEach(act => {
@@ -1638,11 +1544,11 @@ async function renderReportData(grade, branchName) {
         </div>
 
         <div id="report-page-2" class="print-area" style="margin-top: 15px;">
-            <div class="report-box" style="border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; background: rgba(15,23,42,0.4);">
-                <h4 style="font-size: 13px; font-weight: 600; margin: 0 0 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; color:#f8fafc;">📌 Bölüm Sonu Resmi Değerlendirme Raporu</h4>
-                <div style="font-size: 11px; line-height: 1.4; color:#cbd5e1;">${formattedReportHtml}</div>
+            <div class="report-box" style="border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; background: rgba(15,23,42,0.4);">
+                <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; color:#f8fafc;">📌 Bölüm Sonu Resmi Değerlendirme Raporu</h4>
+                <div style="font-size: 12px; line-height: 1.5; color:#cbd5e1;">${formattedReportHtml}</div>
             </div>
-            <div style="margin-top: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; font-size: 11px; display: flex; justify-content: space-around; background: rgba(15,23,42,0.4);">
+            <div style="margin-top: 15px; border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; font-size: 12px; display: flex; justify-content: space-around; background: rgba(15,23,42,0.4);">
                 <div><span class="badge badge-low">0-45 Altı: ${countLow}</span></div>
                 <div><span class="badge badge-mid">45-70 Arası: ${countMid}</span></div>
                 <div><span class="badge badge-high">70-100 Arası: ${countHigh}</span></div>
@@ -1797,7 +1703,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
         </section>
     `;
 }
-
+// Öğrenci panelinde güncel artı/eksi puanlarını göster.
 (function () {
     const originalRenderStudentPanelView = window.renderStudentPanelView;
 
@@ -1809,9 +1715,12 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 window.fenData?.[grade]?.branches?.[branch]
                     ?.find(s => String(s.no) === String(student.no)) || student;
 
-            const printInfo = document.querySelector('#student-full-printable-area .print-info');
+            const printInfo = document.querySelector(
+                '#student-full-printable-area .print-info'
+            );
             if (!printInfo) return;
 
+            // Yeniden çizimde aynı satırların tekrarlanmasını önle.
             printInfo.querySelectorAll('.student-point-row').forEach(row => row.remove());
 
             const generalScoreRow = printInfo.querySelector('div');
@@ -1834,6 +1743,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
         };
     }
 
+    // index.html'deki Ders İşlemleri kartının açılıp kapanması.
     window.toggleTeacherActionsCard = function () {
         const container = document.getElementById('teacher-actions-container');
         const icon = document.getElementById('teacher-actions-toggle-icon');
