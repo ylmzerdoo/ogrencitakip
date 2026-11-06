@@ -20,8 +20,8 @@ async function loadAllDataFromSupabase() {
             fenData[g].branches = {};
         });
 
-        const { data: branchRows, error: bErr } = await supabaseClient.from('branches').select('*');
-        if (!bErr && branchRows) {
+        const { data: branchRows } = await supabaseClient.from('branches').select('*');
+        if (branchRows) {
             branchRows.forEach(row => {
                 const g = row.grade;
                 const bFullName = row.branch_name;
@@ -31,14 +31,13 @@ async function loadAllDataFromSupabase() {
             });
         }
 
-        const { data: studentRows, error: sErr } = await supabaseClient.from('students').select('*');
-        if (!sErr && studentRows) {
+        const { data: studentRows } = await supabaseClient.from('students').select('*');
+        if (studentRows) {
             studentRows.forEach(row => {
                 const g = row.grade; const b = row.branch;
                 if (!g || !b) return;
                 if (!fenData[g]) fenData[g] = { units: [], activities: [], branches: {} };
                 if (!fenData[g].branches[b]) fenData[g].branches[b] = [];
-
                 fenData[g].branches[b].push({
                     no: row.school_no, name: row.name, plus: row.plus || 0, minus: row.minus || 0,
                     quiz: row.quiz || {}, scale: row.scale || {}
@@ -51,8 +50,8 @@ async function loadAllDataFromSupabase() {
             });
         }
 
-        const { data: unitRows, error: uErr } = await supabaseClient.from('units_sections').select('*');
-        if (!uErr && unitRows) {
+        const { data: unitRows } = await supabaseClient.from('units_sections').select('*');
+        if (unitRows) {
             let unitMap = {};
             unitRows.forEach(row => {
                 const g = row.grade; const uName = row.unit_name; const sName = row.section_name;
@@ -70,8 +69,8 @@ async function loadAllDataFromSupabase() {
             });
         }
 
-        const { data: actRows, error: aErr } = await supabaseClient.from('activities').select('*');
-        if (!aErr && actRows) {
+        const { data: actRows } = await supabaseClient.from('activities').select('*');
+        if (actRows) {
             actRows.forEach(row => {
                 const g = row.grade;
                 if (!g) return;
@@ -91,11 +90,9 @@ function updateStudentBranches() {
     const gradeSelect = document.getElementById('student-grade');
     const branchSelect = document.getElementById('student-branch');
     if (!gradeSelect || !branchSelect) return;
-
     const grade = gradeSelect.value;
     branchSelect.innerHTML = '<option value="">-- Şube Seçin --</option>';
-    
-    if (grade && fenData[grade] && fenData[grade].branches) {
+    if (grade && fenData[grade]?.branches) {
         Object.keys(fenData[grade].branches).forEach(bName => {
             const shortBranch = bName.split('/')[1] || bName;
             branchSelect.innerHTML += `<option value="${bName}">${shortBranch} Şubesi</option>`;
@@ -105,13 +102,11 @@ function updateStudentBranches() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAllDataFromSupabase();
-    
     const gradeSelect = document.getElementById('student-grade');
     if (gradeSelect) {
         gradeSelect.addEventListener('change', updateStudentBranches);
         if (gradeSelect.value) updateStudentBranches();
     }
-
     const teacherEmailInput = document.getElementById('teacher-email');
     const teacherPasswordInput = document.getElementById('teacher-password');
     if (teacherEmailInput && teacherPasswordInput) {
@@ -174,7 +169,6 @@ function switchAuthTab(role) {
     const studentForm = document.getElementById('student-auth-form');
     const teacherForm = document.getElementById('teacher-auth-form');
     if (!studentBtn || !teacherBtn || !studentForm || !teacherForm) return;
-
     if (role === 'student') {
         studentBtn.classList.add('active'); teacherBtn.classList.remove('active');
         studentForm.style.display = 'block'; teacherForm.style.display = 'none';
@@ -763,10 +757,16 @@ function loadBranchTabContent(tabType, grade, branchName) {
         let rows = '';
         students.forEach((s, idx) => {
             rows += `<tr>
-                <td style="white-space:nowrap;">${s.no}</td>
-                <td style="white-space:nowrap !important; text-align:left; min-width:140px;">${s.name}</td>
-                <td style="white-space:nowrap;"><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'plus', 1)" class="btn-pastel-green">+</button> <span style="font-weight:bold; margin-left:4px;">${s.plus}</span></td>
-                <td style="white-space:nowrap;"><button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'minus', 1)" class="btn-pastel-red">-</button> <span style="font-weight:bold; margin-left:4px;">${s.minus}</span></td>
+                <td style="white-space:nowrap; width:50px;">${s.no}</td>
+                <td style="white-space:nowrap; text-align:left; min-width:160px;">${s.name}</td>
+                <td style="white-space:nowrap;">
+                    <button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'plus', 1)" class="btn-pastel-green">+</button>
+                    <span style="font-weight:bold; margin:0 6px;">${s.plus}</span>
+                </td>
+                <td style="white-space:nowrap;">
+                    <button onclick="updatePoint('${grade}', '${branchName}', ${idx}, 'minus', 1)" class="btn-pastel-red">-</button>
+                    <span style="font-weight:bold; margin:0 6px;">${s.minus}</span>
+                </td>
                 <td><button onclick="deleteStudent('${grade}', '${branchName}', ${idx})" class="btn-pastel-gray">Sil</button></td>
             </tr>`;
         });
@@ -779,8 +779,8 @@ function loadBranchTabContent(tabType, grade, branchName) {
                     <button onclick="addStudentModal('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:6px 10px; background:#2563eb; font-size:11px;">+ Öğrenci</button>
                 </div>
             </div>
-            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%;">
-                <table class="data-table" id="export-target-table" style="min-width:520px;">
+            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                <table class="data-table" id="export-target-table" style="min-width:480px;">
                     <thead><tr><th>No</th><th>Ad Soyad</th><th>Artı</th><th>Eksi</th><th>İşlem</th></tr></thead>
                     <tbody>${rows || '<tr><td colspan="5" style="text-align:center;">Öğrenci bulunmuyor.</td></tr>'}</tbody>
                 </table>
@@ -841,8 +841,8 @@ function exportTableToWord(elementId, filename) {
         body { font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.4; background: #fff !important; }
         .print-area, .print-header, .print-info { background: #fff !important; color: #000 !important; border-color: #000 !important; }
         .print-header h2, .print-header h3, .print-info p { color: #000 !important; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; word-break: break-word !important; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; }
+        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
         .badge { color: #000 !important; background: transparent !important; } 
@@ -866,8 +866,8 @@ function exportReportToWord(filename) {
         body { font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.4; background: #fff !important; }
         .print-area, .print-header, .print-info, .report-box { background: #fff !important; color: #000 !important; border-color: #000 !important; }
         .print-header h2, .print-header h3, .print-info p { color: #000 !important; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; word-break: break-word !important; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; }
+        th, td { border: 1px solid #000 !important; padding: 6px 4px !important; font-size: 10px !important; text-align: center; color: #000 !important; background: #fff !important; }
         th { background-color: #f2f2f2 !important; font-weight: bold !important; }
         td:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
         .page-break { page-break-before: always; mso-break-type: page-break; clear: both; display: block; }
@@ -893,16 +893,10 @@ function getJsPDF() {
 
 async function exportTableToPDF(elementId, filename) {
     const original = document.getElementById(elementId);
-    if (!original) {
-        alert('İçerik bulunamadı!');
-        return;
-    }
+    if (!original) { alert('İçerik bulunamadı!'); return; }
 
     const jsPDF = getJsPDF();
-    if (!jsPDF) {
-        alert('jsPDF kütüphanesi yüklenemedi!');
-        return;
-    }
+    if (!jsPDF) { alert('jsPDF kütüphanesi yüklenemedi!'); return; }
 
     const clone = original.cloneNode(true);
 
@@ -916,82 +910,32 @@ async function exportTableToPDF(elementId, filename) {
             cloneInputs[i].parentNode.replaceChild(span, cloneInputs[i]);
         }
     });
-
     clone.querySelectorAll('button').forEach(b => b.remove());
 
     const table = clone.querySelector('table');
     const colCount = table ? table.querySelectorAll('th').length : 0;
-    const isWide = colCount > 4 || filename.includes('Olcek') || filename.includes('Tum_Olcekler');
+    const isWide = colCount > 5 || filename.includes('Olcek') || filename.includes('Tum_Olcekler');
 
     const container = document.createElement('div');
     container.style.cssText = `
-        position: fixed;
-        left: -9999px;
-        top: 0;
-        width: ${isWide ? '1300px' : '900px'};
-        background: #ffffff;
-        color: #000000;
-        padding: 20px;
-        font-family: Arial, Helvetica, sans-serif;
-        box-sizing: border-box;
-        z-index: 99999;
+        position: fixed; left: -9999px; top: 0;
+        width: ${isWide ? '1200px' : '850px'};
+        background: #ffffff; color: #000000; padding: 20px;
+        font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; z-index: 99999;
     `;
 
     const style = document.createElement('style');
     style.textContent = `
-        * {
-            color: #000 !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            writing-mode: horizontal-tb !important;
-            transform: none !important;
-        }
-        table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            table-layout: auto !important;
-        }
-        th, td {
-            border: 1px solid #333 !important;
-            padding: 6px 4px !important;
-            font-size: 11px !important;
-            text-align: center !important;
-            vertical-align: middle !important;
-            writing-mode: horizontal-tb !important;
-        }
-        th {
-            background: #e2e8f0 !important;
-            font-weight: bold !important;
-            font-size: 10px !important;
-        }
-        td:nth-child(2), th:nth-child(2) {
-            text-align: left !important;
-            white-space: nowrap !important;
-            min-width: 140px !important;
-        }
-        .badge {
-            background: transparent !important;
-            border: none !important;
-            font-weight: bold;
-            font-size: 11px !important;
-        }
-        .print-header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            margin-bottom: 10px;
-            padding-bottom: 6px;
-        }
+        * { color: #000 !important; background: transparent !important; box-shadow: none !important; writing-mode: horizontal-tb !important; transform: none !important; }
+        table { width: 100% !important; border-collapse: collapse !important; }
+        th, td { border: 1px solid #333 !important; padding: 6px 4px !important; font-size: 11px !important; text-align: center; writing-mode: horizontal-tb !important; }
+        th { background: #e2e8f0 !important; font-weight: bold !important; font-size: 10px !important; }
+        td:nth-child(2), th:nth-child(2) { text-align: left !important; white-space: nowrap !important; min-width: 130px !important; }
+        .badge { background: transparent !important; border: none !important; font-weight: bold; font-size: 11px !important; }
+        .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 6px; }
         .print-header h2 { font-size: 15px; margin: 0 0 3px 0; }
         .print-header h3 { font-size: 12px; margin: 0; }
-        .print-info {
-            border: 1px solid #666;
-            padding: 8px;
-            margin-bottom: 10px;
-            font-size: 11px;
-            background: #f8fafc !important;
-            text-align: left;
-            line-height: 1.4;
-        }
+        .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 10px; font-size: 11px; background: #f8fafc !important; line-height: 1.4; }
     `;
     container.appendChild(style);
     container.appendChild(clone);
@@ -1001,18 +945,12 @@ async function exportTableToPDF(elementId, filename) {
 
     try {
         const canvas = await html2canvas(container, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            logging: false
+            scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
         });
 
         const pdf = new jsPDF({
             orientation: isWide ? 'landscape' : 'portrait',
-            unit: 'mm',
-            format: 'a4',
-            compress: true
+            unit: 'mm', format: 'a4', compress: true
         });
 
         const pageWidth = pdf.internal.pageSize.getWidth();
@@ -1035,156 +973,101 @@ async function exportTableToPDF(elementId, filename) {
 
         pdf.addImage(canvas.toDataURL('image/jpeg', 0.93), 'JPEG', x, y, imgWidth, imgHeight);
         pdf.save(filename + '.pdf');
-
     } catch (err) {
         console.error(err);
         alert('PDF oluşturulamadı: ' + err.message);
     } finally {
-        if (document.body.contains(container)) {
-            document.body.removeChild(container);
-        }
+        if (document.body.contains(container)) document.body.removeChild(container);
     }
 }
 
 async function exportFullReportToPDF(filename) {
     const part1 = document.getElementById('report-printable-area');
     const part2 = document.getElementById('report-page-2');
-
-    if (!part1) {
-        alert('İçerik bulunamadı!');
-        return;
-    }
+    if (!part1) { alert('İçerik bulunamadı!'); return; }
 
     const jsPDF = getJsPDF();
-    if (!jsPDF) {
-        alert('jsPDF kütüphanesi yüklenemedi!');
-        return;
-    }
+    if (!jsPDF) { alert('jsPDF kütüphanesi yüklenemedi!'); return; }
 
-    const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-    });
-
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 12;
     const usableHeight = pageHeight - (margin * 2);
 
     const container1 = document.createElement('div');
-    container1.style.cssText = `
-        position: fixed; left: -9999px; top: 0; width: 900px;
-        background: #ffffff; color: #000000; padding: 25px;
-        font-family: Arial, Helvetica, sans-serif;
-        box-sizing: border-box; z-index: 99999;
-    `;
+    container1.style.cssText = `position: fixed; left: -9999px; top: 0; width: 850px; background: #ffffff; color: #000000; padding: 20px; font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; z-index: 99999;`;
 
     const style1 = document.createElement('style');
     style1.textContent = `
         * { color: #000 !important; background: transparent !important; box-shadow: none !important; writing-mode: horizontal-tb !important; transform: none !important; }
         table { width: 100% !important; border-collapse: collapse !important; }
-        th, td { border: 1px solid #333 !important; padding: 6px 4px !important; font-size: 11px !important; text-align: center; writing-mode: horizontal-tb !important; }
+        th, td { border: 1px solid #333 !important; padding: 5px 3px !important; font-size: 10px !important; text-align: center; writing-mode: horizontal-tb !important; }
         th { background: #e2e8f0 !important; font-weight: bold !important; }
         td:nth-child(2), th:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
-        .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 6px; }
-        .print-header h2 { font-size: 15px; margin: 0 0 3px 0; }
-        .print-header h3 { font-size: 12px; margin: 0; }
-        .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 10px; font-size: 11px; background: #f8fafc !important; line-height: 1.4; }
+        .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 8px; padding-bottom: 5px; }
+        .print-header h2 { font-size: 14px; margin: 0 0 2px 0; }
+        .print-header h3 { font-size: 11px; margin: 0; }
+        .print-info { border: 1px solid #666; padding: 7px; margin-bottom: 8px; font-size: 10px; background: #f8fafc !important; line-height: 1.35; }
         .badge { background: transparent !important; border: none !important; font-weight: bold; }
     `;
     container1.appendChild(style1);
     container1.appendChild(part1.cloneNode(true));
     document.body.appendChild(container1);
 
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 400));
 
     try {
-        const canvas1 = await html2canvas(container1, {
-            scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
-        });
-
+        const canvas1 = await html2canvas(container1, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false });
         const imgWidth = pageWidth - (margin * 2);
         let imgHeight1 = (canvas1.height * imgWidth) / canvas1.width;
 
         if (imgHeight1 > usableHeight) {
             const scale = usableHeight / imgHeight1;
-            imgHeight1 = usableHeight;
-            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.93), 'JPEG', margin, margin, imgWidth * scale, imgHeight1);
+            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgWidth * scale, usableHeight);
         } else {
-            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.93), 'JPEG', margin, margin, imgWidth, imgHeight1);
+            pdf.addImage(canvas1.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgWidth, imgHeight1);
         }
 
         if (part2) {
             pdf.addPage();
-
             const container2 = document.createElement('div');
-            container2.style.cssText = `
-                position: fixed; left: -9999px; top: 0; width: 900px;
-                background: #ffffff; color: #000000; padding: 25px;
-                font-family: Arial, Helvetica, sans-serif;
-                box-sizing: border-box; z-index: 99999;
-            `;
+            container2.style.cssText = `position: fixed; left: -9999px; top: 0; width: 850px; background: #ffffff; color: #000000; padding: 20px; font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; z-index: 99999;`;
 
             const style2 = document.createElement('style');
             style2.textContent = `
                 * { color: #000 !important; background: transparent !important; box-shadow: none !important; writing-mode: horizontal-tb !important; }
-                .report-box { border: 1px solid #000 !important; padding: 14px !important; margin-top: 6px !important; }
-                h4 { font-size: 13.5px !important; font-weight: bold !important; margin: 0 0 8px 0 !important; }
-                ul { margin: 6px 0 10px 18px !important; padding: 0 !important; }
-                li { margin-bottom: 4px !important; font-size: 11.5px !important; text-align: left !important; line-height: 1.4; }
-                p { font-size: 11.5px !important; line-height: 1.45 !important; margin: 4px 0; }
+                .report-box { border: 1px solid #000 !important; padding: 12px !important; margin-top: 4px !important; }
+                h4 { font-size: 13px !important; font-weight: bold !important; margin: 0 0 6px 0 !important; }
+                ul { margin: 4px 0 8px 16px !important; padding: 0 !important; }
+                li { margin-bottom: 3px !important; font-size: 11px !important; text-align: left !important; line-height: 1.35; }
+                p { font-size: 11px !important; line-height: 1.4 !important; margin: 3px 0; }
                 .badge { background: transparent !important; border: none !important; font-weight: bold; }
             `;
             container2.appendChild(style2);
             container2.appendChild(part2.cloneNode(true));
             document.body.appendChild(container2);
 
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, 400));
 
-            const canvas2 = await html2canvas(container2, {
-                scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
-            });
-
+            const canvas2 = await html2canvas(container2, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false });
             let imgHeight2 = (canvas2.height * imgWidth) / canvas2.width;
-            const imgData2 = canvas2.toDataURL('image/jpeg', 0.93);
+            const imgData2 = canvas2.toDataURL('image/jpeg', 0.92);
 
             if (imgHeight2 <= usableHeight) {
                 pdf.addImage(imgData2, 'JPEG', margin, margin, imgWidth, imgHeight2);
             } else {
-                const maxScale = 0.82;
-                const neededScale = usableHeight / imgHeight2;
-                const finalScale = Math.max(neededScale, maxScale);
-
-                if (finalScale >= maxScale) {
-                    const finalWidth = imgWidth * finalScale;
-                    const finalHeight = imgHeight2 * finalScale;
-                    const x = (pageWidth - finalWidth) / 2;
-                    pdf.addImage(imgData2, 'JPEG', x, margin, finalWidth, finalHeight);
-                } else {
-                    let heightLeft = imgHeight2;
-                    let position = margin;
-
-                    pdf.addImage(imgData2, 'JPEG', margin, position, imgWidth, imgHeight2);
-                    heightLeft -= usableHeight;
-
-                    while (heightLeft > 8) {
-                        position = heightLeft - imgHeight2 + margin;
-                        pdf.addPage();
-                        pdf.addImage(imgData2, 'JPEG', margin, position, imgWidth, imgHeight2);
-                        heightLeft -= usableHeight;
-                    }
-                }
+                const finalScale = Math.min(0.85, usableHeight / imgHeight2);
+                const finalWidth = imgWidth * finalScale;
+                const finalHeight = imgHeight2 * finalScale;
+                const x = (pageWidth - finalWidth) / 2;
+                pdf.addImage(imgData2, 'JPEG', x, margin, finalWidth, finalHeight);
             }
-
             document.body.removeChild(container2);
         }
-
         pdf.save(filename + '.pdf');
-
     } catch (err) {
-        console.error('Rapor PDF hatası:', err);
+        console.error(err);
         alert('PDF oluşturulamadı: ' + err.message);
     } finally {
         if (document.body.contains(container1)) document.body.removeChild(container1);
@@ -1283,9 +1166,13 @@ function renderQuizTable(grade, branchName) {
         const key = `${unitName}_${secName}`;
         const currentScore = s.quiz?.[key] ?? '';
         rows += `<tr>
-            <td style="text-align: center; white-space:nowrap;">${s.no}</td>
-            <td style="white-space:nowrap !important; text-align:left; min-width:140px;">${s.name}</td>
-            <td style="text-align: center;"><input type="text" id="quiz-score-${idx}" class="auth-input" style="padding: 6px; width: 70px; margin: 0 auto; text-align:center; background:rgba(15,23,42,0.8);" value="${currentScore}" placeholder="Not/G" autocomplete="off" oninput="validateScoreInput(this)"></td>
+            <td style="text-align:center; white-space:nowrap; width:50px;">${s.no}</td>
+            <td style="white-space:nowrap; text-align:left; min-width:160px;">${s.name}</td>
+            <td style="text-align:center;">
+                <input type="text" id="quiz-score-${idx}" class="auth-input" 
+                    style="padding:6px; width:65px; text-align:center; background:rgba(15,23,42,0.8);" 
+                    value="${currentScore}" placeholder="Not/G" autocomplete="off" oninput="validateScoreInput(this)">
+            </td>
         </tr>`;
     });
 
@@ -1293,7 +1180,7 @@ function renderQuizTable(grade, branchName) {
         <div id="quiz-printable-area" class="print-area">
             <div class="print-header">
                 <h2 style="font-size:15px; margin:0;">FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                <h3 style="font-size:13px; margin:4px 0 0;">${grade}. SINIF (${branchName}) - QUIZ DEĞERLENDİRME</h3>
+                <h3 style="font-size:13px; margin:4px 0 0;">${grade}. SINIF (${branchName}) - QUIZ</h3>
             </div>
             <div class="print-info">
                 <p style="margin:2px 0;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
@@ -1302,15 +1189,21 @@ function renderQuizTable(grade, branchName) {
             </div>
             <div style="overflow-x:auto;">
                 <table class="data-table" id="export-quiz-table">
-                    <thead><tr><th style="text-align: center; width: 15%;">NO</th><th style="text-align: left; width: 65%;">AD SOYAD</th><th style="text-align: center; width: 20%;">QUIZ NOTU</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th style="width:15%;">NO</th>
+                            <th style="width:60%; text-align:left;">AD SOYAD</th>
+                            <th style="width:25%;">QUIZ NOTU</th>
+                        </tr>
+                    </thead>
                     <tbody>${rows || '<tr><td colspan="3" style="text-align:center;">Öğrenci yok.</td></tr>'}</tbody>
                 </table>
             </div>
         </div>
         <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
             <button onclick="saveQuizScores('${grade}', '${branchName}')" class="auth-btn" style="width:auto; padding:8px 14px;">Notları Kaydet</button>
-            <button onclick="exportTableToWord('quiz-printable-area', '${branchName}_Quiz_Sonuclari')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
-            <button onclick="exportTableToPDF('quiz-printable-area', '${branchName}_Quiz_Sonuclari')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
+            <button onclick="exportTableToWord('quiz-printable-area', '${branchName}_Quiz')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word</button>
+            <button onclick="exportTableToPDF('quiz-printable-area', '${branchName}_Quiz')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF</button>
         </div>`;
 }
 
@@ -1430,25 +1323,40 @@ function renderGroupedActivityTable(grade, branchName) {
 
     const students = fenData[grade]?.branches[branchName] || [];
 
-    // ========== TEKİL ÖLÇEK ==========
+    // ========== TEKİL ÖLÇEK (kriterler görünür) ==========
     if (selectedScaleName && selectedScaleName !== '-- TÜM ÖLÇEKLER --') {
         const scaleObj = subScales.find(a => a.name === selectedScaleName);
         if (!scaleObj) return;
 
-        let rows = '';
-        students.forEach((s) => {
-            let storedScale = s.scale?.[selectedScaleName];
-            let scoreDisplay = '-';
-            if (storedScale && storedScale['totalScore'] !== undefined) {
-                scoreDisplay = getScaleBadge(storedScale['totalScore']);
-            }
+        const criteria = scaleObj.criteria || ['1. Kriter', '2. Kriter', '3. Kriter', '4. Kriter'];
+        const scaleType = scaleObj.scale_type || '1-4';
 
-            rows += `
-                <tr>
-                    <td style="white-space:nowrap; text-align:center;">${s.no}</td>
-                    <td style="white-space:nowrap !important; text-align:left;">${s.name}</td>
-                    <td style="text-align:center;">${scoreDisplay}</td>
-                </tr>`;
+        let headerTh = `<th style="width:45px;">No</th><th style="min-width:140px; text-align:left;">Ad Soyad</th>`;
+        criteria.forEach((c, i) => {
+            let shortC = c.length > 12 ? c.substring(0, 10) + '..' : c;
+            headerTh += `<th style="min-width:55px; font-size:10px;">${shortC}</th>`;
+        });
+        headerTh += `<th style="min-width:55px;">Toplam</th>`;
+
+        let rows = '';
+        students.forEach((s, sIdx) => {
+            let stored = s.scale?.[selectedScaleName] || {};
+            let cols = `
+                <td style="white-space:nowrap;">${s.no}</td>
+                <td style="white-space:nowrap; text-align:left;">${s.name}</td>
+            `;
+            criteria.forEach((c, cIdx) => {
+                let val = stored[cIdx] !== undefined ? stored[cIdx] : '';
+                cols += `<td>
+                    <input type="text" id="scale-crit-${sIdx}-${cIdx}" class="auth-input"
+                        style="padding:4px; width:42px; text-align:center; background:rgba(15,23,42,0.8); font-size:12px;"
+                        value="${val}" placeholder="-" autocomplete="off"
+                        oninput="validateScoreInput(this)">
+                </td>`;
+            });
+            let total = stored.totalScore !== undefined ? stored.totalScore : '-';
+            cols += `<td id="scale-total-${sIdx}">${getScaleBadge(total)}</td>`;
+            rows += `<tr>${cols}</tr>`;
         });
 
         container.innerHTML = `
@@ -1463,57 +1371,56 @@ function renderGroupedActivityTable(grade, branchName) {
                     <p style="margin:2px 0;"><b>Bölüm:</b> ${secName}</p>
                     <p style="margin:2px 0;"><b>Ölçek:</b> ${scaleObj.name}</p>
                 </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table" id="export-activity-table">
-                        <thead>
-                            <tr>
-                                <th style="width:15%;">NO</th>
-                                <th style="width:55%; text-align:left;">AD SOYAD</th>
-                                <th style="width:30%;">BAŞARI</th>
-                            </tr>
-                        </thead>
+                <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                    <table class="data-table" id="export-activity-table" style="min-width:${200 + criteria.length * 60}px;">
+                        <thead><tr>${headerTh}</tr></thead>
                         <tbody>${rows}</tbody>
                     </table>
                 </div>
             </div>
             <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-                <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
-                <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
+                <button onclick="saveSingleScaleScores('${grade}', '${branchName}', '${selectedScaleName.replace(/'/g, "\\'")}', ${criteria.length})" class="auth-btn" style="width:auto; padding:8px 14px;">Puanları Kaydet</button>
+                <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word</button>
+                <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Olcek')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF</button>
             </div>`;
         return;
     }
 
-    // ========== TÜM ÖLÇEKLER (temiz 4 sütun) ==========
+    // ========== TÜM ÖLÇEKLER ==========
+    let headerTh = `
+        <th style="width:45px;">No</th>
+        <th style="min-width:140px; text-align:left;">Ad Soyad</th>
+        <th style="min-width:60px;">Hızlı</th>
+    `;
+    subScales.forEach(scale => {
+        let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
+        if (!shortName) shortName = scale.name;
+        if (shortName.length > 10) shortName = shortName.substring(0, 8) + '..';
+        headerTh += `<th style="min-width:55px; font-size:10px;">${shortName}</th>`;
+    });
+
     let rows = '';
     students.forEach((s, sIdx) => {
         let firstSubName = subScales[0]?.name;
-        let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined)
-            ? s.scale[firstSubName]['totalScore'] : '';
+        let existingQuickVal = (firstSubName && s.scale?.[firstSubName]?.totalScore !== undefined)
+            ? s.scale[firstSubName].totalScore : '';
 
-        let total = 0, count = 0;
-        subScales.forEach(scale => {
-            if (s.scale?.[scale.name]?.totalScore !== undefined && s.scale[scale.name].totalScore !== 'G') {
-                total += parseFloat(s.scale[scale.name].totalScore);
-                count++;
-            }
+        let cols = `
+            <td style="white-space:nowrap;">${s.no}</td>
+            <td style="white-space:nowrap; text-align:left;">${s.name}</td>
+            <td>
+                <input type="text" id="group-quick-input-${sIdx}" class="auth-input"
+                    style="padding:5px; width:50px; text-align:center; background:rgba(15,23,42,0.8);"
+                    value="${existingQuickVal}" placeholder="85" autocomplete="off"
+                    oninput="validateScoreInput(this); autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\'")}', ${subScales.length})">
+            </td>
+        `;
+
+        subScales.forEach((scale, scaleIdx) => {
+            let scVal = (s.scale?.[scale.name]?.totalScore !== undefined) ? s.scale[scale.name].totalScore : '-';
+            cols += `<td id="scale-badge-${sIdx}-${scaleIdx}">${getScaleBadge(scVal)}</td>`;
         });
-        let avg = count > 0 ? Math.round(total / count) : '-';
-
-        rows += `
-            <tr>
-                <td style="white-space:nowrap; text-align:center;">${s.no}</td>
-                <td style="white-space:nowrap !important; text-align:left;">${s.name}</td>
-                <td style="text-align:center;">
-                    <input type="text" id="group-quick-input-${sIdx}"
-                        class="auth-input"
-                        style="padding:6px; width:58px; text-align:center; background:rgba(15,23,42,0.8); margin:0 auto;"
-                        value="${existingQuickVal}"
-                        placeholder="85"
-                        autocomplete="off"
-                        oninput="validateScoreInput(this); autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\'")}', ${subScales.length})">
-                </td>
-                <td style="text-align:center;" id="scale-avg-${sIdx}">${getScaleBadge(avg)}</td>
-            </tr>`;
+        rows += `<tr>${cols}</tr>`;
     });
 
     container.innerHTML = `
@@ -1527,24 +1434,17 @@ function renderGroupedActivityTable(grade, branchName) {
                 <p style="margin:2px 0;"><b>Ünite:</b> ${unitName}</p>
                 <p style="margin:2px 0;"><b>Bölüm:</b> ${secName}</p>
             </div>
-            <div style="overflow-x:auto;">
-                <table class="data-table" id="export-activity-table">
-                    <thead>
-                        <tr>
-                            <th style="width:12%;">NO</th>
-                            <th style="width:48%; text-align:left;">AD SOYAD</th>
-                            <th style="width:20%;">HIZLI</th>
-                            <th style="width:20%;">ORT</th>
-                        </tr>
-                    </thead>
+            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                <table class="data-table" id="export-activity-table" style="min-width:${200 + subScales.length * 60}px;">
+                    <thead><tr>${headerTh}</tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
         </div>
         <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
             <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px;">Puanları Kaydet</button>
-            <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
-            <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
+            <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word</button>
+            <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF</button>
         </div>`;
 }
 
@@ -1555,15 +1455,53 @@ function autoApplyScoreToSubScales(sIdx, baseActName, subScalesCount) {
     
     for (let scaleIdx = 0; scaleIdx < subScalesCount; scaleIdx++) {
         const badgeEl = document.getElementById(`scale-badge-${sIdx}-${scaleIdx}`);
-        if (badgeEl) {
-            badgeEl.innerHTML = getScaleBadge(valText);
+        if (badgeEl) badgeEl.innerHTML = getScaleBadge(valText);
+    }
+}
+
+async function saveSingleScaleScores(grade, branchName, scaleName, criteriaCount) {
+    const students = fenData[grade].branches[branchName];
+    const allActs = fenData[grade].activities || [];
+    const scaleObj = allActs.find(a => a.name === scaleName);
+    const scaleType = scaleObj?.scale_type || '1-4';
+
+    for (let sIdx = 0; sIdx < students.length; sIdx++) {
+        const s = students[sIdx];
+        if (!s.scale) s.scale = {};
+        if (!s.scale[scaleName]) s.scale[scaleName] = {};
+
+        let sum = 0;
+        let hasValue = false;
+
+        for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
+            const inputEl = document.getElementById(`scale-crit-${sIdx}-${cIdx}`);
+            if (!inputEl) continue;
+            let val = inputEl.value.trim();
+            if (val === '') continue;
+            hasValue = true;
+            let num = parseFloat(val);
+            if (isNaN(num)) num = 0;
+            s.scale[scaleName][cIdx] = num;
+            sum += num;
+        }
+
+        if (hasValue) {
+            let totalScore;
+            if (scaleType === '1-4') {
+                totalScore = Math.round((sum / (criteriaCount * 4)) * 100);
+            } else {
+                totalScore = Math.round((sum / criteriaCount) * 100);
+            }
+            s.scale[scaleName].totalScore = totalScore;
+        }
+
+        if (supabaseClient) {
+            await supabaseClient.from('students').update({ scale: s.scale }).eq('grade', grade).eq('branch', branchName).eq('school_no', s.no);
         }
     }
-
-    const avgEl = document.getElementById(`scale-avg-${sIdx}`);
-    if (avgEl) {
-        avgEl.innerHTML = getScaleBadge(valText);
-    }
+    await loadAllDataFromSupabase();
+    alert('Tekil ölçek puanları kaydedildi!');
+    renderGroupedActivityTable(grade, branchName);
 }
 
 async function saveGroupScaleScores(grade, branchName, baseActName) {
@@ -1586,10 +1524,8 @@ async function saveGroupScaleScores(grade, branchName, baseActName) {
             const criteriaCount = scale.criteria?.length || 4;
 
             if (valText === 'G') {
-                for (let cIdx = 0; cIdx < criteriaCount; cIdx++) {
-                    s.scale[scale.name][cIdx] = 0;
-                }
-                s.scale[scale.name]['totalScore'] = 'G';
+                for (let cIdx = 0; cIdx < criteriaCount; cIdx++) s.scale[scale.name][cIdx] = 0;
+                s.scale[scale.name].totalScore = 'G';
             } else {
                 let targetVal = parseFloat(valText);
                 if (!isNaN(targetVal)) {
@@ -1612,7 +1548,7 @@ async function saveGroupScaleScores(grade, branchName, baseActName) {
                             s.scale[scale.name][cIdx] = cIdx < targetScore ? 1 : 0;
                         }
                     }
-                    s.scale[scale.name]['totalScore'] = Math.round(targetVal);
+                    s.scale[scale.name].totalScore = Math.round(targetVal);
                 }
             }
         });
@@ -1621,7 +1557,6 @@ async function saveGroupScaleScores(grade, branchName, baseActName) {
             await supabaseClient.from('students').update({ scale: s.scale }).eq('grade', grade).eq('branch', branchName).eq('school_no', s.no);
         }
     }
-
     await loadAllDataFromSupabase();
     alert('Puanlar kaydedildi!');
 }
@@ -1684,12 +1619,12 @@ async function renderReportData(grade, branchName) {
             }
         }
 
-        let cols = `<td style="white-space:nowrap;">${s.no}</td><td style="white-space:nowrap !important; text-align:left; min-width:140px;">${s.name}</td><td>${getScoreBadge(qDisplay)}</td>`;
+        let cols = `<td style="white-space:nowrap;">${s.no}</td><td style="white-space:nowrap; text-align:left; min-width:140px;">${s.name}</td><td>${getScoreBadge(qDisplay)}</td>`;
 
         let scaleScoreSum = 0; let scaleScoreCount = 0;
         sectionActivities.forEach(act => {
             const scaleData = s.scale?.[act.name];
-            const rawActScore = scaleData && scaleData['totalScore'] !== undefined ? scaleData['totalScore'] : null;
+            const rawActScore = scaleData && scaleData.totalScore !== undefined ? scaleData.totalScore : null;
             if (rawActScore !== null && rawActScore !== 'G') {
                 let pScore = parseFloat(rawActScore);
                 if (!isNaN(pScore)) { scaleScoreSum += pScore; scaleScoreCount++; }
@@ -1697,9 +1632,7 @@ async function renderReportData(grade, branchName) {
         });
 
         let sectionScaleAvg = scaleScoreCount > 0 ? Math.round(scaleScoreSum / scaleScoreCount) : null;
-        if (sectionScaleAvg !== null) {
-            allScaleScoresForStats.push(sectionScaleAvg);
-        }
+        if (sectionScaleAvg !== null) allScaleScoresForStats.push(sectionScaleAvg);
         cols += `<td>${sectionScaleAvg !== null ? getScaleBadge(sectionScaleAvg) : getScoreBadge('-')}</td>`;
 
         let generalAvg = null;
@@ -1708,7 +1641,7 @@ async function renderReportData(grade, branchName) {
         else if (sectionScaleAvg !== null) generalAvg = Math.round(sectionScaleAvg);
 
         cols += `<td>${generalAvg !== null ? getScoreBadge(generalAvg) : getScoreBadge(qDisplay === 'G' ? 'G' : '-')}</td>`;
-        if(generalAvg !== null) allGradesForStats.push(generalAvg);
+        if (generalAvg !== null) allGradesForStats.push(generalAvg);
         rows += `<tr>${cols}</tr>`;
     });
 
@@ -1722,13 +1655,13 @@ async function renderReportData(grade, branchName) {
         <div id="report-printable-area" class="print-area">
             <div class="print-header">
                 <h2 style="font-size:15px; margin:0;">FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                <h3 style="font-size:13px; margin:4px 0 0;">${grade}. SINIF (${branchName}) - ÜNİTE VE BÖLÜM ANALİZİ</h3>
+                <h3 style="font-size:13px; margin:4px 0 0;">${grade}. SINIF (${branchName}) - ANALİZ</h3>
             </div>
             <div class="print-info">
                 <p style="margin:2px 0;"><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
                 <p style="margin:2px 0;"><b>Ünite:</b> ${unitName}</p>
                 <p style="margin:2px 0;"><b>Bölüm:</b> ${secName}</p>
-                <p style="margin:2px 0;"><b>Mevcut:</b> ${students.length} Öğrenci | <b>Quiz Ort.:</b> ${classQuizAvg} | <b>Ölçek Ort.:</b> ${classScaleAvg}</p>
+                <p style="margin:2px 0;"><b>Mevcut:</b> ${students.length} | <b>Quiz Ort:</b> ${classQuizAvg} | <b>Ölçek Ort:</b> ${classScaleAvg}</p>
             </div>
             <div style="overflow-x:auto;">
                 <table class="data-table" id="export-report-table">
@@ -1751,8 +1684,8 @@ async function renderReportData(grade, branchName) {
         </div>
 
         <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-            <button onclick="exportReportToWord('${branchName}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
-            <button onclick="exportFullReportToPDF('${branchName}_${secName}_Analiz_Raporu')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
+            <button onclick="exportReportToWord('${branchName}_${secName}_Analiz')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word</button>
+            <button onclick="exportFullReportToPDF('${branchName}_${secName}_Analiz')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF</button>
         </div>`;
 }
 
@@ -1772,17 +1705,15 @@ async function studentLogin(push = true) {
 
     await loadAllDataFromSupabase();
 
-    if (fenData[grade] && fenData[grade].branches && fenData[grade].branches[branchValue]) {
+    if (fenData[grade]?.branches?.[branchValue]) {
         const localStudent = fenData[grade].branches[branchValue].find(
             s => parseInt(s.no) === schoolNo && s.name.trim().toUpperCase() === nameInput
         );
-        if (localStudent) {
-            foundStudent = localStudent;
-        }
+        if (localStudent) foundStudent = localStudent;
     }
 
     if (!foundStudent) {
-        alert('Giriş Başarısız: Girdiğiniz bilgilere ait öğrenci bulunamadı. Lütfen bilgilerinizi (Sınıf, Şube, No, Ad Soyad) kontrol edin.');
+        alert('Giriş Başarısız: Girdiğiniz bilgilere ait öğrenci bulunamadı.');
         return;
     }
 
@@ -1825,8 +1756,8 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 let secScoreSum = 0; let secScoreCount = 0;
                 actsInSec.forEach(act => {
                     let scaleObj = student.scale?.[act.name];
-                    if (scaleObj && scaleObj['totalScore'] !== undefined && scaleObj['totalScore'] !== 'G') {
-                        secScoreSum += parseFloat(scaleObj['totalScore']); secScoreCount++;
+                    if (scaleObj && scaleObj.totalScore !== undefined && scaleObj.totalScore !== 'G') {
+                        secScoreSum += parseFloat(scaleObj.totalScore); secScoreCount++;
                     }
                 });
                 if (secScoreCount > 0) {
@@ -1844,8 +1775,8 @@ function renderStudentPanelView(grade, branch, student, push = true) {
     else if (scaleCount > 0) generalAvg = avgScale;
 
     let badgeHtml = generalAvg >= 85 ? 
-        `<div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 12px; border-radius: 10px; color: white; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);"><span style="font-size: 24px;">🏆</span><h3 style="margin: 4px 0 2px; font-size: 15px;">Fen Bilimleri Yıldızı</h3></div>` :
-        generalAvg >= 70 ? `<div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 12px; border-radius: 10px; color: white; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);"><span style="font-size: 24px;">⭐</span><h3 style="margin: 4px 0 2px; font-size: 15px;">Süper Başarı</h3></div>` : '';
+        `<div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 12px; border-radius: 10px; color: white; text-align: center; margin-bottom: 15px;"><span style="font-size: 24px;">🏆</span><h3 style="margin: 4px 0 2px; font-size: 15px;">Fen Bilimleri Yıldızı</h3></div>` :
+        generalAvg >= 70 ? `<div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 12px; border-radius: 10px; color: white; text-align: center; margin-bottom: 15px;"><span style="font-size: 24px;">⭐</span><h3 style="margin: 4px 0 2px; font-size: 15px;">Süper Başarı</h3></div>` : '';
 
     studentPanel.innerHTML = `
         <header class="teacher-header">
@@ -1854,11 +1785,10 @@ function renderStudentPanelView(grade, branch, student, push = true) {
         </header>
         <section class="dashboard-content" style="max-width: 700px; margin: 0 auto;">
             ${badgeHtml}
-
             <div id="student-full-printable-area" class="print-area" style="background: rgba(30,41,59,0.7); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
                 <div class="print-header">
                     <h2 style="font-size:15px; margin:0;">FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                    <h3 style="font-size:13px; margin:4px 0 0;">ÖĞRENCİ GELİŞİM VE GENEL KARNE</h3>
+                    <h3 style="font-size:13px; margin:4px 0 0;">ÖĞRENCİ GENEL KARNE</h3>
                 </div>
                 <div class="print-info" style="margin-bottom: 15px;">
                     <p style="margin:2px 0;"><b>Adı:</b> ${student.name}</p>
@@ -1869,7 +1799,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                         <b>Genel Puan:</b> ${getScoreBadge(generalAvg)}
                     </div>
                 </div>
-
                 <div style="margin-bottom: 15px;">
                     <h4 style="font-size: 14px; margin-bottom: 8px; color: #f8fafc;">📝 Quiz Sonuçlarım</h4>
                     <div style="overflow-x:auto;">
@@ -1879,7 +1808,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                         </table>
                     </div>
                 </div>
-
                 <div>
                     <h4 style="font-size: 14px; margin-bottom: 8px; color: #f8fafc;">🧪 Etkinlik Ortalamalarım</h4>
                     <div style="overflow-x:auto;">
@@ -1890,10 +1818,9 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                     </div>
                 </div>
             </div>
-
             <div style="display:flex; justify-content:center; gap:10px; margin: 20px 0; flex-wrap:wrap;">
-                <button onclick="exportTableToWord('student-full-printable-area', '${student.name.replace(/\s+/g, '_')}_Genel_Karne')" class="auth-btn" style="background:#2563eb; width:auto; padding:10px 18px;">📥 Karnemi Word İndir</button>
-                <button onclick="exportTableToPDF('student-full-printable-area', '${student.name.replace(/\s+/g, '_')}_Genel_Karne')" class="auth-btn" style="background:#dc2626; width:auto; padding:10px 18px;">📄 Karnemi PDF İndir</button>
+                <button onclick="exportTableToWord('student-full-printable-area', '${student.name.replace(/\s+/g, '_')}_Karne')" class="auth-btn" style="background:#2563eb; width:auto; padding:10px 18px;">📥 Karnemi Word</button>
+                <button onclick="exportTableToPDF('student-full-printable-area', '${student.name.replace(/\s+/g, '_')}_Karne')" class="auth-btn" style="background:#dc2626; width:auto; padding:10px 18px;">📄 Karnemi PDF</button>
             </div>
         </section>
     `;
@@ -1901,31 +1828,22 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
 (function () {
     const originalRenderStudentPanelView = window.renderStudentPanelView;
-
     if (typeof originalRenderStudentPanelView === 'function') {
         window.renderStudentPanelView = function (grade, branch, student, push = true) {
             originalRenderStudentPanelView(grade, branch, student, push);
-
-            const latestStudent =
-                window.fenData?.[grade]?.branches?.[branch]
-                    ?.find(s => String(s.no) === String(student.no)) || student;
-
+            const latestStudent = window.fenData?.[grade]?.branches?.[branch]?.find(s => String(s.no) === String(student.no)) || student;
             const printInfo = document.querySelector('#student-full-printable-area .print-info');
             if (!printInfo) return;
-
             printInfo.querySelectorAll('.student-point-row').forEach(row => row.remove());
-
             const generalScoreRow = printInfo.querySelector('div');
             const plusRow = document.createElement('p');
             plusRow.className = 'student-point-row';
             plusRow.innerHTML = '<b>Artı Puan:</b> ';
             plusRow.append(document.createTextNode(String(latestStudent.plus ?? 0)));
-
             const minusRow = document.createElement('p');
             minusRow.className = 'student-point-row';
             minusRow.innerHTML = '<b>Eksi Puan:</b> ';
             minusRow.append(document.createTextNode(String(latestStudent.minus ?? 0)));
-
             if (generalScoreRow) {
                 printInfo.insertBefore(plusRow, generalScoreRow);
                 printInfo.insertBefore(minusRow, generalScoreRow);
@@ -1934,17 +1852,12 @@ function renderStudentPanelView(grade, branch, student, push = true) {
             }
         };
     }
-
     window.toggleTeacherActionsCard = function () {
         const container = document.getElementById('teacher-actions-container');
         const icon = document.getElementById('teacher-actions-toggle-icon');
         if (!container) return;
-
         const isOpen = getComputedStyle(container).display !== 'none';
         container.style.display = isOpen ? 'none' : 'block';
-
-        if (icon) {
-            icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-        }
+        if (icon) icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
     };
 })();
