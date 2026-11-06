@@ -921,17 +921,17 @@ async function exportTableToPDF(elementId, filename) {
 
     const table = clone.querySelector('table');
     const colCount = table ? table.querySelectorAll('th').length : 0;
-    const isWide = colCount > 5;
+    const isWide = colCount > 4 || filename.includes('Olcek') || filename.includes('Tum_Olcekler');
 
     const container = document.createElement('div');
     container.style.cssText = `
         position: fixed;
         left: -9999px;
         top: 0;
-        width: ${isWide ? '1400px' : '900px'};
+        width: ${isWide ? '1300px' : '900px'};
         background: #ffffff;
         color: #000000;
-        padding: 25px;
+        padding: 20px;
         font-family: Arial, Helvetica, sans-serif;
         box-sizing: border-box;
         z-index: 99999;
@@ -953,8 +953,8 @@ async function exportTableToPDF(elementId, filename) {
         }
         th, td {
             border: 1px solid #333 !important;
-            padding: 7px 5px !important;
-            font-size: 12px !important;
+            padding: 6px 4px !important;
+            font-size: 11px !important;
             text-align: center !important;
             vertical-align: middle !important;
             writing-mode: horizontal-tb !important;
@@ -962,41 +962,42 @@ async function exportTableToPDF(elementId, filename) {
         th {
             background: #e2e8f0 !important;
             font-weight: bold !important;
-            font-size: 11px !important;
+            font-size: 10px !important;
         }
         td:nth-child(2), th:nth-child(2) {
             text-align: left !important;
             white-space: nowrap !important;
-            min-width: 150px !important;
+            min-width: 140px !important;
         }
         .badge {
             background: transparent !important;
             border: none !important;
             font-weight: bold;
-            font-size: 12px !important;
+            font-size: 11px !important;
         }
         .print-header {
             text-align: center;
             border-bottom: 2px solid #000;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             padding-bottom: 6px;
         }
-        .print-header h2 { font-size: 16px; margin: 0 0 3px 0; }
-        .print-header h3 { font-size: 13px; margin: 0; }
+        .print-header h2 { font-size: 15px; margin: 0 0 3px 0; }
+        .print-header h3 { font-size: 12px; margin: 0; }
         .print-info {
             border: 1px solid #666;
             padding: 8px;
-            margin-bottom: 12px;
-            font-size: 12px;
+            margin-bottom: 10px;
+            font-size: 11px;
             background: #f8fafc !important;
             text-align: left;
+            line-height: 1.4;
         }
     `;
     container.appendChild(style);
     container.appendChild(clone);
     document.body.appendChild(container);
 
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 500));
 
     try {
         const canvas = await html2canvas(container, {
@@ -1088,9 +1089,9 @@ async function exportFullReportToPDF(filename) {
         th { background: #e2e8f0 !important; font-weight: bold !important; }
         td:nth-child(2), th:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
         .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 6px; }
-        .print-header h2 { font-size: 16px; margin: 0 0 3px 0; }
-        .print-header h3 { font-size: 13px; margin: 0; }
-        .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 10px; font-size: 12px; background: #f8fafc !important; }
+        .print-header h2 { font-size: 15px; margin: 0 0 3px 0; }
+        .print-header h3 { font-size: 12px; margin: 0; }
+        .print-info { border: 1px solid #666; padding: 8px; margin-bottom: 10px; font-size: 11px; background: #f8fafc !important; line-height: 1.4; }
         .badge { background: transparent !important; border: none !important; font-weight: bold; }
     `;
     container1.appendChild(style1);
@@ -1291,16 +1292,17 @@ function renderQuizTable(grade, branchName) {
     container.innerHTML = `
         <div id="quiz-printable-area" class="print-area">
             <div class="print-header">
-                <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                <h3>${grade}. SINIF (${branchName}) - QUİZ DEĞERLENDİRME RAPORU</h3>
+                <h2 style="font-size:15px; margin:0;">FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                <h3 style="font-size:13px; margin:4px 0 0;">${grade}. SINIF (${branchName}) - QUIZ DEĞERLENDİRME</h3>
             </div>
             <div class="print-info">
-                <p><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
+                <p style="margin:2px 0;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                <p style="margin:2px 0;"><b>Ünite:</b> ${unitName}</p>
+                <p style="margin:2px 0;"><b>Bölüm:</b> ${secName}</p>
             </div>
             <div style="overflow-x:auto;">
                 <table class="data-table" id="export-quiz-table">
-                    <thead><tr><th style="text-align: center; width: 15%;">NO</th><th style="text-align: left; width: 65%;">AD SOYAD</th><th style="text-align: center; width: 20%;">QUİZ NOTU</th></tr></thead>
+                    <thead><tr><th style="text-align: center; width: 15%;">NO</th><th style="text-align: left; width: 65%;">AD SOYAD</th><th style="text-align: center; width: 20%;">QUIZ NOTU</th></tr></thead>
                     <tbody>${rows || '<tr><td colspan="3" style="text-align:center;">Öğrenci yok.</td></tr>'}</tbody>
                 </table>
             </div>
@@ -1427,7 +1429,6 @@ function renderGroupedActivityTable(grade, branchName) {
     }
 
     const students = fenData[grade]?.branches[branchName] || [];
-    const isMobile = window.innerWidth < 768;
 
     // ========== TEKİL ÖLÇEK ==========
     if (selectedScaleName && selectedScaleName !== '-- TÜM ÖLÇEKLER --') {
@@ -1453,13 +1454,14 @@ function renderGroupedActivityTable(grade, branchName) {
         container.innerHTML = `
             <div id="activity-printable-area" class="print-area">
                 <div class="print-header">
-                    <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                    <h3>${grade}. SINIF (${branchName}) - TEKİL ÖLÇEK RAPORU</h3>
+                    <h2 style="font-size:15px; margin:0;">FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                    <h3 style="font-size:13px; margin:4px 0 0;">${grade}. SINIF (${branchName}) - TEKİL ÖLÇEK</h3>
                 </div>
                 <div class="print-info">
-                    <p><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                    <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
-                    <p><b>Ölçek:</b> ${scaleObj.name}</p>
+                    <p style="margin:2px 0;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                    <p style="margin:2px 0;"><b>Ünite:</b> ${unitName}</p>
+                    <p style="margin:2px 0;"><b>Bölüm:</b> ${secName}</p>
+                    <p style="margin:2px 0;"><b>Ölçek:</b> ${scaleObj.name}</p>
                 </div>
                 <div style="overflow-x:auto;">
                     <table class="data-table" id="export-activity-table">
@@ -1481,136 +1483,69 @@ function renderGroupedActivityTable(grade, branchName) {
         return;
     }
 
-    // ========== TÜM ÖLÇEKLER ==========
-    if (isMobile) {
-        // Mobil: temiz dikey liste
-        let rows = '';
-        students.forEach((s, sIdx) => {
-            let firstSubName = subScales[0]?.name;
-            let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined)
-                ? s.scale[firstSubName]['totalScore'] : '';
+    // ========== TÜM ÖLÇEKLER (temiz 4 sütun) ==========
+    let rows = '';
+    students.forEach((s, sIdx) => {
+        let firstSubName = subScales[0]?.name;
+        let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined)
+            ? s.scale[firstSubName]['totalScore'] : '';
 
-            let total = 0, count = 0;
-            subScales.forEach(scale => {
-                if (s.scale?.[scale.name]?.totalScore !== undefined && s.scale[scale.name].totalScore !== 'G') {
-                    total += parseFloat(s.scale[scale.name].totalScore);
-                    count++;
-                }
-            });
-            let avg = count > 0 ? Math.round(total / count) : '-';
-
-            rows += `
-                <tr>
-                    <td style="white-space:nowrap; text-align:center;">${s.no}</td>
-                    <td style="white-space:nowrap !important; text-align:left;">${s.name}</td>
-                    <td style="text-align:center;">
-                        <input type="text" id="group-quick-input-${sIdx}"
-                            class="auth-input"
-                            style="padding:6px; width:60px; text-align:center; background:rgba(15,23,42,0.8); margin:0 auto;"
-                            value="${existingQuickVal}"
-                            placeholder="85"
-                            autocomplete="off"
-                            oninput="validateScoreInput(this); autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\'")}', ${subScales.length})">
-                    </td>
-                    <td style="text-align:center;" id="scale-avg-${sIdx}">${getScaleBadge(avg)}</td>
-                </tr>`;
-        });
-
-        container.innerHTML = `
-            <div id="activity-printable-area" class="print-area">
-                <div class="print-header">
-                    <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                    <h3>${grade}. SINIF (${branchName}) - TÜM ÖLÇEKLER</h3>
-                </div>
-                <div class="print-info">
-                    <p><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                    <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table" id="export-activity-table">
-                        <thead>
-                            <tr>
-                                <th style="width:12%;">NO</th>
-                                <th style="width:48%; text-align:left;">AD SOYAD</th>
-                                <th style="width:20%;">HIZLI</th>
-                                <th style="width:20%;">ORT</th>
-                            </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-                <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px;">Puanları Kaydet</button>
-                <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
-                <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
-            </div>`;
-    } else {
-        // Masaüstü: normal geniş tablo
-        let headerTh = `
-            <th style="min-width:40px;">No</th>
-            <th style="min-width:140px; white-space:nowrap;">Ad Soyad</th>
-            <th style="min-width:60px;">⚡ Hızlı</th>
-        `;
+        let total = 0, count = 0;
         subScales.forEach(scale => {
-            let shortName = scale.name.replace(baseActName, '').replace(/^[\s-]+/, '');
-            if (!shortName) shortName = scale.name;
-            if (shortName.length > 12) shortName = shortName.substring(0, 10) + '..';
-            headerTh += `<th style="min-width:60px; font-size:11px;">${shortName}</th>`;
+            if (s.scale?.[scale.name]?.totalScore !== undefined && s.scale[scale.name].totalScore !== 'G') {
+                total += parseFloat(s.scale[scale.name].totalScore);
+                count++;
+            }
         });
+        let avg = count > 0 ? Math.round(total / count) : '-';
 
-        let rows = '';
-        students.forEach((s, sIdx) => {
-            let cols = `
-                <td style="white-space:nowrap;">${s.no}</td>
+        rows += `
+            <tr>
+                <td style="white-space:nowrap; text-align:center;">${s.no}</td>
                 <td style="white-space:nowrap !important; text-align:left;">${s.name}</td>
-            `;
+                <td style="text-align:center;">
+                    <input type="text" id="group-quick-input-${sIdx}"
+                        class="auth-input"
+                        style="padding:6px; width:58px; text-align:center; background:rgba(15,23,42,0.8); margin:0 auto;"
+                        value="${existingQuickVal}"
+                        placeholder="85"
+                        autocomplete="off"
+                        oninput="validateScoreInput(this); autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\'")}', ${subScales.length})">
+                </td>
+                <td style="text-align:center;" id="scale-avg-${sIdx}">${getScaleBadge(avg)}</td>
+            </tr>`;
+    });
 
-            let firstSubName = subScales[0]?.name;
-            let existingQuickVal = (firstSubName && s.scale?.[firstSubName] && s.scale[firstSubName]['totalScore'] !== undefined)
-                ? s.scale[firstSubName]['totalScore'] : '';
-
-            cols += `<td>
-                <input type="text" id="group-quick-input-${sIdx}"
-                    class="auth-input"
-                    style="padding:5px; width:55px; text-align:center; background:rgba(15,23,42,0.8);"
-                    value="${existingQuickVal}"
-                    placeholder="85"
-                    autocomplete="off"
-                    oninput="validateScoreInput(this); autoApplyScoreToSubScales(${sIdx}, '${baseActName.replace(/'/g, "\\'")}', ${subScales.length})">
-            </td>`;
-
-            subScales.forEach((scale, scaleIdx) => {
-                let hasScore = s.scale?.[scale.name] && s.scale[scale.name]['totalScore'] !== undefined;
-                let scVal = hasScore ? s.scale[scale.name]['totalScore'] : '-';
-                cols += `<td id="scale-badge-${sIdx}-${scaleIdx}">${getScaleBadge(scVal)}</td>`;
-            });
-            rows += `<tr>${cols}</tr>`;
-        });
-
-        container.innerHTML = `
-            <div id="activity-printable-area" class="print-area">
-                <div class="print-header">
-                    <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                    <h3>${grade}. SINIF (${branchName}) - TÜM ÖLÇEKLER</h3>
-                </div>
-                <div class="print-info">
-                    <p><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                    <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table" id="export-activity-table" style="min-width:${Math.max(500, 160 + subScales.length * 65)}px;">
-                        <thead><tr>${headerTh}</tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>
+    container.innerHTML = `
+        <div id="activity-printable-area" class="print-area">
+            <div class="print-header">
+                <h2 style="font-size:15px; margin:0;">FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                <h3 style="font-size:13px; margin:4px 0 0;">${grade}. SINIF (${branchName}) - TÜM ÖLÇEKLER</h3>
             </div>
-            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-                <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px;">Puanları Kaydet</button>
-                <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
-                <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
-            </div>`;
-    }
+            <div class="print-info">
+                <p style="margin:2px 0;"><b>Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                <p style="margin:2px 0;"><b>Ünite:</b> ${unitName}</p>
+                <p style="margin:2px 0;"><b>Bölüm:</b> ${secName}</p>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="data-table" id="export-activity-table">
+                    <thead>
+                        <tr>
+                            <th style="width:12%;">NO</th>
+                            <th style="width:48%; text-align:left;">AD SOYAD</th>
+                            <th style="width:20%;">HIZLI</th>
+                            <th style="width:20%;">ORT</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+            <button onclick="saveGroupScaleScores('${grade}', '${branchName}', '${baseActName.replace(/'/g, "\\'")}')" class="auth-btn" style="width:auto; padding:8px 14px;">Puanları Kaydet</button>
+            <button onclick="exportTableToWord('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">📥 Word İndir</button>
+            <button onclick="exportTableToPDF('activity-printable-area', '${branchName}_Tum_Olcekler')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">📄 PDF İndir</button>
+        </div>`;
 }
 
 function autoApplyScoreToSubScales(sIdx, baseActName, subScalesCount) {
@@ -1625,7 +1560,6 @@ function autoApplyScoreToSubScales(sIdx, baseActName, subScalesCount) {
         }
     }
 
-    // Mobil ortalamayı da güncelle
     const avgEl = document.getElementById(`scale-avg-${sIdx}`);
     if (avgEl) {
         avgEl.innerHTML = getScaleBadge(valText);
@@ -1787,13 +1721,14 @@ async function renderReportData(grade, branchName) {
     container.innerHTML = `
         <div id="report-printable-area" class="print-area">
             <div class="print-header">
-                <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                <h3>${grade}. SINIF (${branchName}) - ÜNİTE VE BÖLÜM ANALİZİ & KARNE RAPORU</h3>
+                <h2 style="font-size:15px; margin:0;">FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                <h3 style="font-size:13px; margin:4px 0 0;">${grade}. SINIF (${branchName}) - ÜNİTE VE BÖLÜM ANALİZİ</h3>
             </div>
             <div class="print-info">
-                <p><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
-                <p><b>Ünite / Bölüm:</b> ${unitName} / ${secName}</p>
-                <p><b>Mevcut:</b> ${students.length} Öğrenci | <b>Quiz Ort.:</b> ${classQuizAvg} | <b>Ölçek Ort.:</b> ${classScaleAvg}</p>
+                <p style="margin:2px 0;"><b>Sınıf / Şube:</b> ${grade}. Sınıf - ${branchName}</p>
+                <p style="margin:2px 0;"><b>Ünite:</b> ${unitName}</p>
+                <p style="margin:2px 0;"><b>Bölüm:</b> ${secName}</p>
+                <p style="margin:2px 0;"><b>Mevcut:</b> ${students.length} Öğrenci | <b>Quiz Ort.:</b> ${classQuizAvg} | <b>Ölçek Ort.:</b> ${classScaleAvg}</p>
             </div>
             <div style="overflow-x:auto;">
                 <table class="data-table" id="export-report-table">
@@ -1922,14 +1857,14 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
             <div id="student-full-printable-area" class="print-area" style="background: rgba(30,41,59,0.7); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
                 <div class="print-header">
-                    <h2>FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
-                    <h3>ÖĞRENCİ GELİŞİM VE GENEL KARNE RAPORU</h3>
+                    <h2 style="font-size:15px; margin:0;">FENOMENAL FEN BİLİMLERİ DİJİTAL EĞİTİM PORTALI</h2>
+                    <h3 style="font-size:13px; margin:4px 0 0;">ÖĞRENCİ GELİŞİM VE GENEL KARNE</h3>
                 </div>
                 <div class="print-info" style="margin-bottom: 15px;">
-                    <p><b>Adı:</b> ${student.name}</p>
-                    <p><b>No / Şube:</b> ${student.no} | ${grade}. Sınıf - ${branch}</p>
-                    <p><b>Quiz Ort:</b> ${quizCount > 0 ? avgQuiz + ' Puan' : '-'}</p>
-                    <p><b>Etkinlik Ort:</b> ${scaleCount > 0 ? '%' + avgScale : '-'}</p>
+                    <p style="margin:2px 0;"><b>Adı:</b> ${student.name}</p>
+                    <p style="margin:2px 0;"><b>No / Şube:</b> ${student.no} | ${grade}. Sınıf - ${branch}</p>
+                    <p style="margin:2px 0;"><b>Quiz Ort:</b> ${quizCount > 0 ? avgQuiz + ' Puan' : '-'}</p>
+                    <p style="margin:2px 0;"><b>Etkinlik Ort:</b> ${scaleCount > 0 ? '%' + avgScale : '-'}</p>
                     <div style="font-size: 14px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; display:flex; align-items:center; gap:8px;">
                         <b>Genel Puan:</b> ${getScoreBadge(generalAvg)}
                     </div>
