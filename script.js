@@ -1623,6 +1623,8 @@ function renderStudentPanelView(grade, branch, student, push = true) {
     panel.style.display = 'flex';
 
     const units = fenData[grade]?.units || [];
+    
+    // Quiz satırları
     let quizRows = '', qSum = 0, qCnt = 0;
     units.forEach(u => {
         (u.sections || []).forEach(sec => {
@@ -1636,23 +1638,42 @@ function renderStudentPanelView(grade, branch, student, push = true) {
     });
     const qAvg = qCnt ? Math.round(qSum / qCnt) : 0;
 
+    // Ölçek satırları - Ünite + Bölüm + Etkinlik adı
     let scaleRows = '', sSum = 0, sCnt = 0;
     units.forEach(u => {
         (u.sections || []).forEach(sec => {
             const acts = (fenData[grade]?.activities || []).filter(a => a.unit === u.name && a.section === sec);
-            let sum = 0, cnt = 0;
+            
             acts.forEach(a => {
                 const sc = student.scale?.[a.name]?.totalScore;
-                if (sc !== undefined && sc !== 'G') { sum += parseFloat(sc); cnt++; }
+                if (sc !== undefined && sc !== '' && sc !== null) {
+                    // Etkinlik adını temizle
+                    let actName = a.name;
+                    if (actName.includes(' - ')) {
+                        const parts = actName.split(' - ');
+                        actName = parts[parts.length - 1];
+                    }
+                    
+                    scaleRows += `
+                        <tr>
+                            <td style="text-align:left; line-height:1.35; padding:8px 6px;">
+                                <b style="font-size:13px;">${u.name}</b><br>
+                                <span style="font-size:12px; color:#94a3b8;">${sec}</span><br>
+                                <span style="font-size:11px; color:#60a5fa;">${actName}</span>
+                            </td>
+                            <td>${getScaleBadge(sc)}</td>
+                        </tr>`;
+                    
+                    if (sc !== 'G') {
+                        sSum += parseFloat(sc);
+                        sCnt++;
+                    }
+                }
             });
-            if (cnt) {
-                const avg = Math.round(sum / cnt);
-                scaleRows += '<tr><td style="text-align:left; line-height:1.35;"><b>' + u.name + '</b><br><span style="font-size:12px; color:#94a3b8;">' + sec + '</span></td><td>' + getScaleBadge(avg) + '</td></tr>';
-                sSum += avg; sCnt++;
-            }
         });
     });
     const sAvg = sCnt ? Math.round(sSum / sCnt) : 0;
+    
     let gen = 0;
     if (qCnt && sCnt) gen = Math.round(qAvg * 0.5 + sAvg * 0.5);
     else if (qCnt) gen = qAvg;
@@ -1742,7 +1763,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th style="text-align:left;">Ünite / Bölüm</th>
+                            <th style="text-align:left;">Ünite / Bölüm / Etkinlik</th>
                             <th>Ort</th>
                         </tr>
                     </thead>
@@ -1756,25 +1777,4 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 <button onclick="exportTableToWord('student-print', '${safeName}_Karne')" class="auth-btn" style="background:#2563eb; width:auto; padding:10px 18px;">
                     📥 Word
                 </button>
-                <button onclick="exportTableToPDF('student-print', '${safeName}_Karne')" class="auth-btn" style="background:#dc2626; width:auto; padding:10px 18px;">
-                    📄 PDF
-                </button>
-            </div>
-        </section>`;
-}
-
-// ====================== BAŞLANGIÇ ======================
-document.addEventListener('DOMContentLoaded', async () => {
-    await loadAllDataFromSupabase();
-    const gradeSel = document.getElementById('student-grade');
-    if (gradeSel) {
-        gradeSel.addEventListener('change', updateStudentBranches);
-        updateStudentBranches();
-    }
-    ['teacher-email', 'teacher-password'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') teacherLogin(); });
-    });
-
-    restoreStateFromSession();
-});
+                <button onclick="exportTableToPDF('st
