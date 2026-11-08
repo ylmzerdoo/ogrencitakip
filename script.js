@@ -1168,7 +1168,7 @@ function exportReportToWord(filename) {
     saveAs(blob, filename + '.doc');
 }
 
-// ====================== PDF ======================
+// ====================== PDF (BEYAZ ARKA PLAN) ======================
 async function exportTableToPDF(elementId, filename) {
     const el = document.getElementById(elementId);
     if (!el) return alert('İçerik bulunamadı');
@@ -1191,12 +1191,13 @@ async function exportTableToPDF(elementId, filename) {
     const isWide = cols > 5 || filename.includes('Olcek') || filename.includes('Tum');
 
     const container = document.createElement('div');
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + (isWide ? '1200px' : '850px') + ';background:#fff;color:#000;padding:20px;font-family:Arial,sans-serif;z-index:99999;';
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + (isWide ? '1200px' : '850px') + ';background:#ffffff !important;color:#000;padding:20px;font-family:Arial,sans-serif;z-index:99999;';
     
     const style = document.createElement('style');
     style.textContent = `
-        * { color: #000 !important; background: transparent !important; writing-mode: horizontal-tb !important; }
-        table { width: 100% !important; border-collapse: collapse !important; }
+        * { color: #000 !important; background: #ffffff !important; writing-mode: horizontal-tb !important; }
+        body, div, section { background: #ffffff !important; }
+        table { width: 100% !important; border-collapse: collapse !important; background: #ffffff !important; }
         th, td { 
             border: 1px solid #222 !important; 
             padding: 7px 5px !important; 
@@ -1204,6 +1205,7 @@ async function exportTableToPDF(elementId, filename) {
             text-align: center; 
             color: #000 !important;
             font-weight: 600 !important;
+            background: #ffffff !important;
         }
         th { background: #e8e8e8 !important; font-weight: bold !important; }
         td:nth-child(2), th:nth-child(2) { text-align: left !important; white-space: nowrap !important; }
@@ -1213,10 +1215,11 @@ async function exportTableToPDF(elementId, filename) {
             font-weight: 700 !important; 
             font-size: 13px !important;
         }
-        .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 6px; }
+        .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 6px; background: #ffffff !important; }
         .print-header h2 { font-size: 15px; margin: 0 0 3px; color: #000 !important; }
         .print-header h3 { font-size: 12px; margin: 0; color: #000 !important; }
         .print-info { border: 1px solid #555; padding: 8px; margin-bottom: 10px; font-size: 11px; background: #f8f8f8 !important; line-height: 1.4; color: #000 !important; }
+        .print-area { background: #ffffff !important; }
     `;
     container.appendChild(style);
     container.appendChild(clone);
@@ -1268,14 +1271,32 @@ async function exportFullReportPDF(filename) {
     const margin = 12;
     const usable = ph - margin * 2;
 
+    // 1. SAYFA
     const c1 = document.createElement('div');
-    c1.style.cssText = 'position:fixed;left:-9999px;width:850px;background:#fff;padding:20px;font-family:Arial;z-index:99999;';
-    c1.innerHTML = '<style>*{color:#000!important;background:transparent!important;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:5px;font-size:10px;text-align:center;color:#000!important;font-weight:600;}th{background:#e2e8f0;}td:nth-child(2){text-align:left;white-space:nowrap;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:8px;}.print-info{border:1px solid #666;padding:7px;margin-bottom:8px;font-size:10px;}</style>';
+    c1.style.cssText = 'position:fixed;left:-9999px;width:850px;background:#ffffff !important;padding:20px;font-family:Arial;z-index:99999;';
+    c1.innerHTML = `
+        <style>
+            * { color: #000 !important; background: #ffffff !important; }
+            body, div, section { background: #ffffff !important; }
+            table { width: 100%; border-collapse: collapse; background: #ffffff !important; }
+            th, td { border: 1px solid #333; padding: 5px; font-size: 10px; text-align: center; color: #000 !important; font-weight: 600; background: #ffffff !important; }
+            th { background: #e8e8e8 !important; }
+            td:nth-child(2) { text-align: left; white-space: nowrap; }
+            .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 8px; background: #ffffff !important; }
+            .print-info { border: 1px solid #666; padding: 7px; margin-bottom: 8px; font-size: 10px; background: #f8f8f8 !important; }
+            .print-area { background: #ffffff !important; }
+            .badge { background: transparent !important; color: #000 !important; font-weight: 700; }
+        </style>`;
     c1.appendChild(p1.cloneNode(true));
     document.body.appendChild(c1);
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 350));
 
-    const canvas1 = await html2canvas(c1, { scale: 2.5, backgroundColor: '#fff', logging: false, letterRendering: true });
+    const canvas1 = await html2canvas(c1, { 
+        scale: 2.5, 
+        backgroundColor: '#ffffff', 
+        logging: false, 
+        letterRendering: true 
+    });
     let imgW = pw - margin * 2;
     let imgH = (canvas1.height * imgW) / canvas1.width;
     if (imgH > usable) {
@@ -1286,18 +1307,33 @@ async function exportFullReportPDF(filename) {
     }
     document.body.removeChild(c1);
 
+    // 2. SAYFA
     if (p2) {
         pdf.addPage();
         const c2 = document.createElement('div');
-        c2.style.cssText = 'position:fixed;left:-9999px;width:850px;background:#fff;padding:20px;font-family:Arial;z-index:99999;';
-        c2.innerHTML = '<style>*{color:#000!important;}h4{font-size:13px;margin:0 0 8px;}p,div{font-size:11px;line-height:1.4;}</style>';
+        c2.style.cssText = 'position:fixed;left:-9999px;width:850px;background:#ffffff !important;padding:20px;font-family:Arial;z-index:99999;';
+        c2.innerHTML = `
+            <style>
+                * { color: #000 !important; background: #ffffff !important; }
+                body, div, section { background: #ffffff !important; }
+                h4 { font-size: 13px; margin: 0 0 8px; color: #000 !important; }
+                p, div { font-size: 11px; line-height: 1.45; color: #000 !important; background: #ffffff !important; }
+                .print-area { background: #ffffff !important; }
+                .badge { background: transparent !important; color: #000 !important; font-weight: 700; }
+            </style>`;
         c2.appendChild(p2.cloneNode(true));
         document.body.appendChild(c2);
-        await new Promise(r => setTimeout(r, 300));
-        const canvas2 = await html2canvas(c2, { scale: 2.5, backgroundColor: '#fff', logging: false, letterRendering: true });
+        await new Promise(r => setTimeout(r, 350));
+
+        const canvas2 = await html2canvas(c2, { 
+            scale: 2.5, 
+            backgroundColor: '#ffffff', 
+            logging: false, 
+            letterRendering: true 
+        });
         imgH = (canvas2.height * imgW) / canvas2.width;
         if (imgH > usable) {
-            const sc = Math.min(0.85, usable / imgH);
+            const sc = Math.min(0.88, usable / imgH);
             pdf.addImage(canvas2.toDataURL('image/jpeg', 0.95), 'JPEG', (pw - imgW * sc) / 2, margin, imgW * sc, imgH * sc);
         } else {
             pdf.addImage(canvas2.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW, imgH);
