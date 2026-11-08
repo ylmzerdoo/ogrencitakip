@@ -191,7 +191,11 @@ function switchAuthTab(role) {
     const tBtn = document.getElementById('btn-teacher-tab');
     const sForm = document.getElementById('student-auth-form');
     const tForm = document.getElementById('teacher-auth-form');
-    if (!sBtn || !tBtn || !sForm || !tForm) return;
+
+    if (!sBtn || !tBtn || !sForm || !tForm) {
+        console.log('Auth elemanları bulunamadı');
+        return;
+    }
 
     if (role === 'student') {
         sBtn.classList.add('active');
@@ -208,16 +212,35 @@ function switchAuthTab(role) {
 }
 
 function updateStudentBranches() {
-    const grade = document.getElementById('student-grade')?.value;
+    const gradeSel = document.getElementById('student-grade');
     const branchSel = document.getElementById('student-branch');
-    if (!branchSel) return;
+    
+    if (!gradeSel || !branchSel) return;
+
+    const grade = gradeSel.value;
     branchSel.innerHTML = '<option value="">-- Şube Seçin --</option>';
-    if (grade && fenData[grade]?.branches) {
-        Object.keys(fenData[grade].branches).forEach(b => {
-            const short = b.split('/')[1] || b;
-            branchSel.innerHTML += '<option value="' + b + '">' + short + ' Şubesi</option>';
-        });
+
+    if (!grade) return;
+
+    if (!fenData[grade] || !fenData[grade].branches) {
+        console.log('fenData henüz hazır değil, grade:', grade);
+        return;
     }
+
+    const branches = Object.keys(fenData[grade].branches);
+    
+    if (branches.length === 0) {
+        branchSel.innerHTML += '<option value="" disabled>Şube bulunamadı</option>';
+        return;
+    }
+
+    branches.forEach(b => {
+        const short = b.includes('/') ? b.split('/')[1] : b;
+        const opt = document.createElement('option');
+        opt.value = b;
+        opt.textContent = short + ' Şubesi';
+        branchSel.appendChild(opt);
+    });
 }
 
 async function teacherLogin() {
@@ -1271,7 +1294,6 @@ async function exportFullReportPDF(filename) {
     const margin = 12;
     const usable = ph - margin * 2;
 
-    // 1. SAYFA
     const c1 = document.createElement('div');
     c1.style.cssText = 'position:fixed;left:-9999px;width:850px;background:#ffffff !important;padding:20px;font-family:Arial;z-index:99999;';
     c1.innerHTML = `
@@ -1307,7 +1329,6 @@ async function exportFullReportPDF(filename) {
     }
     document.body.removeChild(c1);
 
-    // 2. SAYFA
     if (p2) {
         pdf.addPage();
         const c2 = document.createElement('div');
@@ -1647,22 +1668,13 @@ function renderStudentPanelView(grade, branch, student, push = true) {
             acts.forEach(a => {
                 const sc = student.scale?.[a.name]?.totalScore;
                 if (sc !== undefined && sc !== '' && sc !== null) {
-                    // Etkinlik adını temizle
                     let actName = a.name;
                     if (actName.includes(' - ')) {
                         const parts = actName.split(' - ');
                         actName = parts[parts.length - 1];
                     }
                     
-                    scaleRows += `
-                        <tr>
-                            <td style="text-align:left; line-height:1.35; padding:8px 6px;">
-                                <b style="font-size:13px;">${u.name}</b><br>
-                                <span style="font-size:12px; color:#94a3b8;">${sec}</span><br>
-                                <span style="font-size:11px; color:#60a5fa;">${actName}</span>
-                            </td>
-                            <td>${getScaleBadge(sc)}</td>
-                        </tr>`;
+                    scaleRows += '<tr><td style="text-align:left; line-height:1.35; padding:8px 6px;"><b style="font-size:13px;">' + u.name + '</b><br><span style="font-size:12px; color:#94a3b8;">' + sec + '</span><br><span style="font-size:11px; color:#60a5fa;">' + actName + '</span></td><td>' + getScaleBadge(sc) + '</td></tr>';
                     
                     if (sc !== 'G') {
                         sSum += parseFloat(sc);
@@ -1710,12 +1722,7 @@ function renderStudentPanelView(grade, branch, student, push = true) {
 
     let plusBadge = '';
     if (student.plus >= 5) {
-        plusBadge = `
-            <div style="margin-top:8px;">
-                <span style="display:inline-block; background:#166534; color:#86efac; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">
-                    ⭐ Aktif Katılımcı (+${student.plus})
-                </span>
-            </div>`;
+        plusBadge = '<div style="margin-top:8px;"><span style="display:inline-block; background:#166534; color:#86efac; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">⭐ Aktif Katılımcı (+' + student.plus + ')</span></div>';
     }
 
     panel.innerHTML = `
@@ -1736,7 +1743,6 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                     <p><b>Ölçek Ort:</b> ${sCnt ? '%' + sAvg : '-'}</p>
                     <p><b>Genel:</b> ${getScoreBadge(gen)}</p>
                     <p><b>Artı / Eksi:</b> ${student.plus} / ${student.minus}</p>
-
                     <div style="margin-top:12px;">
                         <span style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.07); padding:7px 14px; border-radius:20px; border:1px solid ${badgeColor};">
                             <span style="font-size:20px;">${badgeEmoji}</span>
@@ -1777,4 +1783,37 @@ function renderStudentPanelView(grade, branch, student, push = true) {
                 <button onclick="exportTableToWord('student-print', '${safeName}_Karne')" class="auth-btn" style="background:#2563eb; width:auto; padding:10px 18px;">
                     📥 Word
                 </button>
-                <button onclick="exportTableToPDF('st
+                <button onclick="exportTableToPDF('student-print', '${safeName}_Karne')" class="auth-btn" style="background:#dc2626; width:auto; padding:10px 18px;">
+                    📄 PDF
+                </button>
+            </div>
+        </section>`;
+}
+
+// ====================== BAŞLANGIÇ ======================
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await loadAllDataFromSupabase();
+        console.log('Veri yüklendi', fenData);
+    } catch (e) {
+        console.error('Veri yükleme hatası:', e);
+    }
+
+    const gradeSel = document.getElementById('student-grade');
+    if (gradeSel) {
+        gradeSel.addEventListener('change', function() {
+            updateStudentBranches();
+        });
+    }
+
+    ['teacher-email', 'teacher-password'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('keydown', e => {
+                if (e.key === 'Enter') teacherLogin();
+            });
+        }
+    });
+
+    restoreStateFromSession();
+});
