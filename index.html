@@ -2,44 +2,37 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <title>FENOMENAL Fen Bilimleri - Dijital Eğitim Portalı</title>
-    
-    <meta name="description" content="FENOMENAL Fen Bilimleri Dijital Eğitim Portalı - Erdoğan Yılmaz. 5-8. sınıf fen bilimleri quiz, ölçek, karne ve rapor sistemi. Şehit Halim Class öğrencileri için hazırlanmıştır.">
-    
-    <meta name="keywords" content="ERDOĞAN YILMAZ FEN BİLİMLERİ, erdoğan yılmaz fen bilimleri, FENOMENAL ÖĞRENCİ, ŞEHİT HALİM ATLAS ÖĞRENCİ, fenomenal fen bilimleri, erdoğan yılmaz, fen bilimleri portalı, fen bilimleri dijital eğitim, 5. sınıf fen, 6. sınıf fen, 7. sınıf fen, 8. sınıf fen, ölçek değerlendirme, quiz takip, öğrenci karnesi">
-    <meta name="google-site-verification" content="EtXrqWD5Mzv33nWhdgSnHTJ-5hY87ug1DkigOipQ__k" />
-    
-    <meta name="author" content="Erdoğan Yılmaz">
-    <meta name="robots" content="index, follow">
-    
-    <!-- Open Graph (Google + sosyal medya için) -->
-    <meta property="og:title" content="FENOMENAL Fen Bilimleri - Erdoğan Yılmaz">
-    <meta property="og:description" content="Fen Bilimleri dijital eğitim portalı. Quiz, ölçek, karne ve rapor sistemi.">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="tr_TR">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FENOMENAL Fen Bilimleri</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-
-    <!-- Kütüphaneler -->
+    
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- SheetJS (Excel) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Mammoth.js (Word → text) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
 
-    <!-- GİRİŞ EKRANI -->
+    <!-- ==================== AUTH SCREEN ==================== -->
     <div id="auth-screen" class="auth-container">
         <div class="auth-card">
             <div style="text-align:center; margin-bottom:20px;">
-                <span style="font-size:32px;">🚀 ⚛️ 🔬</span>
-                <h2 style="color:#f8fafc; font-size:20px; font-weight:700; margin-top:8px;">Fen Bilimleri Portalı</h2>
-                <p style="color:#94a3b8; font-size:12px;">FENOMENAL</p>
+                <div style="font-size:28px; margin-bottom:4px;">🔬</div>
+                <h2 style="font-size:18px; font-weight:600; color:#f8fafc;">FENOMENAL</h2>
+                <p style="font-size:12px; color:#94a3b8;">Fen Bilimleri Portalı</p>
             </div>
 
             <div class="auth-tabs">
@@ -47,7 +40,7 @@
                 <button id="btn-teacher-tab" class="auth-tab" onclick="switchAuthTab('teacher')">Öğretmen</button>
             </div>
 
-            <!-- Öğrenci Girişi -->
+            <!-- Öğrenci Formu -->
             <div id="student-auth-form">
                 <select id="student-grade" class="auth-input" onchange="updateStudentBranches()">
                     <option value="">-- Sınıf Seçin --</option>
@@ -59,12 +52,12 @@
                 <select id="student-branch" class="auth-input">
                     <option value="">-- Şube Seçin --</option>
                 </select>
-                <input type="number" id="student-number" class="auth-input" placeholder="Okul Numarası">
+                <input type="number" id="student-number" class="auth-input" placeholder="Okul No">
                 <input type="text" id="student-name" class="auth-input" placeholder="Ad Soyad">
                 <button onclick="studentLogin()" class="auth-btn">Giriş Yap</button>
             </div>
 
-            <!-- Öğretmen Girişi -->
+            <!-- Öğretmen Formu -->
             <div id="teacher-auth-form" style="display:none;">
                 <input type="email" id="teacher-email" class="auth-input" placeholder="E-posta">
                 <input type="password" id="teacher-password" class="auth-input" placeholder="Şifre">
@@ -73,49 +66,44 @@
         </div>
     </div>
 
-    <!-- ÖĞRETMEN PANELİ -->
-    <div id="teacher-panel" style="display:none; min-height:100vh; flex-direction:column;">
+    <!-- ==================== TEACHER PANEL ==================== -->
+    <div id="teacher-panel" style="display:none; flex-direction:column; min-height:100vh;">
         <header class="teacher-header">
             <div class="header-brand">
-                <span class="brand-icon">📚</span>
+                <span class="brand-icon">🔬</span>
                 <h1>Öğretmen Paneli</h1>
             </div>
             <button onclick="logout()" class="logout-btn">Çıkış</button>
         </header>
 
         <section class="dashboard-content">
-            <div class="teacher-actions-card" onclick="toggleTeacherActionsCard()">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3 style="margin:0; font-size:15px;">⚙️ Yönetim İşlemleri</h3>
-                    <span id="teacher-actions-toggle-icon" style="transition:0.3s;">▼</span>
-                </div>
-                <div id="teacher-actions-container" style="display:none; margin-top:12px;">
-                    <button onclick="globalAddUnit()" class="auth-btn" style="width:100%; margin-bottom:6px; background:#059669;">+ Ünite Ekle</button>
-                    <button onclick="globalAddSection()" class="auth-btn" style="width:100%; margin-bottom:6px; background:#0ea5e9;">+ Bölüm Ekle</button>
-                    <button onclick="globalAddActivity()" class="auth-btn" style="width:100%; margin-bottom:6px; background:#8b5cf6;">+ Excel Ölçek Yükle</button>
-                    <button onclick="globalAddReportTemplate()" class="auth-btn" style="width:100%; margin-bottom:6px; background:#f59e0b;">+ Rapor Şablonu</button>
-                    <button onclick="globalDeleteManagement()" class="auth-btn" style="width:100%; background:#ef4444;">Silme Yönetimi</button>
+            <h3 style="margin-bottom:12px; font-size:15px; color:#94a3b8;">Yönetim</h3>
+            <div class="grade-cards-grid" style="margin-bottom:20px;">
+                <div class="grade-card" onclick="openManagementMenu()" style="border-top-color:#8b5cf6;">
+                    <h3>⚙️ Yönetim İşlemleri</h3>
+                    <p>Ünite, Bölüm, Ölçek, Rapor, Silme</p>
+                    <span class="card-action">Gir →</span>
                 </div>
             </div>
 
-            <h3 style="margin:20px 0 12px; font-size:16px;">Sınıf Seçin</h3>
+            <h3 style="margin-bottom:12px; font-size:15px; color:#94a3b8;">Sınıf Seçin</h3>
             <div class="grade-cards-grid">
-                <div class="grade-card" onclick="openGradeManagement('5')">
+                <div class="grade-card" onclick="openGradeManagement('5')" style="border-top-color:#3b82f6;">
                     <h3>5. Sınıflar</h3>
                     <p>Şubeler, Quizler ve Etkinlikler</p>
                     <span class="card-action">Yönetime Git →</span>
                 </div>
-                <div class="grade-card" onclick="openGradeManagement('6')">
+                <div class="grade-card" onclick="openGradeManagement('6')" style="border-top-color:#3b82f6;">
                     <h3>6. Sınıflar</h3>
                     <p>Şubeler, Quizler ve Etkinlikler</p>
                     <span class="card-action">Yönetime Git →</span>
                 </div>
-                <div class="grade-card" onclick="openGradeManagement('7')">
+                <div class="grade-card" onclick="openGradeManagement('7')" style="border-top-color:#3b82f6;">
                     <h3>7. Sınıflar</h3>
                     <p>Şubeler, Quizler ve Etkinlikler</p>
                     <span class="card-action">Yönetime Git →</span>
                 </div>
-                <div class="grade-card" onclick="openGradeManagement('8')">
+                <div class="grade-card" onclick="openGradeManagement('8')" style="border-top-color:#3b82f6;">
                     <h3>8. Sınıflar</h3>
                     <p>Şubeler, Quizler ve Etkinlikler</p>
                     <span class="card-action">Yönetime Git →</span>
@@ -124,20 +112,20 @@
         </section>
     </div>
 
-    <!-- SINIF / ŞUBE DETAY PANELİ -->
-    <div id="grade-detail-panel" style="display:none; min-height:100vh; flex-direction:column;"></div>
+    <!-- ==================== GRADE DETAIL PANEL ==================== -->
+    <div id="grade-detail-panel" style="display:none; flex-direction:column; min-height:100vh;"></div>
 
-    <!-- ÖĞRENCİ PANELİ -->
-    <div id="student-panel" style="display:none; min-height:100vh; flex-direction:column;"></div>
+    <!-- ==================== STUDENT PANEL ==================== -->
+    <div id="student-panel" style="display:none; flex-direction:column; min-height:100vh;"></div>
 
-    <!-- MODAL -->
+    <!-- ==================== MODAL ==================== -->
     <div id="app-modal" class="modal-overlay" style="display:none;">
         <div class="modal-box">
-            <h3 id="modal-title" class="modal-title"></h3>
+            <h3 id="modal-title" class="modal-title">Başlık</h3>
             <div id="modal-body"></div>
             <div class="modal-footer">
-                <button onclick="closeModal()" class="logout-btn" style="background:#64748b; padding:8px 14px;">Kapat</button>
-                <button id="modal-confirm-btn" class="auth-btn" style="width:auto; padding:8px 16px;">Kaydet</button>
+                <button onclick="closeModal()" class="auth-btn" style="background:#475569; width:auto; padding:8px 14px;">İptal</button>
+                <button id="modal-confirm-btn" class="auth-btn" style="width:auto; padding:8px 14px;">Kaydet</button>
             </div>
         </div>
     </div>
