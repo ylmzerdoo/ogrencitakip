@@ -144,40 +144,82 @@ body {
 
 .grade-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
 }
 
 .grade-card {
-    background: rgba(30,41,59,0.8);
+    background: rgba(30,41,59,0.85);
     border: 1px solid rgba(255,255,255,0.08);
-    border-top: 3px solid #3b82f6;
-    border-radius: 12px;
-    padding: 18px 16px;
+    border-top: 4px solid #3b82f6;
+    border-radius: 14px;
+    padding: 20px 16px 16px;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .grade-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+    border-color: rgba(255,255,255,0.15);
+}
+
+.grade-card.locked {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: grayscale(0.4);
+}
+
+.grade-card.locked:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .grade-card h3 {
     font-size: 16px;
-    margin-bottom: 6px;
+    margin: 6px 0 4px;
+    font-weight: 600;
 }
 
 .grade-card p {
     font-size: 12px;
     color: #94a3b8;
-    margin-bottom: 10px;
+    margin: 0;
 }
 
 .card-action {
-    font-size: 12px;
+    font-size: 13px;
     color: #60a5fa;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.card-action::after {
+    content: "→";
+    font-size: 14px;
+}
+
+.progress-bar-container {
+    background: rgba(15,23,42,0.7);
+    border-radius: 10px;
+    height: 14px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981);
+    border-radius: 10px;
+    transition: width 0.5s ease;
 }
 
 /* ========== TABLOLAR ========== */
@@ -332,6 +374,134 @@ body {
     margin: 2px 0;
 }
 
+/* ========== YENİ: İLERLEME ÇUBUĞU ========== */
+.progress-bar-container {
+    background: rgba(15,23,42,0.6);
+    border-radius: 8px;
+    height: 10px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    border-radius: 8px;
+    transition: width 0.4s ease;
+}
+
+.progress-text {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+}
+
+/* ========== YENİ: İÇERİK KARTLARI ========== */
+.content-card {
+    background: rgba(30,41,59,0.8);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: 0.2s;
+}
+
+.content-card:hover {
+    border-color: rgba(59,130,246,0.4);
+}
+
+.content-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.content-type-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.content-type-pptx { background: #7c3aed; color: #e9d5ff; }
+.content-type-pdf { background: #dc2626; color: #fecaca; }
+.content-type-video { background: #0891b2; color: #a5f3fc; }
+.content-type-experiment { background: #059669; color: #a7f3d0; }
+.content-type-quiz { background: #d97706; color: #fde68a; }
+
+/* ========== YENİ: QUIZ ALANI ========== */
+.quiz-question {
+    background: rgba(15,23,42,0.5);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.quiz-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    margin: 6px 0;
+    border-radius: 8px;
+    background: rgba(30,41,59,0.6);
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.quiz-option:hover {
+    background: rgba(59,130,246,0.15);
+}
+
+.quiz-option.selected {
+    background: rgba(59,130,246,0.25);
+    border: 1px solid #3b82f6;
+}
+
+.quiz-option.correct {
+    background: rgba(22,101,52,0.3);
+    border: 1px solid #16a34a;
+}
+
+.quiz-option.wrong {
+    background: rgba(153,27,27,0.3);
+    border: 1px solid #dc2626;
+}
+
+/* ========== YENİ: IFRAME DENEY ========== */
+.experiment-frame {
+    width: 100%;
+    height: 500px;
+    border: none;
+    border-radius: 10px;
+    background: #0f172a;
+}
+
+/* ========== YENİ: TAMAMLANDI BUTONU ========== */
+.btn-completed {
+    background: #166534;
+    color: #86efac;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-not-completed {
+    background: #334155;
+    color: #94a3b8;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 /* ========== MOBİL ========== */
 @media (max-width: 600px) {
     .dashboard-content {
@@ -353,5 +523,9 @@ body {
 
     .auth-card {
         padding: 22px 18px;
+    }
+
+    .experiment-frame {
+        height: 320px;
     }
 }
