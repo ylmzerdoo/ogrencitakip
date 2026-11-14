@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://ylmzerdoo.github.io/ogrencitakip/sitemap.xml
