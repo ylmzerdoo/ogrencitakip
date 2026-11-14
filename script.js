@@ -1924,7 +1924,7 @@ function openContentViewer(contentId, grade, branch, unitName, sectionName) {
     } catch(e){}
 
     var panel = document.getElementById('student-panel');
-    var iframeHeight = 'calc(100vh - 180px)';
+    var iframeHeight = 'calc(100vh - 60px)';
     var body = '';
 
     if (lesson.type === 'pptx' && lesson.file_url) {
@@ -1933,11 +1933,11 @@ function openContentViewer(contentId, grade, branch, unitName, sectionName) {
         if (lesson.description && lesson.description.indexOf('slides:') === 0) {
             totalSlides = parseInt(lesson.description.split(':')[1]) || 10;
         }
-        body = '<iframe src="' + vUrl + '" style="width:100%;height:' + iframeHeight + ';border:none;border-radius:10px;background:#0f172a;" allowfullscreen></iframe>';
+        body = '<iframe src="' + vUrl + '" style="position:fixed;top:50px;left:0;width:100%;height:calc(100vh - 50px);border:none;background:#1e293b;z-index:40;" allowfullscreen></iframe>';
     } else if (lesson.type === 'pdf' && lesson.file_url) {
-        body = '<iframe src="' + lesson.file_url + '#toolbar=1" style="width:100%;height:' + iframeHeight + ';border:none;border-radius:10px;background:#0f172a;" allowfullscreen></iframe>';
+        body = '<iframe src="' + lesson.file_url + '#toolbar=1" style="position:fixed;top:50px;left:0;width:100%;height:calc(100vh - 50px);border:none;background:#1e293b;z-index:40;" allowfullscreen></iframe>';
     } else if (lesson.type === 'experiment' && lesson.experiment_url) {
-        body = '<iframe class="experiment-frame" src="' + lesson.experiment_url + '" style="height:' + iframeHeight + ';" allowfullscreen></iframe>';
+        body = '<iframe src="' + lesson.experiment_url + '" style="position:fixed;top:50px;left:0;width:100%;height:calc(100vh - 50px);border:none;background:#1e293b;z-index:40;" allowfullscreen></iframe>';
     } else if (lesson.type === 'video' && lesson.file_url) {
         var ytMatch = lesson.file_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
         if (ytMatch) {
