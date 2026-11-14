@@ -2399,7 +2399,7 @@ function loadBranchTabContent(tab, grade, branchName) {
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">' +
                 '<h3 style="margin:0; font-size:15px;">Öğrenci Listesi</h3>' +
                 '<div style="display:flex; gap:6px;">' +
-                    '<button onclick="addStudentModal(\'' + grade + '\',\'' + branchName + '\')" class="auth-btn" style="width:auto; padding:6px 10px; background:#2563eb; font-size:12px;">+ Öğrenci</button>' +
+                    '<button onclick="openBulkStudentModal(\'' + grade + '\',\'' + branchName + '\')" class="auth-btn" style="width:auto; padding:6px 10px; background:#059669; font-size:12px;">Toplu</button><button onclick="addStudentModal(\'' + grade + '\',\'' + branchName + '\')" class="auth-btn" style="width:auto; padding:6px 10px; background:#2563eb; font-size:12px;">+ Öğrenci</button>' +
                 '</div>' +
             '</div>' +
             '<div style="overflow-x:auto;">' +
@@ -2603,7 +2603,7 @@ function renderQuizTable(grade, branchName) {
         rows += '<tr>' +
             '<td style="white-space:nowrap;">' + s.no + '</td>' +
             '<td style="white-space:nowrap; text-align:left; min-width:150px;">' + s.name + '</td>' +
-            '<td><input type="text" id="quiz-' + idx + '" class="auth-input" style="width:70px; padding:6px; text-align:center; margin:0 auto;" value="' + val + '" placeholder="0-100 / G" oninput="validateScoreInput(this)"></td>' +
+            '<td><input type="text" id="quiz-' + idx + '" class="auth-input" style="width:70px; padding:6px; text-align:center; margin:0 auto;" value="' + val + '" placeholder="-" oninput="validateScoreInput(this)"></td>' +
         '</tr>';
     });
     cont.innerHTML =
@@ -2696,8 +2696,12 @@ function loadSubScales(grade, branchName) {
     var subs = (fenData[grade]?.activities || []).filter(function(a) {
         return a.unit === unit && a.section === section && (a.name === base || a.name.indexOf(base + ' -') === 0);
     });
+    var typeNames = { '1-4': 'ANALİTİK RUBRİK', 'var-yok': 'KONTROL LİSTESİ', 'evet-hayir': 'ÖZ DEĞERLENDİRME' };
     subs.forEach(function(s) {
-        var short = s.name.replace(base, '').replace(/^[\s-]+/, '') || s.name;
+        var short = s.name.replace(base, '').replace(/^[\s-]+/, '');
+        if (!short || short === s.name) {
+            short = typeNames[s.scale_type] || s.scale_type || s.name;
+        }
         sel.innerHTML += '<option value="' + s.name + '">' + short + '</option>';
     });
     renderActivityTable(grade, branchName);
@@ -2766,7 +2770,7 @@ function renderActivityTable(grade, branchName) {
         var first = subScales[0]?.name;
         var quick = (first && s.scale?.[first]?.totalScore !== undefined) ? s.scale[first].totalScore : '';
         var cells = '<td style="white-space:nowrap;">' + s.no + '</td><td style="white-space:nowrap; text-align:left;">' + s.name + '</td>';
-        cells += '<td><input type="text" id="quick-' + sIdx + '" class="auth-input" style="width:55px; padding:5px; text-align:center;" value="' + quick + '" placeholder="85" oninput="validateScoreInput(this); applyQuick(' + sIdx + ',' + subScales.length + ')"></td>';
+        cells += '<td><input type="text" id="quick-' + sIdx + '" class="auth-input" style="width:55px; padding:5px; text-align:center;" value="' + quick + '" placeholder="-" oninput="validateScoreInput(this); applyQuick(' + sIdx + ',' + subScales.length + ')"></td>';
         subScales.forEach(function(sc, i) {
             var val = s.scale?.[sc.name]?.totalScore !== undefined ? s.scale[sc.name].totalScore : '-';
             cells += '<td id="badge-' + sIdx + '-' + i + '">' + getScaleBadge(val) + '</td>';
@@ -3211,16 +3215,98 @@ function fillModalUnits(grade) {
 }
 
 function globalAddActivity() {
-    var html = '<label style="font-size:13px;color:#cbd5e1;">Sınıf</label>' +
-        '<select id="act-grade" class="auth-input"><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select>' +
-        '<label style="font-size:13px;color:#cbd5e1;margin-top:8px;">Ünite</label>' +
-        '<input type="text" id="act-unit" class="auth-input" placeholder="1.ÜNİTE ...">' +
-        '<label style="font-size:13px;color:#cbd5e1;margin-top:8px;">Bölüm</label>' +
-        '<input type="text" id="act-section" class="auth-input" placeholder="1. Bölüm ...">' +
-        '<label style="font-size:13px;color:#cbd5e1;margin-top:8px;">Etkinlik Adı</label>' +
-        '<input type="text" id="act-name" class="auth-input" placeholder="Etkinlik 1 - ...">' +
-        '<button onclick="saveActivity()" class="auth-btn" style="margin-top:16px;">Kaydet</button>';
-    openManagementPage('Ölçek Yükle', html);
+    openModal('Excel Olcek Yukle',
+        '<select id="m-grade" class="auth-input" onchange="fillModalUnitsAct(this.value)"><option value="5">5. Sinif</option><option value="6" selected>6. Sinif</option><option value="7">7. Sinif</option><option value="8">8. Sinif</option></select>' +
+        '<select id="m-unit" class="auth-input" onchange="fillModalSectionsAct()"><option value="">Unite</option></select>' +
+        '<select id="m-section" class="auth-input"><option value="">Bolum</option></select>' +
+        '<input type="file" id="m-file" class="auth-input" accept=".xlsx,.xls">',
+    function() {
+        var g = document.getElementById('m-grade').value;
+        var u = document.getElementById('m-unit').value;
+        var s = document.getElementById('m-section').value;
+        var file = document.getElementById('m-file').files[0];
+        if (!u || !s || !file) return alert('Tum alanlari doldurun');
+        var reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                var count = 0;
+                for (var si = 0; si < wb.SheetNames.length; si++) {
+                    var sheet = wb.SheetNames[si];
+                    var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1 });
+                    var currentScale = null;
+                    var currentType = '1-4';
+                    for (var ri = 0; ri < rows.length; ri++) {
+                        var row = rows[ri];
+                        if (!row || !row[0]) continue;
+                        var firstCell = String(row[0]);
+                        
+                        // Ölçek başlığı (📋 ile başlayan)
+                        if (firstCell.indexOf('📋') >= 0 || firstCell.toUpperCase().indexOf('RUBRİK') >= 0 || firstCell.toUpperCase().indexOf('LİSTESİ') >= 0 || firstCell.toUpperCase().indexOf('FORMU') >= 0) {
+                            currentScale = firstCell.replace(/📋/g, '').trim();
+                            var upper = currentScale.toUpperCase();
+                            if (upper.indexOf('KONTROL') >= 0 || upper.indexOf('LİSTESİ') >= 0) currentType = 'var-yok';
+                            else if (upper.indexOf('FORMU') >= 0 || upper.indexOf('GÖZLEM') >= 0) currentType = 'evet-hayir';
+                            else currentType = '1-4';
+                            continue;
+                        }
+                        
+                        // Kriter satırı
+                        if (currentScale && row.some(function(c) { return c && (String(c).indexOf('Okul No') >= 0 || String(c).indexOf('Adı Soyadı') >= 0); })) {
+                            var crits = row.filter(function(c) {
+                                return c && String(c).indexOf('Okul No') < 0 && String(c).indexOf('Adı Soyadı') < 0 && String(c).indexOf('TOPLAM') < 0 && String(c).indexOf('BAŞARI') < 0;
+                            });
+                            if (crits.length && supabaseClient) {
+                                await supabaseClient.from('activities').insert([{
+                                    grade: g, unit_name: u, section_name: s, 
+                                    activity_name: sheet + ' - ' + currentScale,
+                                    criteria: crits, scale_type: currentType
+                                }]);
+                                count++;
+                            }
+                            currentScale = null;
+                        }
+                    }
+                    if (count === 0 && rows.length) {
+                        await supabaseClient.from('activities').insert([{
+                            grade: g, unit_name: u, section_name: s, activity_name: sheet,
+                            criteria: ['1. Kriter','2. Kriter','3. Kriter','4. Kriter'], scale_type: '1-4'
+                        }]);
+                        count++;
+                    }
+                }
+                await loadAllDataFromSupabase();
+                closeModal();
+                alert(count + ' olcek yuklendi');
+            } catch (err) {
+                alert('Hata: ' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
+    fillModalUnitsAct('6');
+}
+
+function fillModalUnitsAct(grade) {
+    var sel = document.getElementById('m-unit');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Unite</option>';
+    (fenData[grade]?.units || []).forEach(function(u) {
+        sel.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>';
+    });
+    fillModalSectionsAct();
+}
+
+function fillModalSectionsAct() {
+    var g = document.getElementById('m-grade')?.value;
+    var u = document.getElementById('m-unit')?.value;
+    var sel = document.getElementById('m-section');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Bolum</option>';
+    var unit = fenData[g]?.units.find(function(x) { return x.name === u; });
+    if (unit) unit.sections.forEach(function(s) {
+        sel.innerHTML += '<option value="' + s + '">' + s + '</option>';
+    });
 }
 
 async function saveActivity() {
@@ -3612,4 +3698,33 @@ async function loadStudentProgress() {
     }
     html += '</tbody></table>';
     result.innerHTML = html;
+}
+
+function openBulkStudentModal(grade, branchName) {
+    openModal('Toplu Ogrenci (e-Okul)',
+        '<p style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Okul No + Tab + Ad Soyad seklinde yapistirin</p>' +
+        '<textarea id="bulk-text" class="auth-input" style="height:140px;font-family:monospace;"></textarea>',
+    async function() {
+        var text = document.getElementById('bulk-text').value.trim();
+        if (!text) return;
+        var lines = text.split('\n');
+        var count = 0;
+        for (var i = 0; i < lines.length; i++) {
+            var parts = lines[i].split('\t');
+            if (parts.length >= 2) {
+                var no = parseInt(parts[0]);
+                var name = parts[1].trim().toUpperCase();
+                if (no && name && supabaseClient) {
+                    await supabaseClient.from('students').insert([{
+                        grade: grade, branch: branchName, school_no: no, name: name, plus: 0, minus: 0, quiz: {}, scale: {}
+                    }]);
+                    count++;
+                }
+            }
+        }
+        await loadAllDataFromSupabase();
+        closeModal();
+        alert(count + ' ogrenci eklendi');
+        openBranchDetail(grade, branchName, 'students', false);
+    });
 }
