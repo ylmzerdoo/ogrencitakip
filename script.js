@@ -448,6 +448,9 @@ function openManagementMenu() {
                 '<div class="grade-card" onclick="globalDeleteManagement()" style="border-top-color:#ef4444;">' +
                     '<h3>Silme Yönetimi</h3><span class="card-action">Git →</span>' +
                 '</div>' +
+                '<div class="grade-card" onclick="openStudentProgressPage()" style="border-top-color:#a855f7;">' +
+                    '<h3>Öğrenci İlerlemesi</h3><span class="card-action">Git →</span>' +
+                '</div>' +
             '</div>' +
         '</section>';
 }
@@ -958,6 +961,21 @@ function applyAnswerKey(questions, keyText) {
 function parseQuizFromText(text) {
     var clean = (text || '').replace(/\r/g, '\n');
     var lines = clean.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+    // Başlık ve cevap anahtarı satırlarını atla
+    lines = lines.filter(function(line) {
+        var upper = line.toUpperCase();
+        if (upper.indexOf('AD SOYAD') >= 0) return false;
+        if (upper.indexOf('SINIF:') >= 0) return false;
+        if (upper.indexOf('PUAN:') >= 0) return false;
+        if (upper.indexOf('BÖLÜM:') >= 0 && upper.indexOf('?') < 0) return false;
+        if (/^[\-\_\=]{5,}$/.test(line)) return false;
+        // Cevap anahtarı formatı: C2-B3-C4 veya 1-C 2-B 3-C
+        if (/[A-D]\d+[-\s][A-D]\d+/.test(upper)) return false;
+        if (/\d+[-\.][A-D]\s+\d+[-\.][A-D]/.test(upper)) return false;
+        if (upper.indexOf('CEVAP ANAHTAR') >= 0) return false;
+        if (upper.indexOf('ANSWER KEY') >= 0) return false;
+        return true;
+    });
     var questions = [];
     var current = null;
 
@@ -1915,9 +1933,26 @@ function nextSlide(contentId, grade, branch, unitName, sectionName, total) {
     }
 }
 
-function openContentViewer(contentId, grade, branch, unitName, sectionName) {
+async function openContentViewer(contentId, grade, branch, unitName, sectionName) {
     var lesson = (fenData[grade]?.lessons || []).find(function(l) { return l.id === contentId; });
     if (!lesson) return alert('İçerik bulunamadı');
+
+    // İlerleme kaydet
+    var student = currentStudentContext.student;
+    console.log('İlerleme kaydı:', student?.id, contentId, lesson.type);
+    if (supabaseClient && student && student.id && lesson.type !== 'quiz') {
+        var { error } = await supabaseClient.from('student_progress').upsert({
+            student_id: student.id,
+            grade: grade,
+            branch: branch,
+            school_no: student.no || '',
+            content_id: contentId,
+            is_completed: true,
+            completed_at: new Date().toISOString()
+        }, { onConflict: 'student_id,content_id' });
+        if (error) console.error('İlerleme kayıt hatası:', error);
+        else console.log('İlerleme kaydedildi');
+    }
 
     try {
         history.pushState({ type: 'content-view', contentId: contentId, grade: grade, branch: branch, unitName: unitName, sectionName: sectionName }, '', '#content');
@@ -1941,10 +1976,9 @@ function openContentViewer(contentId, grade, branch, unitName, sectionName) {
     } else if (lesson.type === 'video' && lesson.file_url) {
         var ytMatch = lesson.file_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
         if (ytMatch) {
-            body = '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;background:#000;">' +
-                '<iframe src="https://www.youtube.com/embed/' + ytMatch[1] + '?rel=0" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>';
+            body = '<iframe src="https://www.youtube.com/embed/' + ytMatch[1] + '?rel=0" style="position:fixed;top:50px;left:0;width:100%;height:calc(100vh - 50px);border:none;background:#000;z-index:40;" allowfullscreen></iframe>';
         } else {
-            body = '<a href="' + lesson.file_url + '" target="_blank" class="auth-btn">Videoyu Aç</a>';
+            body = '<iframe src="' + lesson.file_url + '" style="position:fixed;top:50px;left:0;width:100%;height:calc(100vh - 50px);border:none;background:#000;z-index:40;" allowfullscreen></iframe>';
         }
     } else if (lesson.type === 'quiz') {
         startStudentQuiz(contentId);
@@ -2058,11 +2092,27 @@ async function markContentCompleted(contentId, grade, branch, unitName, sectionN
 // ====================== ONLINE QUIZ ÇÖZME ======================
 let currentQuizState = null;
 
-function startStudentQuiz(contentId) {
+async function startStudentQuiz(contentId) {
     var grade = currentStudentContext.grade;
+    var student = currentStudentContext.student;
     var lesson = (fenData[grade]?.lessons || []).find(function(l) { return l.id === contentId; });
     if (!lesson || !lesson.quiz_data || lesson.quiz_data.length === 0) {
         return alert('Bu quiz için soru bulunamadı. Öğretmen Word dosyasını kontrol etsin.');
+    }
+
+    // Daha önce çözülmüş mü kontrol et
+    if (supabaseClient && student && student.id) {
+        var { data: existing } = await supabaseClient.from('quiz_results')
+            .select('*')
+            .eq('student_id', student.id)
+            .eq('content_id', contentId)
+            .eq('is_finished', true)
+            .maybeSingle();
+        if (existing) {
+            // Sonuçları göster
+            showPreviousQuizResult(existing, lesson);
+            return;
+        }
     }
 
     currentQuizState = {
@@ -2074,6 +2124,41 @@ function startStudentQuiz(contentId) {
     };
 
     renderQuizScreen();
+}
+
+function showPreviousQuizResult(result, lesson) {
+    var panel = document.getElementById('student-panel');
+    var qs = lesson.quiz_data || [];
+    var answers = result.answers || {};
+    var html = '';
+    qs.forEach(function(q, i) {
+        var userAns = answers[i] || '-';
+        var isCorrect = q.correct && userAns === q.correct;
+        var border = isCorrect ? '#16a34a' : '#dc2626';
+        var bg = isCorrect ? 'rgba(22,101,52,0.2)' : 'rgba(153,27,27,0.2)';
+        html += '<div class="quiz-question" style="border-left:4px solid ' + border + ';background:' + bg + ';">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                '<div style="font-weight:600;">' + (i+1) + '. ' + (q.question || '').substring(0, 60) + '</div>' +
+                '<div style="font-size:13px;font-weight:700;color:' + (isCorrect ? '#86efac' : '#fca5a5') + ';">' +
+                    (isCorrect ? '✓' : '✗') + ' ' + userAns +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    });
+
+    panel.innerHTML =
+        '<header class="teacher-header">' +
+            '<div class="header-brand"><h1>Quiz Sonucun</h1></div>' +
+            '<button onclick="history.back()" class="logout-btn" style="background:#3b82f6;">Geri</button>' +
+        '</header>' +
+        '<section class="dashboard-content" style="max-width:700px;margin:0 auto;">' +
+            '<div style="background:rgba(30,41,59,0.7);padding:16px;border-radius:12px;margin-bottom:16px;text-align:center;">' +
+                '<div style="font-size:32px;font-weight:700;color:#f8fafc;">%' + result.score + '</div>' +
+                '<div style="font-size:14px;color:#94a3b8;margin-top:4px;">Doğru: ' + result.correct_count + ' / ' + result.total_questions + '</div>' +
+                '<div style="font-size:12px;color:#64748b;margin-top:8px;">Bu quiz daha önce çözüldü</div>' +
+            '</div>' +
+            html +
+        '</section>';
 }
 
 function renderQuizScreen() {
@@ -2170,8 +2255,12 @@ async function submitQuiz() {
     var student = currentStudentContext.student;
     var qs = currentQuizState.questions;
     var correct = 0;
+    console.log('Quiz cevapları:', currentQuizState.answers);
+    console.log('Doğru cevaplar:', qs.map(function(q, i) { return (i+1) + ':' + q.correct; }));
     qs.forEach(function(q, i) {
-        if (q.correct && currentQuizState.answers[i] === q.correct) correct++;
+        var userAns = (currentQuizState.answers[i] || '').toString().toUpperCase().trim();
+        var correctAns = (q.correct || '').toString().toUpperCase().trim();
+        if (userAns && correctAns && userAns === correctAns) correct++;
     });
     var total = qs.length;
     var score = total ? Math.round((correct / total) * 100) : 0;
@@ -3394,3 +3483,126 @@ function toggleDel() {
     document.getElementById('d-act-box').style.display = type === 'activity' ? 'block' : 'none';
 }
 
+
+function openStudentProgressPage() {
+    var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+        '<div><label style="font-size:13px;color:#cbd5e1;">Sınıf</label>' +
+        '<select id="prog-grade" class="auth-input" onchange="fillProgBranches()"><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></div>' +
+        '<div><label style="font-size:13px;color:#cbd5e1;">Şube</label>' +
+        '<select id="prog-branch" class="auth-input" onchange="fillProgUnits()"><option value="">Seçin</option></select></div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">' +
+        '<div><label style="font-size:13px;color:#cbd5e1;">Ünite</label>' +
+        '<select id="prog-unit" class="auth-input" onchange="fillProgSections()"><option value="">Tümü</option></select></div>' +
+        '<div><label style="font-size:13px;color:#cbd5e1;">Bölüm</label>' +
+        '<select id="prog-section" class="auth-input" onchange="loadStudentProgress()"><option value="">Tümü</option></select></div>' +
+        '</div>' +
+        '<div id="progress-result" style="margin-top:16px;"></div>';
+    openManagementPage('Öğrenci İlerlemesi', html);
+    setTimeout(fillProgBranches, 50);
+}
+
+function fillProgBranches() {
+    var grade = document.getElementById('prog-grade').value;
+    var sel = document.getElementById('prog-branch');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Seçin</option>';
+    var branches = fenData[grade]?.branches || {};
+    Object.keys(branches).forEach(function(b) {
+        sel.innerHTML += '<option value="' + b + '">' + b + '</option>';
+    });
+    fillProgUnits();
+}
+
+
+function fillProgUnits() {
+    var grade = document.getElementById('prog-grade').value;
+    var sel = document.getElementById('prog-unit');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Tümü</option>';
+    (fenData[grade]?.units || []).forEach(function(u) {
+        sel.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>';
+    });
+    fillProgSections();
+}
+
+function fillProgSections() {
+    var grade = document.getElementById('prog-grade').value;
+    var unit = document.getElementById('prog-unit').value;
+    var sel = document.getElementById('prog-section');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Tümü</option>';
+    if (unit) {
+        var unitObj = (fenData[grade]?.units || []).find(function(u) { return u.name === unit; });
+        if (unitObj) {
+            unitObj.sections.forEach(function(s) {
+                sel.innerHTML += '<option value="' + s + '">' + s + '</option>';
+            });
+        }
+    }
+    loadStudentProgress();
+}
+async function loadStudentProgress() {
+    var grade = document.getElementById('prog-grade').value;
+    var branch = document.getElementById('prog-branch').value;
+    var unit = document.getElementById('prog-unit').value;
+    var section = document.getElementById('prog-section').value;
+    var result = document.getElementById('progress-result');
+    if (!grade || !branch || !result) return;
+    result.innerHTML = '<p style="color:#94a3b8;">Yükleniyor...</p>';
+
+    var students = fenData[grade]?.branches?.[branch] || [];
+    var lessons = (fenData[grade]?.lessons || []).filter(function(l) {
+        if (unit && l.unit !== unit) return false;
+        if (section && l.section !== section) return false;
+        return true;
+    });
+
+    if (students.length === 0) {
+        result.innerHTML = '<p style="color:#94a3b8;">Öğrenci bulunamadı.</p>';
+        return;
+    }
+
+    var html = '<table class="data-table" style="font-size:12px;"><thead><tr><th>Öğrenci</th><th>Video</th><th>Slayt</th><th>Deney</th><th>Quiz</th></tr></thead><tbody>';
+
+    for (var s of students) {
+        var progress = {};
+        var quizResults = {};
+        if (supabaseClient && s.id) {
+            var { data: progData } = await supabaseClient.from('student_progress').select('content_id, is_completed').eq('student_id', s.id);
+            (progData || []).forEach(function(p) { progress[p.content_id] = p.is_completed; });
+            var { data: quizData } = await supabaseClient.from('quiz_results').select('content_id, correct_count, total_questions').eq('student_id', s.id);
+            (quizData || []).forEach(function(q) { quizResults[q.content_id] = q; });
+        }
+
+        function getStatus(type) {
+            var typeLessons = lessons.filter(function(l) { return l.type === type; });
+            if (typeLessons.length === 0) return '-';
+            var done = typeLessons.filter(function(l) { return progress[l.id]; }).length;
+            if (done === typeLessons.length) return '<span style="color:#22c55e;">✓</span>';
+            if (done > 0) return '<span style="color:#f59e0b;">' + done + '/' + typeLessons.length + '</span>';
+            return '<span style="color:#ef4444;">✗</span>';
+        }
+
+        function getQuizStatus() {
+            var quizLessons = lessons.filter(function(l) { return l.type === 'quiz'; });
+            if (quizLessons.length === 0) return '-';
+            var results = [];
+            quizLessons.forEach(function(l) {
+                if (quizResults[l.id]) {
+                    results.push(quizResults[l.id].correct_count + '/' + quizResults[l.id].total_questions);
+                }
+            });
+            if (results.length === 0) return '<span style="color:#ef4444;">✗</span>';
+            return '<span style="color:#22c55e;">' + results.join(', ') + '</span>';
+        }
+
+        html += '<tr><td style="text-align:left;">' + s.name + '</td>' +
+            '<td>' + getStatus('video') + '</td>' +
+            '<td>' + getStatus('pptx') + '</td>' +
+            '<td>' + getStatus('experiment') + '</td>' +
+            '<td>' + getQuizStatus() + '</td></tr>';
+    }
+    html += '</tbody></table>';
+    result.innerHTML = html;
+}
