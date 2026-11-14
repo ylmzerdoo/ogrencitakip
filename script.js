@@ -3321,7 +3321,10 @@ function fillModalSectionsAct() {
     sel.innerHTML = '<option value="">Bolum</option>';
     var unit = fenData[g]?.units.find(function(x) { return x.name === u; });
     if (unit) unit.sections.forEach(function(s) {
-        sel.innerHTML += '<option value="' + s + '">' + s + '</option>';
+        var opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        sel.appendChild(opt);
     });
 }
 
@@ -3391,7 +3394,7 @@ function globalDeleteManagement() {
         '<select id="d-grade" class="auth-input" onchange="fillDelUnits(this.value)"><option value="5">5. Sinif</option><option value="6" selected>6. Sinif</option><option value="7">7. Sinif</option><option value="8">8. Sinif</option></select>' +
         '<select id="d-type" class="auth-input" onchange="toggleDel()"><option value="unit">Unite Sil</option><option value="section">Bolum Sil</option><option value="activity">Etkinlik Sil</option><option value="report">Rapor Sil</option></select>' +
         '<div id="d-unit-box"><select id="d-unit" class="auth-input" onchange="fillDelSections()"><option value="">Unite</option></select></div>' +
-        '<div id="d-sec-box" style="display:none;"><select id="d-section" class="auth-input"><option value="">Bolum</option></select></div>' +
+        '<div id="d-sec-box" style="display:none;"><select id="d-section" class="auth-input" onchange="fillDelActivities()"><option value="">Bolum</option></select></div>' +
         '<div id="d-act-box" style="display:none;"><select id="d-act" class="auth-input"><option value="">Etkinlik</option></select></div>',
     async function() {
         var g = document.getElementById('d-grade').value;
@@ -3453,21 +3456,31 @@ function fillDelSections() {
     sel.innerHTML = '<option value="">Bolum</option>';
     var unit = fenData[g]?.units.find(function(x) { return x.name === u; });
     if (unit) unit.sections.forEach(function(s) {
-        sel.innerHTML += '<option value="' + s + '">' + s + '</option>';
+        var opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        sel.appendChild(opt);
     });
+}
+
+function fillDelActivities() {
+    var g = document.getElementById('d-grade')?.value;
+    var u = document.getElementById('d-unit')?.value;
+    var sec = document.getElementById('d-section')?.value;
     var actSel = document.getElementById('d-act');
-    if (actSel) {
-        actSel.innerHTML = '<option value="">Etkinlik</option>';
-        var acts = (fenData[g]?.activities || []).filter(function(a) { return a.unit === u; });
-        var bases = new Set();
-        acts.forEach(function(a) {
-            var p = a.name.split(' - ');
-            bases.add(p.length >= 2 ? p[0] + ' - ' + p[1] : a.name);
-        });
-        bases.forEach(function(b) {
-            actSel.innerHTML += '<option value="' + b + '">' + b + '</option>';
-        });
-    }
+    if (!actSel || !sec) return;
+    actSel.innerHTML = '<option value="">Etkinlik</option>';
+    var acts = (fenData[g]?.activities || []).filter(function(a) { 
+        return a.unit === u && a.section === sec; 
+    });
+    var bases = new Set();
+    acts.forEach(function(a) {
+        var p = a.name.split(' - ');
+        bases.add(p.length >= 2 ? p[0] + ' - ' + p[1] : a.name);
+    });
+    bases.forEach(function(b) {
+        actSel.innerHTML += '<option value="' + b + '">' + b + '</option>';
+    });
 }
 
 function toggleDel() {
@@ -3507,7 +3520,7 @@ function globalDeleteManagement() {
         '<select id="d-grade" class="auth-input" onchange="fillDelUnits(this.value)"><option value="5">5. Sinif</option><option value="6" selected>6. Sinif</option><option value="7">7. Sinif</option><option value="8">8. Sinif</option></select>' +
         '<select id="d-type" class="auth-input" onchange="toggleDel()"><option value="unit">Unite Sil</option><option value="section">Bolum Sil</option><option value="activity">Etkinlik Sil</option><option value="report">Rapor Sil</option></select>' +
         '<div id="d-unit-box"><select id="d-unit" class="auth-input" onchange="fillDelSections()"><option value="">Unite</option></select></div>' +
-        '<div id="d-sec-box" style="display:none;"><select id="d-section" class="auth-input"><option value="">Bolum</option></select></div>' +
+        '<div id="d-sec-box" style="display:none;"><select id="d-section" class="auth-input" onchange="fillDelActivities()"><option value="">Bolum</option></select></div>' +
         '<div id="d-act-box" style="display:none;"><select id="d-act" class="auth-input"><option value="">Etkinlik</option></select></div>',
     async function() {
         var g = document.getElementById('d-grade').value;
@@ -3574,7 +3587,8 @@ function fillDelSections() {
     var actSel = document.getElementById('d-act');
     if (actSel) {
         actSel.innerHTML = '<option value="">Etkinlik</option>';
-        var acts = (fenData[g]?.activities || []).filter(function(a) { return a.unit === u; });
+        var sec = document.getElementById('d-section')?.value;
+        var acts = (fenData[g]?.activities || []).filter(function(a) { return a.unit === u && (!sec || a.section === sec); });
         var bases = new Set();
         acts.forEach(function(a) {
             var p = a.name.split(' - ');
