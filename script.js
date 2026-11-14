@@ -2739,7 +2739,7 @@ function renderActivityTable(grade, branchName) {
             var cells = '<td style="white-space:nowrap;">' + s.no + '</td><td style="white-space:nowrap; text-align:left;">' + s.name + '</td>';
             criteria.forEach(function(_, cIdx) {
                 var val = stored[cIdx] !== undefined ? stored[cIdx] : '';
-                cells += '<td><input type="text" id="crit-' + sIdx + '-' + cIdx + '" class="auth-input" style="width:45px; padding:5px; text-align:center; font-size:12px;" value="' + val + '" oninput="validateScoreInput(this)"></td>';
+                cells += '<td><input type="text" id="crit-' + sIdx + '-' + cIdx + '" data-no="' + s.no + '" class="auth-input" style="width:45px; padding:5px; text-align:center; font-size:12px;" value="' + val + '" oninput="validateScoreInput(this)"></td>';
             });
             var total = stored.totalScore !== undefined ? stored.totalScore : '-';
             cells += '<td id="total-' + sIdx + '">' + getScaleBadge(total) + '</td>';
@@ -2748,7 +2748,7 @@ function renderActivityTable(grade, branchName) {
         cont.innerHTML =
             '<div id="act-print" class="print-area">' +
                 '<div class="print-header"><h2>FENOMENAL FEN BILIMLERI</h2><h3>Tekil Olcek</h3></div>' +
-                '<div class="print-info"><p><b>Olcek:</b> ' + scale.name + '</p></div>' +
+                '<div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Olcek:</b> ' + scale.name + '</p></div>' +
                 '<div style="overflow-x:auto;"><table class="data-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
             '</div>' +
             '<div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">' +
@@ -2770,7 +2770,7 @@ function renderActivityTable(grade, branchName) {
         var first = subScales[0]?.name;
         var quick = (first && s.scale?.[first]?.totalScore !== undefined) ? s.scale[first].totalScore : '';
         var cells = '<td style="white-space:nowrap;">' + s.no + '</td><td style="white-space:nowrap; text-align:left;">' + s.name + '</td>';
-        cells += '<td><input type="text" id="quick-' + sIdx + '" class="auth-input" style="width:55px; padding:5px; text-align:center;" value="' + quick + '" placeholder="-" oninput="validateScoreInput(this); applyQuick(' + sIdx + ',' + subScales.length + ')"></td>';
+        cells += '<td><input type="text" id="quick-' + sIdx + '" data-no="' + s.no + '" class="auth-input" style="width:55px; padding:5px; text-align:center;" value="' + quick + '" placeholder="-" oninput="validateScoreInput(this); applyQuick(' + sIdx + ',' + subScales.length + ')"></td>';
         subScales.forEach(function(sc, i) {
             var val = s.scale?.[sc.name]?.totalScore !== undefined ? s.scale[sc.name].totalScore : '-';
             cells += '<td id="badge-' + sIdx + '-' + i + '">' + getScaleBadge(val) + '</td>';
@@ -2779,7 +2779,7 @@ function renderActivityTable(grade, branchName) {
     });
     cont.innerHTML =
         '<div id="act-print" class="print-area">' +
-            '<div class="print-header"><h2>FENOMENAL FEN BILIMLERI</h2><h3>Tum Olcekler</h3></div>' +
+            '<div class="print-header"><h2>FENOMENAL FEN BILIMLERI</h2><h3>Tum Olcekler</h3></div><div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Etkinlik:</b> ' + base + '</p></div>' +
             '<div style="overflow-x:auto;"><table class="data-table"><thead><tr>' + head2 + '</tr></thead><tbody>' + body2 + '</tbody></table></div>' +
         '</div>' +
         '<div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">' +
@@ -2801,15 +2801,18 @@ async function saveSingleScale(grade, branchName, scaleName, critCount) {
     var students = fenData[grade].branches[branchName];
     var scaleObj = (fenData[grade].activities || []).find(function(a) { return a.name === scaleName; });
     var type = scaleObj?.scale_type || '1-4';
-    for (var i = 0; i < students.length; i++) {
-        var s = students[i];
+    var rows = document.querySelectorAll('#act-print tbody tr');
+    for (var i = 0; i < rows.length; i++) {
+        var noCell = rows[i].querySelector('td');
+        var studentNo = noCell ? parseInt(noCell.innerText) : null;
+        var s = students.find(function(st) { return parseInt(st.no) === studentNo; });
+        if (!s) continue;
         if (!s.scale) s.scale = {};
         if (!s.scale[scaleName]) s.scale[scaleName] = {};
+        var inputs = rows[i].querySelectorAll('input');
         var sum = 0, has = false;
-        for (var c = 0; c < critCount; c++) {
-            var input = document.getElementById('crit-' + i + '-' + c);
-            if (!input) continue;
-            var v = input.value.trim();
+        for (var c = 0; c < inputs.length && c < critCount; c++) {
+            var v = inputs[c].value.trim();
             if (v === '') continue;
             has = true;
             var n = parseFloat(v) || 0;
@@ -2820,7 +2823,7 @@ async function saveSingleScale(grade, branchName, scaleName, critCount) {
             var max = type === '1-4' ? critCount * 4 : critCount;
             s.scale[scaleName].totalScore = Math.round((sum / max) * 100);
         }
-        if (supabaseClient) {
+        if (supabaseClient && s.no) {
             await supabaseClient.from('students').update({ scale: s.scale })
                 .eq('grade', grade).eq('branch', branchName).eq('school_no', s.no);
         }
@@ -2837,11 +2840,13 @@ async function saveGroupScales(grade, branchName, baseName) {
         return a.unit === unit && a.section === section && (a.name === baseName || a.name.indexOf(baseName + ' -') === 0);
     });
     var students = fenData[grade].branches[branchName];
-    for (var i = 0; i < students.length; i++) {
-        var input = document.getElementById('quick-' + i);
-        if (!input || input.value === '') continue;
+    var inputs = document.querySelectorAll('#act-print input[data-no]');
+    for (var i = 0; i < inputs.length; i++) {
+        var input = inputs[i];
+        var studentNo = parseInt(input.getAttribute('data-no'));
+        var s = students.find(function(st) { return parseInt(st.no) === studentNo; });
+        if (!s || input.value === '') continue;
         var valText = input.value.trim().toUpperCase();
-        var s = students[i];
         if (!s.scale) s.scale = {};
         subScales.forEach(function(sc) {
             if (!s.scale[sc.name]) s.scale[sc.name] = {};
@@ -2871,7 +2876,7 @@ async function saveGroupScales(grade, branchName, baseName) {
                 s.scale[sc.name].totalScore = Math.round(target);
             }
         });
-        if (supabaseClient) {
+        if (supabaseClient && s.no) {
             await supabaseClient.from('students').update({ scale: s.scale })
                 .eq('grade', grade).eq('branch', branchName).eq('school_no', s.no);
         }
@@ -3033,14 +3038,19 @@ function exportTableToWord(elementId, filename) {
     var element = document.getElementById(elementId);
     if (!element) return alert('Icerik bulunamadi!');
     var clone = element.cloneNode(true);
-    var originalInputs = element.querySelectorAll('input');
-    var clonedInputs = clone.querySelectorAll('input');
-    for (var i = 0; i < originalInputs.length; i++) {
-        var span = document.createElement('span');
-        span.innerText = originalInputs[i].value || '-';
-        span.style.color = '#000';
-        span.style.fontWeight = 'bold';
-        if (clonedInputs[i]) clonedInputs[i].parentNode.replaceChild(span, clonedInputs[i]);
+    var rows = element.querySelectorAll('tbody tr');
+    var cloneRows = clone.querySelectorAll('tbody tr');
+    for (var r = 0; r < rows.length; r++) {
+        var inputs = rows[r].querySelectorAll('input');
+        var cloneInputs = cloneRows[r] ? cloneRows[r].querySelectorAll('input') : [];
+        for (var i = 0; i < inputs.length; i++) {
+            var span = document.createElement('span');
+            var val = inputs[i].value.trim();
+            span.innerText = val === '' ? '-' : val;
+            span.style.color = '#000';
+            span.style.fontWeight = 'bold';
+            if (cloneInputs[i]) cloneInputs[i].parentNode.replaceChild(span, cloneInputs[i]);
+        }
     }
     clone.querySelectorAll('button').forEach(function(b) { b.remove(); });
     var styles = '<style>@page{size:A4;margin:1.5cm;}body{font-family:Times New Roman,serif;color:#000;}table{width:100%;border-collapse:collapse;margin-top:10px;}th,td{border:1px solid #000;padding:6px 4px;font-size:11px;text-align:center;}th{background:#f2f2f2;font-weight:bold;}td:nth-child(2){text-align:left;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:10px;}.print-info{border:1px solid #666;padding:8px;margin-bottom:10px;font-size:12px;}</style>';
@@ -3080,13 +3090,19 @@ async function exportTableToPDF(elementId, filename) {
     var jsPDF = getJsPDF();
     if (!jsPDF) return alert('jsPDF yuklenemedi');
     var clone = el.cloneNode(true);
-    el.querySelectorAll('input').forEach(function(inp, i) {
-        var span = document.createElement('span');
-        span.textContent = inp.value || '-';
-        span.style.cssText = 'color:#000;font-weight:bold;';
-        var target = clone.querySelectorAll('input')[i];
-        if (target) target.parentNode.replaceChild(span, target);
-    });
+    var rows = el.querySelectorAll('tbody tr');
+    var cloneRows = clone.querySelectorAll('tbody tr');
+    for (var r = 0; r < rows.length; r++) {
+        var inputs = rows[r].querySelectorAll('input');
+        var cloneInputs = cloneRows[r] ? cloneRows[r].querySelectorAll('input') : [];
+        for (var i = 0; i < inputs.length; i++) {
+            var span = document.createElement('span');
+            var val = inputs[i].value.trim();
+            span.textContent = val === '' ? '-' : val;
+            span.style.cssText = 'color:#000;font-weight:bold;';
+            if (cloneInputs[i]) cloneInputs[i].parentNode.replaceChild(span, cloneInputs[i]);
+        }
+    }
     clone.querySelectorAll('button').forEach(function(b) { b.remove(); });
     var table = clone.querySelector('table');
     var cols = table ? table.querySelectorAll('th').length : 0;
