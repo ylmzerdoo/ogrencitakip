@@ -1835,7 +1835,9 @@ async function openContentList(type, grade, branch, unitName, sectionName) {
             if (completedIds.indexOf(prev.id) < 0) locked = true;
         }
         var safeId = String(l.id).replace(/'/g, "");
-        var onclick = locked ? '' : 'onclick="openContentViewer(\'' + safeId + '\',\'' + grade + '\',\'' + branch + '\',\'' + unitName.replace(/'/g,"\\'") + '\',\'' + sectionName.replace(/'/g,"\\'") + '\')"';
+        var onclick = locked ? '' : (l.type === 'experiment' && l.experiment_url 
+            ? 'onclick="window.open(\'' + l.experiment_url + '\',\'_blank\');markContentComplete(\'' + safeId + '\',\'' + grade + '\',\'' + branch + '\')"'
+            : 'onclick="openContentViewer(\'' + safeId + '\',\'' + grade + '\',\'' + branch + '\',\'' + unitName.replace(/'/g,"\\'") + '\',\'' + sectionName.replace(/'/g,"\\'") + '\')"');
         var style = locked ? 'opacity:0.5;cursor:not-allowed;' : '';
         var badge = locked ? '<span style="font-size:11px;color:#f87171;">Kilitli</span>' : (isDone ? '<span class="btn-completed" style="font-size:11px;">✓</span>' : '');
 
@@ -1972,7 +1974,12 @@ async function openContentViewer(contentId, grade, branch, unitName, sectionName
     } else if (lesson.type === 'pdf' && lesson.file_url) {
         body = '<iframe src="' + lesson.file_url + '#toolbar=1" style="position:fixed;top:50px;left:0;width:100%;height:calc(100vh - 50px);border:none;background:#1e293b;z-index:40;" allowfullscreen></iframe>';
     } else if (lesson.type === 'experiment' && lesson.experiment_url) {
-        body = '<iframe src="' + lesson.experiment_url + '" style="position:fixed;top:50px;left:0;width:100%;height:calc(100vh - 50px);border:none;background:#1e293b;z-index:40;" allowfullscreen></iframe>';
+        body = '<div style="text-align:center;padding:60px 20px;">' +
+            '<div style="font-size:48px;margin-bottom:16px;">🔬</div>' +
+            '<h2 style="color:#f8fafc;margin-bottom:8px;">' + (lesson.title || 'Deney') + '</h2>' +
+            '<p style="color:#94a3b8;margin-bottom:24px;">Deney harici bir sitede açılacak</p>' +
+            '<a href="' + lesson.experiment_url + '" target="_blank" class="auth-btn" style="display:inline-block;padding:16px 32px;font-size:16px;background:#059669;">Deneyi Başlat →</a>' +
+            '</div>';
     } else if (lesson.type === 'video' && lesson.file_url) {
         var ytMatch = lesson.file_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
         if (ytMatch) {
