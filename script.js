@@ -15,6 +15,9 @@ let fenData = {
     '8': { units: [], activities: [], branches: {}, lessons: [] }
 };
 
+// Tek ekranda tüm soruların PDF kırpma kutularını tutan geçici durum
+let batchCropState = null;
+
 // Türkçe karakter normalizasyonu
 function normTR(str) {
     return (str || '').toString().trim().toUpperCase()
@@ -85,7 +88,6 @@ async function loadAllDataFromSupabase() {
                 }
             });
             Object.keys(unitMap).forEach(function(g) {
-                // Önce temizle
                 fenData[g].units = [];
                 Object.keys(unitMap[g]).forEach(function(uName) {
                     fenData[g].units.push({ name: uName, sections: unitMap[g][uName] });
@@ -131,7 +133,8 @@ async function loadAllDataFromSupabase() {
                     file_path: row.file_path,
                     experiment_url: row.experiment_url,
                     quiz_data: row.quiz_data || [],
-                    sort_order: row.sort_order || 0
+                    sort_order: row.sort_order || 0,
+                    locked: row.locked === true || (row.description || '').indexOf('|LOCKED') >= 0 || row.description === 'LOCKED'
                 });
             });
         }
@@ -191,7 +194,6 @@ function saveState(state) {
     }
 }
 
-// Sayfa yüklendiğinde ilk history kaydını oluştur
 if (!history.state) {
     history.replaceState({ type: 'auth' }, '', '#giris');
 }
@@ -275,7 +277,6 @@ window.addEventListener('popstate', function(event) {
         window._skipHistory = false;
         return;
     }
-    // State yoksa session'dan dene
     var saved = sessionStorage.getItem('fen_app_state');
     if (saved) {
         try {
@@ -404,8 +405,7 @@ function showStudentScaleDetail(grade, branch, activityName, unit, section) {
         });
         var scaleType = sc.scale_type || '1-4';
         var scaleName = sc.name.split(' - ').pop();
-        var isAkran = scaleName.toLowerCase().indexOf('akran') >= 0;
-        
+
         html += '<div style="background:#0f172a;padding:16px;border-radius:12px;margin-bottom:16px;border:1px solid #334155;">';
         html += '<h3 style="margin:0 0 8px 0;color:#60a5fa;font-size:16px;">' + scaleName + '</h3>';
         html += '<p style="font-size:12px;color:#94a3b8;margin-bottom:12px;padding:8px;background:#1e293b;border-radius:6px;">';
@@ -414,8 +414,8 @@ function showStudentScaleDetail(grade, branch, activityName, unit, section) {
         else html += 'Kodlama: 1=Var | 0=Yok';
         html += '</p>';
         html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="border-bottom:1px solid #334155;">';
-        criteria.forEach(function(c) { 
-            html += '<th style="padding:10px 4px;text-align:center;font-size:10px;font-weight:500;color:#94a3b8;min-width:60px;max-width:100px;white-space:normal;overflow-wrap:break-word;hyphens:auto;line-height:1.3;">' + c + '</th>'; 
+        criteria.forEach(function(c) {
+            html += '<th style="padding:10px 4px;text-align:center;font-size:10px;font-weight:500;color:#94a3b8;min-width:60px;max-width:100px;white-space:normal;overflow-wrap:break-word;hyphens:auto;line-height:1.3;">' + c + '</th>';
         });
         html += '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:500;color:#94a3b8;min-width:60px;">Toplam</th></tr></thead><tbody><tr>';
         criteria.forEach(function(_, i) {
@@ -526,7 +526,7 @@ function openManagementMenu() {
 function openTeacherInfoPage() {
     var schoolName = localStorage.getItem('fen_school_name') || '';
     var academicYear = localStorage.getItem('fen_academic_year') || '2025-2026';
-    
+
     openModal('Öğretmen Bilgileri',
         '<div style="margin-bottom:12px;">' +
             '<label style="display:block;margin-bottom:4px;font-size:13px;color:#94a3b8;">Okul Adı</label>' +
@@ -736,7 +736,7 @@ function openBranchMenu(grade, branchName, push) {
         '</section>';
 }
 
-// ====================== DERS İŞLEMLERİ (YENİ) ======================
+// ====================== DERS İŞLEMLERİ ======================
 function openLessonOperations(grade, push) {
     if (push !== false) saveState({ type: 'lesson-ops', grade: grade });
     var panel = document.getElementById('grade-detail-panel');
@@ -766,7 +766,7 @@ function openLessonOperations(grade, push) {
                     '<h3>🔬 Deney Ekle</h3><span class="card-action">Ekle →</span>' +
                 '</div>' +
                 '<div class="grade-card" onclick="openAddContentModal(\'' + grade + '\',\'quiz\')" style="border-top-color:#d97706;">' +
-                    '<h3>📝 Quiz Ekle (Word)</h3><span class="card-action">Ekle →</span>' +
+                    '<h3>📝 Quiz Ekle (Word / PDF)</h3><span class="card-action">Ekle →</span>' +
                 '</div>' +
                 '<div class="grade-card" onclick="openLockManagement(\'' + grade + '\')" style="border-top-color:#ef4444;">' +
                     '<h3>🔒 Kilit Yönetimi</h3><span class="card-action">Aç/Kapat →</span>' +
@@ -783,7 +783,7 @@ function openLockManagement(grade) {
     var units = fenData[grade]?.units || [];
     var unitOpts = '<option value="">Ünite Seç</option>';
     units.forEach(function(u) { unitOpts += '<option value="' + u.name + '">' + u.name + '</option>'; });
-    
+
     openModal('Kilit Yönetimi',
         '<div style="margin-bottom:12px;">' +
             '<label style="display:block;margin-bottom:4px;font-size:13px;color:#94a3b8;">İşlem</label>' +
@@ -806,24 +806,30 @@ function openLockManagement(grade) {
         var unit = document.getElementById('lock-unit').value;
         var section = document.getElementById('lock-section').value;
         if (!unit || !section) return alert('Ünite ve bölüm seçin');
-        
+
         var isLocked = action === 'lock';
         var lessons = fenData[grade]?.lessons || [];
         var count = 0;
-        
+
         for (var i = 0; i < lessons.length; i++) {
             var l = lessons[i];
             if (l.unit === unit && l.section === section) {
+                var newDesc = (l.description || '').replace(/\|LOCKED/g, '').replace(/^LOCKED$/, '');
+                if (isLocked) newDesc = newDesc ? (newDesc + '|LOCKED') : 'LOCKED';
                 l.locked = isLocked;
+                l.description = newDesc;
                 if (supabaseClient && l.id) {
-                    await supabaseClient.from('lessons').update({ locked: isLocked }).eq('id', l.id);
+                    var upd = await supabaseClient.from('lesson_contents').update({ description: newDesc, locked: isLocked }).eq('id', l.id);
+                    if (upd.error) {
+                        await supabaseClient.from('lesson_contents').update({ description: newDesc }).eq('id', l.id);
+                    }
                 }
                 count++;
             }
         }
-        
+
         closeModal();
-        alert(count + ' içerik ' + (isLocked ? 'kilitlendi' : 'açıldı') + '!');
+        alert(count + ' içerik ' + (isLocked ? 'kilitlendi. Öğrenci sayfayı yenileyince göremez.' : 'açıldı.'));
         renderExistingLessons(grade);
     });
 }
@@ -849,7 +855,6 @@ function renderExistingLessons(grade) {
         return;
     }
 
-    // Ünite ve bölüme göre grupla
     var grouped = {};
     lessons.forEach(function(l) {
         var key = l.unit + '|||' + l.section;
@@ -863,12 +868,12 @@ function renderExistingLessons(grade) {
         html += '<div style="margin-bottom:16px;">' +
             '<div style="font-size:13px; font-weight:600; color:#94a3b8; margin-bottom:8px;">' + parts[0] + ' → ' + parts[1] + '</div>';
         grouped[key].forEach(function(l) {
+            var lockBadge = l.locked ? ' <span style="font-size:11px;color:#f87171;margin-left:6px;">Kilitli</span>' : '';
             html += '<div class="content-card">' +
                 '<div class="content-card-header">' +
-                    '<div>' + getContentTypeBadge(l.type) + ' <span style="margin-left:8px; font-weight:500;">' + l.title + '</span></div>' +
+                    '<div>' + getContentTypeBadge(l.type) + ' <span style="margin-left:8px; font-weight:500;">' + l.title + '</span>' + lockBadge + '</div>' +
                     '<button onclick="deleteLessonContent(\'' + l.id + '\',\'' + grade + '\')" class="btn-pastel-red" style="font-size:11px;">Sil</button>' +
                 '</div>' +
-                (l.description ? '<p style="font-size:12px; color:#94a3b8; margin-top:4px;">' + l.description + '</p>' : '') +
             '</div>';
         });
         html += '</div>';
@@ -876,13 +881,16 @@ function renderExistingLessons(grade) {
     container.innerHTML = html;
 }
 
+// ====================== QUIZ EKLEME + TEK SAYFADA TOPLU KIRPMA ======================
 function openAddContentModal(grade, type) {
+    batchCropState = null;
+
     var typeLabels = {
         pptx: 'PPTX Dosyası',
         pdf: 'PDF Dosyası',
         video: 'Video (URL veya dosya)',
         experiment: 'Deney URL',
-        quiz: 'Word Quiz Dosyası'
+        quiz: 'Quiz (Word veya PDF)'
     };
 
     var unitOpts = '<option value="">-- Ünite Seçin --</option>';
@@ -907,11 +915,15 @@ function openAddContentModal(grade, type) {
                 '<label style="font-size:13px; color:#cbd5e1;">Video URL (YouTube vb.)</label>' +
                 '<input type="url" id="m-url" class="auth-input" placeholder="https://...">';
     } else if (type === 'quiz') {
-        html += '<label style="font-size:13px; color:#cbd5e1;">Word Quiz Dosyası</label>' +
-                '<input type="file" id="m-file" class="auth-input" accept=".docx,.doc">' +
+        html += '<label style="font-size:13px; color:#cbd5e1;">Quiz Dosyası (Word veya PDF)</label>' +
+                '<input type="file" id="m-file" class="auth-input" accept=".docx,.doc,.pdf,application/pdf">' +
+                '<label style="font-size:13px; color:#cbd5e1;margin-top:8px;">Soru Sayısı (PDF Kırpma İçin)</label>' +
+                '<input type="number" id="m-qcount" class="auth-input" min="1" max="100" value="15">' +
+                '<button type="button" onclick="openBatchPdfCropperModal()" class="auth-btn" style="width:auto;padding:8px 14px;background:#7c3aed;margin-top:8px;">PDF\'i Aç ve Tek Sayfada Kırp</button>' +
+                '<div id="m-crop-summary" style="font-size:12px;color:#94a3b8;margin-top:6px;">Henüz kırpma yapılmadı.</div>' +
                 '<label style="font-size:13px; color:#cbd5e1;margin-top:8px;">Cevap Anahtarı (Word veya TXT)</label>' +
                 '<input type="file" id="m-key" class="auth-input" accept=".docx,.doc,.txt">' +
-                '<p style="font-size:11px;color:#64748b;margin-top:4px;">Cevap anahtarı formatı: 1-C  2-B  3-A ... veya her satırda 1. C</p>';
+                '<p style="font-size:11px;color:#64748b;margin-top:4px;">Tek kırpma penceresinde tüm soruları sırayla kırpıp onaylayabilirsiniz. Cevap anahtarı formatı: 1-C  2-B  3-A</p>';
     } else if (type === 'pptx') {
         html += '<label style="font-size:13px; color:#cbd5e1;">PPTX Dosyası</label>' +
                 '<input type="file" id="m-file" class="auth-input" accept=".pptx,.ppt">' +
@@ -993,8 +1005,6 @@ function openAddContentModal(grade, type) {
                 var safeName = cleanPath(file.name);
                 var path = grade + '/' + cleanPath(unit) + '/' + cleanPath(section) + '/' + Date.now() + '_' + safeName;
 
-                console.log('Yükleniyor:', path, file.size, 'bytes');
-
                 var { data: uploadData, error: uploadError } = await supabaseClient.storage
                     .from('lesson-files')
                     .upload(path, file, { upsert: false });
@@ -1005,68 +1015,78 @@ function openAddContentModal(grade, type) {
                     return alert('Dosya yükleme hatası: ' + uploadError.message);
                 }
 
-                console.log('Upload OK:', uploadData);
-
-                // Signed URL
                 try {
                     var { data: signedData, error: signedError } = await supabaseClient.storage
                         .from('lesson-files')
                         .createSignedUrl(path, 60 * 60 * 24 * 365);
                     if (signedError || !signedData) {
-                        console.warn('Signed URL hatası:', signedError);
                         var { data: urlData } = supabaseClient.storage.from('lesson-files').getPublicUrl(path);
                         payload.file_url = urlData.publicUrl;
                     } else {
                         payload.file_url = signedData.signedUrl;
                     }
                 } catch (e) {
-                    console.warn('Signed URL exception:', e);
                     var { data: urlData } = supabaseClient.storage.from('lesson-files').getPublicUrl(path);
                     payload.file_url = urlData.publicUrl;
                 }
                 payload.file_path = path;
-                console.log('URL hazır:', payload.file_url ? 'OK' : 'YOK');
 
                 if (type === 'quiz') {
-                    console.log('Quiz parse başlıyor...');
-                    try {
-                        var arrayBuffer = await file.arrayBuffer();
-                        var result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-                        console.log('Mammoth OK, metin uzunluğu:', (result.value || '').length);
-                        payload.quiz_data = parseQuizFromText(result.value || '');
-                        console.log('Quiz parse tamam:', payload.quiz_data.length, 'soru');
-
-                        // Cevap anahtarı varsa işle
-                        var keyInput = document.getElementById('m-key');
-                        if (keyInput && keyInput.files && keyInput.files[0]) {
-                            var keyFile = keyInput.files[0];
-                            var keyText = '';
-                            if (keyFile.name.endsWith('.txt')) {
-                                keyText = await keyFile.text();
-                            } else {
-                                var keyBuf = await keyFile.arrayBuffer();
-                                var keyRes = await mammoth.extractRawText({ arrayBuffer: keyBuf });
-                                keyText = keyRes.value || '';
-                            }
-                            console.log('Cevap anahtarı okundu, uzunluk:', keyText.length);
-                            applyAnswerKey(payload.quiz_data, keyText);
+                    var isPdfQuiz = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+                    var keyInput = document.getElementById('m-key');
+                    var keyText = '';
+                    if (keyInput && keyInput.files && keyInput.files[0]) {
+                        var keyFile = keyInput.files[0];
+                        if (keyFile.name.endsWith('.txt')) {
+                            keyText = await keyFile.text();
+                        } else if (window.mammoth) {
+                            var keyBuf = await keyFile.arrayBuffer();
+                            var keyRes = await mammoth.extractRawText({ arrayBuffer: keyBuf });
+                            keyText = keyRes.value || '';
                         }
-                    } catch (err) {
-                        console.error('Word parse hatası:', err);
-                        alert('Word okunamadı, quiz boş kaydedilecek.');
-                        payload.quiz_data = [];
+                    }
+                    if (isPdfQuiz) {
+                        var qCountInput = document.getElementById('m-qcount');
+                        var manualCount = parseInt(qCountInput && qCountInput.value, 10) || 0;
+                        if (batchCropState && batchCropState.boxes && batchCropState.boxes.some(Boolean)) {
+                            var countToUse = manualCount > 0 ? manualCount : batchCropState.totalQuestions;
+                            var manualQs = buildQuestionsFromManualCropBoxes(countToUse, batchCropState.boxes, keyText);
+                            var pagesUsed = Array.from(new Set(manualQs.map(function(q) { return q.page || 1; })));
+                            payload.quiz_data = manualQs;
+                            payload.description = (payload.description ? payload.description + '|' : '') +
+                                'PDFQUIZ|PAGES:' + pagesUsed.join(',');
+                            batchCropState = null;
+                        } else {
+                            var pdfBuf = await file.arrayBuffer();
+                            var analyzedPdf = await analyzePdfQuizPagesAndQuestions(pdfBuf, keyText);
+                            payload.quiz_data = analyzedPdf.questions;
+                            payload.description = (payload.description ? payload.description + '|' : '') +
+                                'PDFQUIZ|PAGES:' + (analyzedPdf.questionPages.join(',') || '1');
+                            if (!payload.quiz_data.length) {
+                                payload.quiz_data = buildQuizFromAnswerKey(keyText || '1-A');
+                            }
+                        }
+                    } else {
+                        try {
+                            var arrayBuffer = await file.arrayBuffer();
+                            var result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                            payload.quiz_data = parseQuizFromText(result.value || '');
+                            if (keyText) applyAnswerKey(payload.quiz_data, keyText);
+                        } catch (err) {
+                            console.error('Word parse hatası:', err);
+                            alert('Word okunamadı, quiz boş kaydedilecek.');
+                            payload.quiz_data = [];
+                        }
                     }
                 }
             }
 
-            console.log('Veritabanına yazılıyor...');
             var { error } = await supabaseClient.from('lesson_contents').insert([payload]);
             if (error) {
                 console.error('DB insert error:', error);
                 if (btn) { btn.disabled = false; btn.textContent = 'Kaydet'; }
                 return alert('Kayıt hatası: ' + error.message);
             }
-            console.log('DB OK');
 
             await loadAllDataFromSupabase();
             closeModal();
@@ -1077,7 +1097,6 @@ function openAddContentModal(grade, type) {
             if (btn) { btn.disabled = false; btn.textContent = 'Kaydet'; }
             alert('Hata: ' + (err.message || err));
         } finally {
-            // Her durumda butonu sıfırla (modal kapanmazsa)
             setTimeout(function() {
                 var b = document.getElementById('modal-confirm-btn');
                 if (b && b.textContent === 'Yükleniyor...') {
@@ -1087,6 +1106,440 @@ function openAddContentModal(grade, type) {
             }, 500);
         }
     });
+}
+
+async function openBatchPdfCropperModal() {
+    var fileInput = document.getElementById('m-file');
+    var qCountEl = document.getElementById('m-qcount');
+    var totalQuestions = Math.max(1, Math.min(100, parseInt(qCountEl && qCountEl.value, 10) || 15));
+
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+        return alert('Önce bir PDF dosyası seçin.');
+    }
+    var file = fileInput.files[0];
+    if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
+        return alert('Bu toplu kırpma aracı PDF dosyaları içindir.');
+    }
+
+    var pdfjs = await ensurePdfJsLoaded();
+    if (!pdfjs) return alert('PDF.js yüklenemedi.');
+
+    var buf = await file.arrayBuffer();
+    var pdfDoc = await pdfjs.getDocument({ data: buf }).promise;
+
+    var existingBoxes = (batchCropState && batchCropState.totalQuestions === totalQuestions)
+        ? batchCropState.boxes.slice(0, totalQuestions)
+        : [];
+    while (existingBoxes.length < totalQuestions) {
+        existingBoxes.push(null);
+    }
+
+    batchCropState = {
+        pdfDoc: pdfDoc,
+        numPages: pdfDoc.numPages || 1,
+        currentPage: 1,
+        totalQuestions: totalQuestions,
+        activeIndex: 0,
+        boxes: existingBoxes,
+        pageCanvases: {}
+    };
+
+    var overlay = document.createElement('div');
+    overlay.id = 'batch-crop-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,0.92);z-index:100000;display:flex;flex-direction:column;padding:16px;overflow:auto;';
+
+    overlay.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:#0f172a;padding:12px 16px;border-radius:10px;border:1px solid #334155;margin-bottom:12px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+                '<button type="button" onclick="changeBatchCropPage(-1)" class="logout-btn" style="background:#334155;">◀ Önceki Sayfa</button>' +
+                '<span id="bc-page-info" style="color:#f8fafc;font-size:13px;font-weight:600;min-width:110px;text-align:center;">Sayfa 1 / ' + batchCropState.numPages + '</span>' +
+                '<button type="button" onclick="changeBatchCropPage(1)" class="logout-btn" style="background:#334155;">Sonraki Sayfa ▶</button>' +
+            '</div>' +
+            '<div id="bc-active-badge" style="color:#60a5fa;font-size:13px;font-weight:600;">Sıradaki Kırpılacak: 1. Soru</div>' +
+            '<div style="display:flex;gap:8px;">' +
+                '<button type="button" onclick="closeBatchPdfCropperModal(false)" class="logout-btn" style="background:#475569;">İptal</button>' +
+                '<button type="button" onclick="closeBatchPdfCropperModal(true)" class="auth-btn" style="width:auto;padding:8px 16px;background:#059669;">Kırpmaları Onayla</button>' +
+            '</div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start;flex:1;">' +
+            '<div style="background:#1e293b;padding:12px;border-radius:10px;border:1px solid #334155;overflow:auto;max-height:78vh;text-align:center;">' +
+                '<canvas id="bc-canvas" style="cursor:crosshair;max-width:100%;background:#fff;border-radius:4px;touch-action:none;"></canvas>' +
+            '</div>' +
+            '<div style="background:#0f172a;padding:12px;border-radius:10px;border:1px solid #334155;max-height:78vh;overflow-y:auto;">' +
+                '<div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Sorular (Tıklayıp seç, solda çiz)</div>' +
+                '<div id="bc-question-list" style="display:flex;flex-direction:column;gap:6px;"></div>' +
+            '</div>' +
+        '</div>';
+
+    document.body.appendChild(overlay);
+    await renderBatchCropPage();
+    renderBatchQuestionList();
+    bindBatchCropEvents();
+}
+
+async function changeBatchCropPage(delta) {
+    if (!batchCropState) return;
+    var next = batchCropState.currentPage + delta;
+    if (next < 1 || next > batchCropState.numPages) return;
+    batchCropState.currentPage = next;
+    await renderBatchCropPage();
+}
+
+async function renderBatchCropPage() {
+    if (!batchCropState) return;
+    var pNum = batchCropState.currentPage;
+    var infoEl = document.getElementById('bc-page-info');
+    if (infoEl) infoEl.textContent = 'Sayfa ' + pNum + ' / ' + batchCropState.numPages;
+
+    if (!batchCropState.pageCanvases[pNum]) {
+        var page = await batchCropState.pdfDoc.getPage(pNum);
+        var vp = page.getViewport({ scale: 1.4 });
+        var off = document.createElement('canvas');
+        off.width = Math.floor(vp.width);
+        off.height = Math.floor(vp.height);
+        await page.render({ canvasContext: off.getContext('2d'), viewport: vp }).promise;
+        batchCropState.pageCanvases[pNum] = off;
+    }
+    redrawBatchCropCanvas(null);
+}
+
+function redrawBatchCropCanvas(dragRect) {
+    if (!batchCropState) return;
+    var canvas = document.getElementById('bc-canvas');
+    var baseCanvas = batchCropState.pageCanvases[batchCropState.currentPage];
+    if (!canvas || !baseCanvas) return;
+
+    canvas.width = baseCanvas.width;
+    canvas.height = baseCanvas.height;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(baseCanvas, 0, 0);
+
+    batchCropState.boxes.forEach(function(box, idx) {
+        if (!box || box.page !== batchCropState.currentPage) return;
+        var isActive = idx === batchCropState.activeIndex;
+        var x = box.xRatio * canvas.width;
+        var y = box.yRatio * canvas.height;
+        var w = box.wRatio * canvas.width;
+        var h = box.hRatio * canvas.height;
+
+        ctx.save();
+        ctx.strokeStyle = isActive ? '#2563eb' : '#059669';
+        ctx.lineWidth = isActive ? 3 : 2;
+        ctx.fillStyle = isActive ? 'rgba(37, 99, 235, 0.14)' : 'rgba(5, 150, 105, 0.10)';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeRect(x, y, w, h);
+
+        ctx.fillStyle = isActive ? '#2563eb' : '#059669';
+        ctx.fillRect(x, Math.max(0, y - 20), 66, 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText((idx + 1) + '. Soru', x + 6, Math.max(14, y - 6));
+        ctx.restore();
+    });
+
+    if (dragRect && dragRect.w > 4 && dragRect.h > 4) {
+        ctx.save();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([6, 4]);
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.14)';
+        ctx.fillRect(dragRect.x, dragRect.y, dragRect.w, dragRect.h);
+        ctx.strokeRect(dragRect.x, dragRect.y, dragRect.w, dragRect.h);
+        ctx.restore();
+    }
+}
+
+function bindBatchCropEvents() {
+    var canvas = document.getElementById('bc-canvas');
+    if (!canvas || !batchCropState) return;
+    var drawing = false;
+    var startX = 0, startY = 0, currRect = null;
+
+    function getCanvasPos(e) {
+        var rect = canvas.getBoundingClientRect();
+        var scaleX = canvas.width / (rect.width || 1);
+        var scaleY = canvas.height / (rect.height || 1);
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    }
+
+    canvas.onmousedown = function(e) {
+        drawing = true;
+        var p = getCanvasPos(e);
+        startX = p.x;
+        startY = p.y;
+        currRect = { x: startX, y: startY, w: 0, h: 0 };
+    };
+
+    canvas.onmousemove = function(e) {
+        if (!drawing) return;
+        var p = getCanvasPos(e);
+        currRect = {
+            x: Math.min(startX, p.x),
+            y: Math.min(startY, p.y),
+            w: Math.abs(p.x - startX),
+            h: Math.abs(p.y - startY)
+        };
+        redrawBatchCropCanvas(currRect);
+    };
+
+    window.addEventListener('mouseup', function onUp() {
+        if (!drawing) return;
+        drawing = false;
+        if (currRect && currRect.w > 12 && currRect.h > 12 && batchCropState) {
+            var idx = batchCropState.activeIndex;
+            batchCropState.boxes[idx] = {
+                page: batchCropState.currentPage,
+                xRatio: Math.max(0, currRect.x / canvas.width),
+                yRatio: Math.max(0, currRect.y / canvas.height),
+                wRatio: Math.min(1, currRect.w / canvas.width),
+                hRatio: Math.min(1, currRect.h / canvas.height)
+            };
+            var nextUnset = -1;
+            for (var i = idx + 1; i < batchCropState.totalQuestions; i++) {
+                if (!batchCropState.boxes[i]) { nextUnset = i; break; }
+            }
+            if (nextUnset < 0) {
+                for (var j = 0; j < batchCropState.totalQuestions; j++) {
+                    if (!batchCropState.boxes[j]) { nextUnset = j; break; }
+                }
+            }
+            if (nextUnset >= 0) batchCropState.activeIndex = nextUnset;
+            renderBatchQuestionList();
+        }
+        currRect = null;
+        redrawBatchCropCanvas(null);
+    }, { once: false });
+}
+
+function selectBatchQuestion(idx) {
+    if (!batchCropState) return;
+    batchCropState.activeIndex = idx;
+    var chosen = batchCropState.boxes[idx];
+    if (chosen && chosen.page && chosen.page !== batchCropState.currentPage) {
+        batchCropState.currentPage = chosen.page;
+        renderBatchCropPage();
+    } else {
+        redrawBatchCropCanvas(null);
+    }
+    renderBatchQuestionList();
+}
+
+function renderBatchQuestionList() {
+    if (!batchCropState) return;
+    var listEl = document.getElementById('bc-question-list');
+    var badgeEl = document.getElementById('bc-active-badge');
+    if (badgeEl) {
+        badgeEl.textContent = 'Sıradaki Kırpılacak: ' + (batchCropState.activeIndex + 1) + '. Soru';
+    }
+    if (!listEl) return;
+
+    var html = '';
+    for (var i = 0; i < batchCropState.totalQuestions; i++) {
+        var box = batchCropState.boxes[i];
+        var isActive = i === batchCropState.activeIndex;
+        var done = !!box;
+        html += '<button type="button" onclick="selectBatchQuestion(' + i + ')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:6px;border:1px solid ' +
+            (isActive ? '#3b82f6' : (done ? '#059669' : '#334155')) + ';background:' +
+            (isActive ? 'rgba(59,130,246,0.22)' : '#1e293b') + ';color:#f8fafc;font-size:12px;cursor:pointer;">' +
+            '<span><b>' + (i + 1) + '. Soru</b></span>' +
+            '<span style="color:' + (done ? '#34d399' : '#94a3b8') + ';">' + (done ? 'S.' + box.page + ' ✓' : 'Bekliyor') + '</span>' +
+        '</button>';
+    }
+    listEl.innerHTML = html;
+}
+
+function closeBatchPdfCropperModal(confirmed) {
+    var overlay = document.getElementById('batch-crop-overlay');
+    if (confirmed && batchCropState) {
+        var doneCount = batchCropState.boxes.filter(Boolean).length;
+        var summaryEl = document.getElementById('m-crop-summary');
+        if (summaryEl) {
+            summaryEl.textContent = doneCount + ' / ' + batchCropState.totalQuestions + ' soru kırpıldı.';
+        }
+    } else if (!confirmed) {
+        batchCropState = null;
+        var sum = document.getElementById('m-crop-summary');
+        if (sum) sum.textContent = 'Henüz kırpma yapılmadı.';
+    }
+    if (overlay && overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+    }
+}
+
+function buildQuestionsFromManualCropBoxes(totalQuestions, cropBoxes, keyText) {
+    var answerMap = {};
+    if (keyText) {
+        keyText.split(/\r?\n/).forEach(function(line) {
+            var many = line.match(/(\d+)\s*[\.\)\-\:]\s*([A-Ea-e])/g);
+            if (many) {
+                many.forEach(function(part) {
+                    var m = part.match(/(\d+)\s*[\.\)\-\:]\s*([A-Ea-e])/);
+                    if (m) answerMap[parseInt(m[1], 10)] = m[2].toUpperCase();
+                });
+            }
+        });
+    }
+    var list = [];
+    for (var i = 0; i < totalQuestions; i++) {
+        var num = i + 1;
+        var b = cropBoxes[i] || { page: 1, xRatio: 0.03, yRatio: 0.04, wRatio: 0.94, hRatio: 0.88 };
+        list.push({
+            number: num,
+            page: b.page || 1,
+            question: num + '. Soru',
+            options: ['A', 'B', 'C', 'D'].map(function(k) { return { key: k, text: '' }; }),
+            correct: answerMap[num] || null,
+            cropBox: {
+                xRatio: b.xRatio,
+                yRatio: b.yRatio,
+                wRatio: b.wRatio,
+                hRatio: b.hRatio
+            }
+        });
+    }
+    return list;
+}
+
+// PDF.js kütüphanesini gerekirse yükle
+async function ensurePdfJsLoaded() {
+    if (window.pdfjsLib && typeof window.pdfjsLib.getDocument === 'function') {
+        if (window.pdfjsLib.GlobalWorkerOptions && !window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        return window.pdfjsLib;
+    }
+    await new Promise(function(resolve) {
+        if (document.getElementById('pdfjs-cdn-script')) {
+            setTimeout(resolve, 600);
+            return;
+        }
+        var s = document.createElement('script');
+        s.id = 'pdfjs-cdn-script';
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.onload = function() {
+            if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+            resolve();
+        };
+        s.onerror = function() { resolve(); };
+        document.head.appendChild(s);
+    });
+    return window.pdfjsLib || null;
+}
+
+// PDF Quiz sayfa ve soru sırasını tespit et (otomatik fallback)
+async function analyzePdfQuizPagesAndQuestions(arrayBuffer, keyText) {
+    var answerMap = {};
+    if (keyText) {
+        var kLines = keyText.split(/\r?\n/).map(function(l) { return l.trim(); }).filter(Boolean);
+        kLines.forEach(function(line) {
+            var many = line.match(/(\d+)\s*[\.\)\-\:]\s*([A-Ea-e])/g);
+            if (many && many.length) {
+                many.forEach(function(part) {
+                    var m = part.match(/(\d+)\s*[\.\)\-\:]\s*([A-Ea-e])/);
+                    if (m) answerMap[parseInt(m[1], 10)] = m[2].toUpperCase();
+                });
+                return;
+            }
+            var m2 = line.match(/(\d+)\s*[\.\)\-\:\s]\s*([A-Ea-e])\b/);
+            if (m2) answerMap[parseInt(m2[1], 10)] = m2[2].toUpperCase();
+        });
+    }
+
+    var questionPages = [];
+    var detectedQuestions = [];
+    var pdfjs = await ensurePdfJsLoaded();
+
+    if (pdfjs && typeof pdfjs.getDocument === 'function') {
+        try {
+            var pdfDoc = await pdfjs.getDocument({ data: arrayBuffer.slice(0) }).promise;
+            var numPages = pdfDoc.numPages || 1;
+            var seenQuestionNums = {};
+
+            for (var p = 1; p <= numPages; p++) {
+                var page = await pdfDoc.getPage(p);
+                var textContent = await page.getTextContent();
+                var items = (textContent.items || []).filter(function(it) { return it && (it.str || '').trim(); });
+                var pageText = items.map(function(it) { return it.str; }).join(' ').replace(/\s+/g, ' ').trim();
+                var upperPage = pageText.toUpperCase();
+
+                var isAnswerKeyPage = upperPage.indexOf('CEVAP ANAHTARI') >= 0 && !/\bA\)\s|\bB\)\s/.test(upperPage);
+                var hasOptionMarkers = /\b[A-D]\)\s|\b[A-D]\.\s/.test(pageText);
+                var qNumsInPage = [];
+
+                items.forEach(function(it) {
+                    var str = (it.str || '').trim();
+                    var m = str.match(/^(\d{1,2})\.$/);
+                    if (!m && /^\d{1,2}\.\s+/.test(str)) {
+                        m = str.match(/^(\d{1,2})\./);
+                    }
+                    if (!m) return;
+                    var qNum = parseInt(m[1], 10);
+                    if (qNum < 1 || qNum > 100 || seenQuestionNums[qNum]) return;
+                    seenQuestionNums[qNum] = true;
+                    qNumsInPage.push(qNum);
+                });
+
+                var isCoverOrPromo = !hasOptionMarkers && qNumsInPage.length === 0 && (
+                    upperPage.indexOf('SORU BANKASI') >= 0 ||
+                    upperPage.indexOf('DENEME SINAVI') >= 0 ||
+                    upperPage.indexOf('DİJİTAL KİTAP') >= 0 ||
+                    upperPage.indexOf('AKILLI TAHTA') >= 0 ||
+                    pageText.length < 40
+                );
+
+                if (isAnswerKeyPage || isCoverOrPromo) continue;
+
+                if (hasOptionMarkers || qNumsInPage.length > 0) {
+                    questionPages.push(p);
+                }
+
+                qNumsInPage.sort(function(a, b) { return a - b; });
+                qNumsInPage.forEach(function(num) {
+                    detectedQuestions.push({
+                        number: num,
+                        page: p,
+                        question: num + '. Soru',
+                        options: ['A', 'B', 'C', 'D'].map(function(k) { return { key: k, text: '' }; }),
+                        correct: answerMap[num] || null,
+                        cropBox: { xRatio: 0.03, yRatio: 0.04, wRatio: 0.94, hRatio: 0.88 }
+                    });
+                });
+            }
+        } catch (e) {
+            console.warn('PDF sayfa analizi yedeğe geçti:', e);
+        }
+    }
+
+    detectedQuestions.sort(function(a, b) { return a.number - b.number; });
+
+    if (!detectedQuestions.length && Object.keys(answerMap).length) {
+        var nums = Object.keys(answerMap).map(function(n) { return parseInt(n, 10); }).sort(function(a, b) { return a - b; });
+        detectedQuestions = nums.map(function(n, idx) {
+            var pg = questionPages[idx] || questionPages[0] || 1;
+            return {
+                number: n,
+                page: pg,
+                question: n + '. Soru',
+                options: ['A', 'B', 'C', 'D'].map(function(k) { return { key: k, text: '' }; }),
+                correct: answerMap[n],
+                cropBox: { xRatio: 0.03, yRatio: 0.04, wRatio: 0.94, hRatio: 0.88 }
+            };
+        });
+    }
+
+    if (!questionPages.length) {
+        questionPages = [1];
+    }
+
+    return {
+        questionPages: questionPages,
+        questions: detectedQuestions
+    };
 }
 
 function fillModalSectionsLesson(grade) {
@@ -1102,13 +1555,41 @@ function fillModalSectionsLesson(grade) {
     }
 }
 
-// Basit Word quiz parser (soru + şık yapısını yakalamaya çalışır)
+function buildQuizFromAnswerKey(keyText) {
+    var lines = (keyText || '').split(/\r?\n/).map(function(l) { return l.trim(); }).filter(Boolean);
+    var map = {};
+    lines.forEach(function(line) {
+        var many = line.match(/(\d+)\s*[\.\)\-\:]\s*([A-Ea-e])/g);
+        if (many && many.length) {
+            many.forEach(function(part) {
+                var m = part.match(/(\d+)\s*[\.\)\-\:]\s*([A-Ea-e])/);
+                if (m) map[parseInt(m[1], 10)] = m[2].toUpperCase();
+            });
+            return;
+        }
+        var m2 = line.match(/(\d+)\s*[\.\)\-\:\s]\s*([A-Ea-e])\b/);
+        if (m2) map[parseInt(m2[1], 10)] = m2[2].toUpperCase();
+    });
+    var nums = Object.keys(map).map(function(n) { return parseInt(n, 10); }).sort(function(a, b) { return a - b; });
+    var hasE = nums.some(function(n) { return map[n] === 'E'; });
+    var keys = hasE ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'];
+    return nums.map(function(n) {
+        return {
+            number: n,
+            page: 1,
+            question: 'Soru ' + n,
+            options: keys.map(function(k) { return { key: k, text: '' }; }),
+            correct: map[n],
+            cropBox: { xRatio: 0.03, yRatio: 0.04, wRatio: 0.94, hRatio: 0.88 }
+        };
+    });
+}
+
 function applyAnswerKey(questions, keyText) {
     if (!questions || !keyText) return;
     var lines = keyText.split(/\r?\n/).map(function(l){return l.trim();}).filter(Boolean);
     var map = {};
     lines.forEach(function(line) {
-        // 1-C  1.C  1) C  1:C  1 C
         var m = line.match(/(\d+)\s*[\.\)\-\:\s]\s*([A-Da-d])\b/);
         if (m) {
             map[parseInt(m[1])] = m[2].toUpperCase();
@@ -1117,13 +1598,11 @@ function applyAnswerKey(questions, keyText) {
     questions.forEach(function(q, i) {
         if (map[i+1]) q.correct = map[i+1];
     });
-    console.log('Cevap anahtarı uygulandı:', Object.keys(map).length, 'eşleşme');
 }
 
 function parseQuizFromText(text) {
     var clean = (text || '').replace(/\r/g, '\n');
     var lines = clean.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
-    // Başlık ve cevap anahtarı satırlarını atla
     lines = lines.filter(function(line) {
         var upper = line.toUpperCase();
         if (upper.indexOf('AD SOYAD') >= 0) return false;
@@ -1131,7 +1610,6 @@ function parseQuizFromText(text) {
         if (upper.indexOf('PUAN:') >= 0) return false;
         if (upper.indexOf('BÖLÜM:') >= 0 && upper.indexOf('?') < 0) return false;
         if (/^[\-\_\=]{5,}$/.test(line)) return false;
-        // Cevap anahtarı formatı: C2-B3-C4 veya 1-C 2-B 3-C
         if (/[A-D]\d+[-\s][A-D]\d+/.test(upper)) return false;
         if (/\d+[-\.][A-D]\s+\d+[-\.][A-D]/.test(upper)) return false;
         if (upper.indexOf('CEVAP ANAHTAR') >= 0) return false;
@@ -1222,9 +1700,7 @@ function parseQuizFromText(text) {
     });
     pushCurrent();
 
-    // Cevap anahtarı tarama (son sayfa / ayrı bölüm)
     var fullText = lines.join(' ');
-    // Formatlar: 1-C  1.C  1) C  1:C  veya "1 C"
     var keyMatches = fullText.match(/(\d+)\s*[\.\)\-\:]\s*([A-Da-d])\b/g) || [];
     var keyMap = {};
     keyMatches.forEach(function(m) {
@@ -1235,7 +1711,6 @@ function parseQuizFromText(text) {
             if (num > 0 && num <= questions.length + 5) keyMap[num] = ans;
         }
     });
-    // Daha sıkı: sadece "cevap" veya "anahtar" kelimesinden sonraki kısım
     var answerSection = fullText.split(/(cevap\s*anahtar|doğru\s*cevaplar|answer\s*key)/i);
     if (answerSection.length > 1) {
         var after = answerSection.slice(1).join(' ');
@@ -1257,7 +1732,6 @@ function parseQuizFromText(text) {
 
 async function deleteLessonContent(id, grade) {
     if (!confirm('Bu içeriği silmek istediğinize emin misiniz?')) return;
-    // Önce storage'dan sil (varsa)
     var lesson = (fenData[grade]?.lessons || []).find(function(l) { return l.id === id; });
     if (lesson && lesson.file_path) {
         await supabaseClient.storage.from('lesson-files').remove([lesson.file_path]);
@@ -1602,7 +2076,6 @@ function openStudentQuizResults(grade, branch) {
 
     var avg = qCnt ? Math.round(qSum / qCnt) : '-';
 
-    // Grafik verisi
     var chartLabels = [];
     var chartValues = [];
     units.forEach(function(u) {
@@ -1711,7 +2184,6 @@ function openStudentActivityResults(grade, branch) {
 
     var sAvg = sCnt ? Math.round(sSum / sCnt) : '-';
 
-    // Grafik verisi (etkinlik)
     var chartLabels = [];
     var chartValues = [];
     units.forEach(function(u) {
@@ -1792,7 +2264,6 @@ function openStudentLessons(grade, branch) {
 
     var panel = document.getElementById('student-panel');
     var units = fenData[grade]?.units || [];
-    // Tekrarlayan üniteleri temizle
     var seen = {};
     units = units.filter(function(u) {
         if (seen[u.name]) return false;
@@ -1898,17 +2369,6 @@ async function openStudentSection(grade, branch, unitName, sectionName) {
 
     var progress = await getStudentSectionProgress(student.id, grade, unitName, sectionName);
 
-    var completedIds = [];
-    if (supabaseClient && student.id) {
-        var { data: prog } = await supabaseClient
-            .from('student_progress')
-            .select('content_id')
-            .eq('student_id', student.id)
-            .eq('is_completed', true);
-        completedIds = (prog || []).map(function(r) { return r.content_id; });
-    }
-
-    // Sıralı kilit sistemi: Video → Slayt → Deney → Quiz
     var typeOrder = ['video', 'pptx', 'experiment', 'quiz'];
     var typeLabels = {
         video: 'Bölüm Videosu',
@@ -1921,12 +2381,6 @@ async function openStudentSection(grade, branch, unitName, sectionName) {
         pptx: '#7c3aed',
         experiment: '#059669',
         quiz: '#d97706'
-    };
-    var typeReq = {
-        video: null,
-        pptx: 'video',
-        experiment: 'pptx',
-        quiz: 'experiment'
     };
 
     var cards = '';
@@ -1971,7 +2425,6 @@ async function openContentList(type, grade, branch, unitName, sectionName) {
         return l.unit === unitName && l.section === sectionName && l.type === type;
     });
 
-    // Tamamlananları çek
     var completedIds = [];
     var student = currentStudentContext.student;
     if (supabaseClient && student && student.id) {
@@ -1991,14 +2444,13 @@ async function openContentList(type, grade, branch, unitName, sectionName) {
     var cards = '';
     lessons.forEach(function(l, idx) {
         var isDone = completedIds.indexOf(l.id) >= 0;
-        // Sıralı kilit: önceki tamamlanmadıysa kilitle
         var locked = false;
         if (idx > 0) {
             var prev = lessons[idx - 1];
             if (completedIds.indexOf(prev.id) < 0) locked = true;
         }
         var safeId = String(l.id).replace(/'/g, "");
-        var onclick = locked ? '' : (l.type === 'experiment' && l.experiment_url 
+        var onclick = locked ? '' : (l.type === 'experiment' && l.experiment_url
             ? 'onclick="window.open(\'' + l.experiment_url + '\',\'_blank\');markContentComplete(\'' + safeId + '\',\'' + grade + '\',\'' + branch + '\')"'
             : 'onclick="openContentViewer(\'' + safeId + '\',\'' + grade + '\',\'' + branch + '\',\'' + unitName.replace(/'/g,"\\'") + '\',\'' + sectionName.replace(/'/g,"\\'") + '\')"');
         var style = locked ? 'opacity:0.5;cursor:not-allowed;' : '';
@@ -2074,7 +2526,6 @@ function startYouTubeProgress(contentId, grade, branch, unitName, sectionName) {
             if (fill) fill.style.width = maxPercent + '%';
             var txt = document.querySelector('.progress-text');
             if (txt) txt.textContent = 'İlerleme: %' + maxPercent;
-            // %90 ve üzeri izlendiyse tamamla
             if (maxPercent >= 90) {
                 clearInterval(ytProgressInterval);
                 markContentCompleted(contentId, grade, branch, unitName, sectionName);
@@ -2102,9 +2553,7 @@ async function openContentViewer(contentId, grade, branch, unitName, sectionName
     var lesson = (fenData[grade]?.lessons || []).find(function(l) { return l.id === contentId; });
     if (!lesson) return alert('İçerik bulunamadı');
 
-    // İlerleme kaydet
     var student = currentStudentContext.student;
-    console.log('İlerleme kaydı:', student?.id, contentId, lesson.type);
     if (supabaseClient && student && student.id && lesson.type !== 'quiz') {
         var { error } = await supabaseClient.from('student_progress').upsert({
             student_id: student.id,
@@ -2116,7 +2565,6 @@ async function openContentViewer(contentId, grade, branch, unitName, sectionName
             completed_at: new Date().toISOString()
         }, { onConflict: 'student_id,content_id' });
         if (error) console.error('İlerleme kayıt hatası:', error);
-        else console.log('İlerleme kaydedildi');
     }
 
     try {
@@ -2124,15 +2572,10 @@ async function openContentViewer(contentId, grade, branch, unitName, sectionName
     } catch(e){}
 
     var panel = document.getElementById('student-panel');
-    var iframeHeight = 'calc(100vh - 60px)';
     var body = '';
 
     if (lesson.type === 'pptx' && lesson.file_url) {
         var vUrl = 'https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(lesson.file_url);
-        var totalSlides = 10;
-        if (lesson.description && lesson.description.indexOf('slides:') === 0) {
-            totalSlides = parseInt(lesson.description.split(':')[1]) || 10;
-        }
         body = '<iframe src="' + vUrl + '" style="position:fixed;top:50px;left:0;width:100%;height:calc(100vh - 50px);border:none;background:#1e293b;z-index:40;" allowfullscreen></iframe>';
     } else if (lesson.type === 'pdf' && lesson.file_url) {
         body = '<iframe src="' + lesson.file_url + '#toolbar=1" style="position:fixed;top:50px;left:0;width:100%;height:calc(100vh - 50px);border:none;background:#1e293b;z-index:40;" allowfullscreen></iframe>';
@@ -2188,7 +2631,6 @@ async function openContentViewer(contentId, grade, branch, unitName, sectionName
                     '<button onclick="markContentCompleted(\'' + contentId + '\',\'' + grade + '\',\'' + branch + '\',\'' + safeUnit + '\',\'' + safeSec + '\')" class="auth-btn" style="width:auto;padding:10px 20px;background:#059669;margin-top:12px;">Tamamladım (Sonraki Açılır)</button>' +
                   '</div>') +
         '</section>';
-
 }
 
 function renderContentBody(lesson) {
@@ -2267,10 +2709,9 @@ async function startStudentQuiz(contentId) {
     var student = currentStudentContext.student;
     var lesson = (fenData[grade]?.lessons || []).find(function(l) { return l.id === contentId; });
     if (!lesson || !lesson.quiz_data || lesson.quiz_data.length === 0) {
-        return alert('Bu quiz için soru bulunamadı. Öğretmen Word dosyasını kontrol etsin.');
+        return alert('Bu quiz için soru bulunamadı. Öğretmen dosyasını kontrol etsin.');
     }
 
-    // Daha önce çözülmüş mü kontrol et
     if (supabaseClient && student && student.id) {
         var { data: existing } = await supabaseClient.from('quiz_results')
             .select('*')
@@ -2279,21 +2720,81 @@ async function startStudentQuiz(contentId) {
             .eq('is_finished', true)
             .maybeSingle();
         if (existing) {
-            // Sonuçları göster
             showPreviousQuizResult(existing, lesson);
             return;
         }
     }
 
+    var isPdf = ((lesson.description || '').indexOf('PDFQUIZ') >= 0 || /\.pdf/i.test(lesson.file_url || ''));
     currentQuizState = {
         contentId: contentId,
         questions: lesson.quiz_data,
         answers: {},
         currentIndex: 0,
-        startTime: Date.now()
+        startTime: Date.now(),
+        pdfUrl: isPdf ? lesson.file_url : '',
+        pdfDoc: null,
+        pageCache: {}
     };
 
     renderQuizScreen();
+}
+
+async function renderCroppedQuestionImage(q, qIndex) {
+    var imgEl = document.getElementById('cropped-q-img-' + qIndex);
+    var statusEl = document.getElementById('cropped-q-status-' + qIndex);
+    if (!imgEl || !currentQuizState || !currentQuizState.pdfUrl) return;
+
+    try {
+        var pdfjs = await ensurePdfJsLoaded();
+        if (!pdfjs) {
+            if (statusEl) statusEl.textContent = 'PDF görüntüleyici yüklenemedi.';
+            return;
+        }
+        if (!currentQuizState.pdfDoc) {
+            currentQuizState.pdfDoc = await pdfjs.getDocument(currentQuizState.pdfUrl).promise;
+        }
+        var pageNum = q.page || 1;
+        var cacheKey = pageNum + '_1.8';
+        var fullCanvas = currentQuizState.pageCache[cacheKey];
+
+        if (!fullCanvas) {
+            var page = await currentQuizState.pdfDoc.getPage(pageNum);
+            var viewport = page.getViewport({ scale: 1.8 });
+            var c = document.createElement('canvas');
+            c.width = Math.floor(viewport.width);
+            c.height = Math.floor(viewport.height);
+            var ctx = c.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            fullCanvas = c;
+            currentQuizState.pageCache[cacheKey] = fullCanvas;
+        }
+
+        var box = q.cropBox || { xRatio: 0.03, yRatio: 0.04, wRatio: 0.94, hRatio: 0.88 };
+        var sx = Math.max(0, Math.floor(fullCanvas.width * box.xRatio));
+        var sy = Math.max(0, Math.floor(fullCanvas.height * box.yRatio));
+        var sw = Math.min(fullCanvas.width - sx, Math.floor(fullCanvas.width * box.wRatio));
+        var sh = Math.min(fullCanvas.height - sy, Math.floor(fullCanvas.height * box.hRatio));
+
+        if (sw <= 10 || sh <= 10) {
+            sx = 0; sy = 0; sw = fullCanvas.width; sh = fullCanvas.height;
+        }
+
+        var cropCanvas = document.createElement('canvas');
+        cropCanvas.width = sw;
+        cropCanvas.height = sh;
+        var cropCtx = cropCanvas.getContext('2d');
+        cropCtx.fillStyle = '#ffffff';
+        cropCtx.fillRect(0, 0, sw, sh);
+        cropCtx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+
+        imgEl.src = cropCanvas.toDataURL('image/png');
+        imgEl.style.display = 'block';
+        if (statusEl) statusEl.style.display = 'none';
+    } catch (err) {
+        console.error('Soru kırpma hatası:', err);
+        if (statusEl) statusEl.textContent = 'Soru görseli kırpılamadı.';
+    }
 }
 
 function showPreviousQuizResult(result, lesson) {
@@ -2343,7 +2844,6 @@ function renderQuizScreen() {
         return;
     }
 
-    // Yapışık şıkları anında ayır
     var opts = q.options || [];
     if (opts.length <= 1) {
         var raw = (opts[0] ? (opts[0].key + ') ' + opts[0].text) : '') || q.question || '';
@@ -2356,35 +2856,44 @@ function renderQuizScreen() {
         }
         if (fixed.length >= 2) {
             opts = fixed;
-            // Soru metnini de düzelt
             var pos = raw.search(/[A-D][\.\)\-\:]/);
             if (pos > 0 && !q.question) q.question = raw.substring(0, pos).trim();
         }
     }
 
+    var pdfMode = !!currentQuizState.pdfUrl;
+    var qLabel = q.number ? (q.number + '. Soru') : ((idx + 1) + '. Soru');
+
     var optionsHtml = '';
     opts.forEach(function(opt) {
         var selected = currentQuizState.answers[idx] === opt.key ? ' selected' : '';
         optionsHtml += '<div class="quiz-option' + selected + '" onclick="selectQuizAnswer(' + idx + ',\'' + opt.key + '\')">' +
-            '<strong>' + opt.key + ')</strong> ' + (opt.text || '') +
+            '<strong>' + opt.key + '</strong>' + (opt.text ? ') ' + opt.text : '') +
         '</div>';
     });
 
     var isLast = idx === total - 1;
     var hasAnswer = !!currentQuizState.answers[idx];
 
+    var croppedQuestionBox = pdfMode
+        ? '<div style="background:#ffffff;padding:12px;border-radius:10px;margin-bottom:14px;text-align:center;">' +
+            '<div id="cropped-q-status-' + idx + '" style="color:#475569;font-size:13px;padding:24px 10px;">' + qLabel + ' kırpılıyor...</div>' +
+            '<img id="cropped-q-img-' + idx + '" alt="' + qLabel + '" style="display:none;max-width:100%;max-height:58vh;margin:0 auto;border-radius:6px;">' +
+          '</div>'
+        : '<div style="font-weight:600;margin-bottom:12px;">' + (idx+1) + '. ' + q.question + '</div>';
+
     panel.innerHTML =
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>Quiz (' + (idx+1) + ' / ' + total + ')</h1></div>' +
             '<button onclick="cancelQuiz()" class="logout-btn" style="background:#475569;">İptal</button>' +
         '</header>' +
-        '<section class="dashboard-content" style="max-width:700px;margin:0 auto;">' +
+        '<section class="dashboard-content" style="max-width:760px;margin:0 auto;">' +
             '<div class="progress-bar-container" style="margin-bottom:16px;">' +
                 '<div class="progress-bar-fill" style="width:' + Math.round(((idx) / total) * 100) + '%"></div>' +
             '</div>' +
             '<div class="quiz-question">' +
-                '<div style="font-weight:600;margin-bottom:14px;font-size:15px;">' + (idx+1) + '. ' + q.question + '</div>' +
-                optionsHtml +
+                croppedQuestionBox +
+                '<div style="margin-top:8px;">' + optionsHtml + '</div>' +
             '</div>' +
             '<div style="display:flex;gap:10px;margin-top:20px;justify-content:space-between;">' +
                 (idx > 0 ? '<button onclick="prevQuizQuestion()" class="auth-btn" style="width:auto;padding:10px 18px;background:#475569;">← Önceki</button>' : '<div></div>') +
@@ -2393,6 +2902,10 @@ function renderQuizScreen() {
                     : '<button onclick="nextQuizQuestion()" class="auth-btn" style="width:auto;padding:10px 18px;background:#3b82f6;" ' + (!hasAnswer ? 'disabled' : '') + '>Sonraki →</button>') +
             '</div>' +
         '</section>';
+
+    if (pdfMode) {
+        renderCroppedQuestionImage(q, idx);
+    }
 }
 
 function selectQuizAnswer(qIndex, key) {
@@ -2425,8 +2938,6 @@ async function submitQuiz() {
     var student = currentStudentContext.student;
     var qs = currentQuizState.questions;
     var correct = 0;
-    console.log('Quiz cevapları:', currentQuizState.answers);
-    console.log('Doğru cevaplar:', qs.map(function(q, i) { return (i+1) + ':' + q.correct; }));
     qs.forEach(function(q, i) {
         var userAns = (currentQuizState.answers[i] || '').toString().toUpperCase().trim();
         var correctAns = (q.correct || '').toString().toUpperCase().trim();
@@ -2463,7 +2974,6 @@ async function submitQuiz() {
         }, { onConflict: 'student_id,content_id' });
     }
 
-    // Optik sonuç ekranı göster
     showQuizResults(currentQuizState, correct, total, score);
 }
 
@@ -2474,7 +2984,6 @@ function showQuizResults(state, correct, total, score) {
     qs.forEach(function(q, i) {
         var userAns = state.answers[i] || '-';
         var isCorrect = q.correct && userAns === q.correct;
-        var color = isCorrect ? '#166534' : '#991b1b';
         var bg = isCorrect ? 'rgba(22,101,52,0.2)' : 'rgba(153,27,27,0.2)';
         var border = isCorrect ? '#16a34a' : '#dc2626';
         html += '<div class="quiz-question" style="border-left:4px solid ' + border + ';background:' + bg + ';cursor:pointer;" onclick="toggleQuizDetail(' + i + ')">' +
@@ -2904,7 +3413,6 @@ function renderActivityTable(grade, branchName) {
         students.forEach(function(s, sIdx) {
             var stored = s.scale?.[selected] || {};
             var cells = '<td style="white-space:nowrap;">' + s.no + '</td><td style="white-space:nowrap; text-align:left;">' + s.name + '</td>';
-            // Akran değerlendirme için rastgele sınıf arkadaşı
             if (isAkran) {
                 var classmates = students.filter(function(st) { return st.no !== s.no; });
                 var akranName = '-';
@@ -2928,8 +3436,8 @@ function renderActivityTable(grade, branchName) {
                 '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">FEN BİLİMLERİ DERSİ</p></div>' +
                 '<div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Olcek:</b> ' + scale.name + '</p></div>' +
                 '<div style="background:#1e293b;padding:8px 12px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#94a3b8;">' +
-                    (scale.scale_type === '1-4' ? 'Kodlama: 4=Cok Iyi | 3=Iyi | 2=Gelistirilmeli | 1=Yetersiz' : 
-                     scale.scale_type === 'var-yok' ? 'Kodlama: 1=Var | 0=Yok' : 
+                    (scale.scale_type === '1-4' ? 'Kodlama: 4=Cok Iyi | 3=Iyi | 2=Gelistirilmeli | 1=Yetersiz' :
+                     scale.scale_type === 'var-yok' ? 'Kodlama: 1=Var | 0=Yok' :
                      'Kodlama: 3=Evet | 2=Kismen | 1=Hayir') +
                 '</div>' +
                 '<div style="overflow-x:auto;"><table class="data-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
@@ -3045,17 +3553,15 @@ async function saveGroupScales(grade, branchName, baseName) {
                 var minVal = 1, maxVal = 4;
                 var st = (sc.scale_type || '').toLowerCase();
                 var nm = (sc.name || '').toLowerCase();
-                // Hem scale_type hem de ölçek adından kontrol et
                 if (st.indexOf('1-4') >= 0 || nm.indexOf('rubrik') >= 0 || nm.indexOf('analitik') >= 0 || nm.indexOf('holistik') >= 0) { minVal = 1; maxVal = 4; }
                 else if (st.indexOf('evet') >= 0 || st.indexOf('formu') >= 0 || nm.indexOf('formu') >= 0 || nm.indexOf('gozlem') >= 0 || nm.indexOf('gözlem') >= 0 || nm.indexOf('oz') >= 0 || nm.indexOf('öz') >= 0 || nm.indexOf('akran') >= 0) { minVal = 1; maxVal = 3; }
                 else if (st.indexOf('var') >= 0 || st.indexOf('kontrol') >= 0 || nm.indexOf('kontrol') >= 0 || nm.indexOf('liste') >= 0 || nm.indexOf('listesi') >= 0) { minVal = 0; maxVal = 1; }
-                
-                // Hedef yüzdeye göre toplam puan hesapla ve kriterlere dağıt
+
                 var maxTotal = critCount * maxVal;
                 var targetTotal = Math.round((target / 100) * maxTotal);
                 var baseVal = Math.floor(targetTotal / critCount);
                 var remainder = targetTotal % critCount;
-                
+
                 for (var c2 = 0; c2 < critCount; c2++) {
                     var v = baseVal + (c2 < remainder ? 1 : 0);
                     if (v < minVal) v = minVal;
@@ -3074,7 +3580,6 @@ async function saveGroupScales(grade, branchName, baseName) {
     alert('Olcek puanlari kaydedildi!');
     renderActivityTable(grade, branchName);
 }
-
 
 async function updatePoint(grade, branchName, idx, type) {
     var students = fenData[grade]?.branches[branchName] || [];
@@ -3125,7 +3630,7 @@ function addStudentModal(grade, branchName) {
     });
 }
 
-// ====================== YÖNETİM İŞLEMLERİ (basit) ======================
+// ====================== YÖNETİM İŞLEMLERİ ======================
 function loadRepSections(grade, branchName) {
     var unit = document.getElementById('rep-unit-sel').value;
     var sel = document.getElementById('rep-section-sel');
@@ -3247,19 +3752,17 @@ function exportTableToWord(elementId, filename) {
     var element = document.getElementById(elementId);
     if (!element) return alert('Icerik bulunamadi!');
     var clone = element.cloneNode(true);
-    // SVG grafikleri kaldır (Word'de bozuluyor)
     clone.querySelectorAll('svg').forEach(function(svg) { svg.remove(); });
     clone.querySelectorAll('div').forEach(function(div) {
         if (div.innerText && div.innerText.indexOf('Grafiği') >= 0 && div.querySelector('svg') === null) {
             div.remove();
         }
     });
-    // Ölçek tipini kodlama metninden algıla
     var allText = element.innerText || '';
     var scaleType = '1-4';
     if (allText.indexOf('Evet') >= 0 && allText.indexOf('Kismen') >= 0) scaleType = 'evet-hayir';
     else if (allText.indexOf('Var') >= 0 && allText.indexOf('Yok') >= 0) scaleType = 'var-yok';
-    
+
     var rows = element.querySelectorAll('tbody tr');
     var cloneRows = clone.querySelectorAll('tbody tr');
     for (var r = 0; r < rows.length; r++) {
@@ -3313,12 +3816,11 @@ async function exportTableToPDF(elementId, filename) {
     var jsPDF = getJsPDF();
     if (!jsPDF) return alert('jsPDF yuklenemedi');
     var clone = el.cloneNode(true);
-    // Ölçek tipini kodlama metninden algıla
     var allText = el.innerText || '';
     var scaleType = '1-4';
     if (allText.indexOf('Evet') >= 0 && allText.indexOf('Kismen') >= 0) scaleType = 'evet-hayir';
     else if (allText.indexOf('Var') >= 0 && allText.indexOf('Yok') >= 0) scaleType = 'var-yok';
-    
+
     var rows = el.querySelectorAll('tbody tr');
     var cloneRows = clone.querySelectorAll('tbody tr');
     for (var r = 0; r < rows.length; r++) {
@@ -3485,8 +3987,7 @@ function globalAddActivity() {
                         var row = rows[ri];
                         if (!row || !row[0]) continue;
                         var firstCell = String(row[0]);
-                        
-                        // Ölçek başlığı (📋 ile başlayan)
+
                         if (firstCell.indexOf('📋') >= 0 || firstCell.toUpperCase().indexOf('RUBRİK') >= 0 || firstCell.toUpperCase().indexOf('LİSTESİ') >= 0 || firstCell.toUpperCase().indexOf('FORMU') >= 0) {
                             currentScale = firstCell.replace(/📋/g, '').trim();
                             var upper = currentScale.toUpperCase().replace(/İ/g,'I').replace(/Ş/g,'S').replace(/Ğ/g,'G').replace(/Ü/g,'U').replace(/Ö/g,'O').replace(/Ç/g,'C');
@@ -3495,8 +3996,7 @@ function globalAddActivity() {
                             else currentType = '1-4';
                             continue;
                         }
-                        
-                        // Kriter satırı
+
                         if (currentScale && row.some(function(c) { return c && (String(c).indexOf('Okul No') >= 0 || String(c).indexOf('Adı Soyadı') >= 0); })) {
                             var crits = row.filter(function(c) {
                                 if (!c) return false;
@@ -3505,7 +4005,7 @@ function globalAddActivity() {
                             });
                             if (crits.length && supabaseClient) {
                                 await supabaseClient.from('activities').insert([{
-                                    grade: g, unit_name: u, section_name: s, 
+                                    grade: g, unit_name: u, section_name: s,
                                     activity_name: sheet + ' - ' + currentScale,
                                     criteria: crits, scale_type: currentType
                                 }]);
@@ -3619,47 +4119,36 @@ function fillRepSections() {
     });
 }
 
-
 function globalDeleteManagement() {
     openModal('Silme Yonetimi',
         '<select id="d-grade" class="auth-input" onchange="fillDelUnits(this.value)"><option value="5">5. Sinif</option><option value="6" selected>6. Sinif</option><option value="7">7. Sinif</option><option value="8">8. Sinif</option></select>' +
         '<select id="d-type" class="auth-input" onchange="toggleDel()"><option value="unit">Unite Sil</option><option value="section">Bolum Sil</option><option value="activity">Etkinlik Sil</option><option value="report">Rapor Sil</option></select>' +
-        '<div id="d-unit-box"><select id="d-unit" class="auth-input" onchange="fillDelSections()"><option value="">Unite</option></select></div>' +
-        '<div id="d-sec-box" style="display:none;"><select id="d-section" class="auth-input" onchange="fillDelActivities()"><option value="">Bolum</option></select></div>' +
-        '<div id="d-act-box" style="display:none;"><select id="d-act" class="auth-input"><option value="">Etkinlik</option></select></div>',
+        '<div id="d-unit-box"><select id="d-unit" class="auth-input"></select></div>' +
+        '<div id="d-sec-box" style="display:none;"><select id="d-sec-unit" class="auth-input" onchange="fillDelSecs()"><option value="">Unite</option></select><select id="d-sec" class="auth-input"><option value="">Bolum</option></select></div>' +
+        '<div id="d-act-box" style="display:none;"><select id="d-act" class="auth-input"><option value="">Etkinlik</option></select></div>' +
+        '<div id="d-rep-box" style="display:none;"><select id="d-rep" class="auth-input"><option value="">Rapor</option></select></div>',
     async function() {
         var g = document.getElementById('d-grade').value;
         var type = document.getElementById('d-type').value;
-        if (type === 'unit') {
-            var u = document.getElementById('d-unit').value;
-            if (!u || !confirm('Unite ve bagli her sey silinsin mi?')) return;
-            if (supabaseClient) {
+        if (!confirm('Silmek istediginize emin misiniz?')) return;
+        if (supabaseClient) {
+            if (type === 'unit') {
+                var u = document.getElementById('d-unit').value;
+                if (!u) return alert('Unite secin');
                 await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', u);
-                await supabaseClient.from('activities').delete().eq('grade', g).eq('unit_name', u);
-                await supabaseClient.from('report_templates').delete().eq('grade', g).eq('unit_name', u);
-            }
-        } else if (type === 'section') {
-            var u2 = document.getElementById('d-unit').value;
-            var s = document.getElementById('d-section').value;
-            if (!u2 || !s || !confirm('Bolum silinsin mi?')) return;
-            if (supabaseClient) {
-                await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', u2).eq('section_name', s);
-                await supabaseClient.from('activities').delete().eq('grade', g).eq('unit_name', u2).eq('section_name', s);
-                await supabaseClient.from('report_templates').delete().eq('grade', g).eq('unit_name', u2).eq('section_name', s);
-            }
-        } else if (type === 'activity') {
-            var a = document.getElementById('d-act').value;
-            if (!a || !confirm('Etkinlik silinsin mi?')) return;
-            if (supabaseClient) {
+            } else if (type === 'section') {
+                var su = document.getElementById('d-sec-unit').value;
+                var s = document.getElementById('d-sec').value;
+                if (!su || !s) return alert('Bolum secin');
+                await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', su).eq('section_name', s);
+            } else if (type === 'activity') {
+                var a = document.getElementById('d-act').value;
+                if (!a) return alert('Etkinlik secin');
                 await supabaseClient.from('activities').delete().eq('grade', g).eq('activity_name', a);
-                await supabaseClient.from('activities').delete().eq('grade', g).ilike('activity_name', a + ' -%');
-            }
-        } else if (type === 'report') {
-            var u3 = document.getElementById('d-unit').value;
-            var s2 = document.getElementById('d-section').value;
-            if (!u3 || !s2 || !confirm('Rapor silinsin mi?')) return;
-            if (supabaseClient) {
-                await supabaseClient.from('report_templates').delete().eq('grade', g).eq('unit_name', u3).eq('section_name', s2);
+            } else if (type === 'report') {
+                var r = document.getElementById('d-rep').value;
+                if (!r) return alert('Rapor secin');
+                await supabaseClient.from('report_templates').delete().eq('id', r);
             }
         }
         await loadAllDataFromSupabase();
@@ -3667,325 +4156,203 @@ function globalDeleteManagement() {
         alert('Silindi');
     });
     fillDelUnits('6');
-    toggleDel();
-}
-
-function fillDelUnits(grade) {
-    var sel = document.getElementById('d-unit');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Unite</option>';
-    (fenData[grade]?.units || []).forEach(function(u) {
-        sel.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>';
-    });
-}
-
-function fillDelSections() {
-    var g = document.getElementById('d-grade')?.value;
-    var u = document.getElementById('d-unit')?.value;
-    var sel = document.getElementById('d-section');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Bolum</option>';
-    var unit = fenData[g]?.units.find(function(x) { return x.name === u; });
-    if (unit) unit.sections.forEach(function(s) {
-        var opt = document.createElement('option');
-        opt.value = s;
-        opt.textContent = s;
-        sel.appendChild(opt);
-    });
-}
-
-function fillDelActivities() {
-    var g = document.getElementById('d-grade')?.value;
-    var u = document.getElementById('d-unit')?.value;
-    var sec = document.getElementById('d-section')?.value;
-    var actSel = document.getElementById('d-act');
-    if (!actSel || !sec) return;
-    actSel.innerHTML = '<option value="">Etkinlik</option>';
-    var acts = (fenData[g]?.activities || []).filter(function(a) { 
-        return a.unit === u && a.section === sec; 
-    });
-    var bases = new Set();
-    acts.forEach(function(a) {
-        var p = a.name.split(' - ');
-        bases.add(p.length >= 2 ? p[0] + ' - ' + p[1] : a.name);
-    });
-    bases.forEach(function(b) {
-        actSel.innerHTML += '<option value="' + b + '">' + b + '</option>';
-    });
 }
 
 function toggleDel() {
-    var type = document.getElementById('d-type')?.value;
-    document.getElementById('d-sec-box').style.display = (type === 'section' || type === 'activity' || type === 'report') ? 'block' : 'none';
-    document.getElementById('d-act-box').style.display = type === 'activity' ? 'block' : 'none';
+    var t = document.getElementById('d-type').value;
+    document.getElementById('d-unit-box').style.display = t === 'unit' ? 'block' : 'none';
+    document.getElementById('d-sec-box').style.display = t === 'section' ? 'block' : 'none';
+    document.getElementById('d-act-box').style.display = t === 'activity' ? 'block' : 'none';
+    document.getElementById('d-rep-box').style.display = t === 'report' ? 'block' : 'none';
+    fillDelUnits(document.getElementById('d-grade').value);
 }
 
-
-// ====================== BAŞLANGIÇ ======================
-document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        await loadAllDataFromSupabase();
-        console.log('Veri yüklendi', fenData);
-    } catch (e) {
-        console.error('Veri yükleme hatası:', e);
-    }
-    var gradeSel = document.getElementById('student-grade');
-    if (gradeSel) {
-        gradeSel.addEventListener('change', function() {
-            updateStudentBranches();
+function fillDelUnits(g) {
+    var units = fenData[g]?.units || [];
+    var u1 = document.getElementById('d-unit');
+    var u2 = document.getElementById('d-sec-unit');
+    if (u1) { u1.innerHTML = '<option value="">Unite</option>'; units.forEach(function(u) { u1.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>'; }); }
+    if (u2) { u2.innerHTML = '<option value="">Unite</option>'; units.forEach(function(u) { u2.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>'; }); }
+    var a = document.getElementById('d-act');
+    if (a) {
+        a.innerHTML = '<option value="">Etkinlik</option>';
+        (fenData[g]?.activities || []).forEach(function(act) {
+            a.innerHTML += '<option value="' + act.name + '">' + act.name + '</option>';
         });
     }
-    ['teacher-email', 'teacher-password'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') teacherLogin();
+    var r = document.getElementById('d-rep');
+    if (r && supabaseClient) {
+        r.innerHTML = '<option value="">Rapor</option>';
+        supabaseClient.from('report_templates').select('id,unit_name,section_name').eq('grade', g).then(function(res) {
+            if (res.data) res.data.forEach(function(rep) {
+                r.innerHTML += '<option value="' + rep.id + '">' + rep.unit_name + ' - ' + rep.section_name + '</option>';
             });
-        }
-    });
-    restoreStateFromSession();
-});
-
-function globalDeleteManagement() {
-    openModal('Silme Yonetimi',
-        '<select id="d-grade" class="auth-input" onchange="fillDelUnits(this.value)"><option value="5">5. Sinif</option><option value="6" selected>6. Sinif</option><option value="7">7. Sinif</option><option value="8">8. Sinif</option></select>' +
-        '<select id="d-type" class="auth-input" onchange="toggleDel()"><option value="unit">Unite Sil</option><option value="section">Bolum Sil</option><option value="activity">Etkinlik Sil</option><option value="report">Rapor Sil</option></select>' +
-        '<div id="d-unit-box"><select id="d-unit" class="auth-input" onchange="fillDelSections()"><option value="">Unite</option></select></div>' +
-        '<div id="d-sec-box" style="display:none;"><select id="d-section" class="auth-input" onchange="fillDelActivities()"><option value="">Bolum</option></select></div>' +
-        '<div id="d-act-box" style="display:none;"><select id="d-act" class="auth-input"><option value="">Etkinlik</option></select></div>',
-    async function() {
-        var g = document.getElementById('d-grade').value;
-        var type = document.getElementById('d-type').value;
-        if (type === 'unit') {
-            var u = document.getElementById('d-unit').value;
-            if (!u || !confirm('Unite ve bagli her sey silinsin mi?')) return;
-            if (supabaseClient) {
-                await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', u);
-                await supabaseClient.from('activities').delete().eq('grade', g).eq('unit_name', u);
-                await supabaseClient.from('report_templates').delete().eq('grade', g).eq('unit_name', u);
-            }
-        } else if (type === 'section') {
-            var u2 = document.getElementById('d-unit').value;
-            var s = document.getElementById('d-section').value;
-            if (!u2 || !s || !confirm('Bolum silinsin mi?')) return;
-            if (supabaseClient) {
-                await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', u2).eq('section_name', s);
-                await supabaseClient.from('activities').delete().eq('grade', g).eq('unit_name', u2).eq('section_name', s);
-                await supabaseClient.from('report_templates').delete().eq('grade', g).eq('unit_name', u2).eq('section_name', s);
-            }
-        } else if (type === 'activity') {
-            var a = document.getElementById('d-act').value;
-            if (!a || !confirm('Etkinlik silinsin mi?')) return;
-            if (supabaseClient) {
-                await supabaseClient.from('activities').delete().eq('grade', g).eq('activity_name', a);
-                await supabaseClient.from('activities').delete().eq('grade', g).ilike('activity_name', a + ' -%');
-            }
-        } else if (type === 'report') {
-            var u3 = document.getElementById('d-unit').value;
-            var s2 = document.getElementById('d-section').value;
-            if (!u3 || !s2 || !confirm('Rapor silinsin mi?')) return;
-            if (supabaseClient) {
-                await supabaseClient.from('report_templates').delete().eq('grade', g).eq('unit_name', u3).eq('section_name', s2);
-            }
-        }
-        await loadAllDataFromSupabase();
-        closeModal();
-        alert('Silindi');
-    });
-    fillDelUnits('6');
-    toggleDel();
+        });
+    }
 }
 
-function fillDelUnits(grade) {
-    var sel = document.getElementById('d-unit');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Unite</option>';
-    (fenData[grade]?.units || []).forEach(function(u) {
-        sel.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>';
-    });
-}
-
-function fillDelSections() {
-    var g = document.getElementById('d-grade')?.value;
-    var u = document.getElementById('d-unit')?.value;
-    var sel = document.getElementById('d-section');
-    if (!sel) return;
+function fillDelSecs() {
+    var g = document.getElementById('d-grade').value;
+    var u = document.getElementById('d-sec-unit').value;
+    var sel = document.getElementById('d-sec');
     sel.innerHTML = '<option value="">Bolum</option>';
     var unit = fenData[g]?.units.find(function(x) { return x.name === u; });
     if (unit) unit.sections.forEach(function(s) {
         sel.innerHTML += '<option value="' + s + '">' + s + '</option>';
     });
-    var actSel = document.getElementById('d-act');
-    if (actSel) {
-        actSel.innerHTML = '<option value="">Etkinlik</option>';
-        var sec = document.getElementById('d-section')?.value;
-        var acts = (fenData[g]?.activities || []).filter(function(a) { return a.unit === u && (!sec || a.section === sec); });
-        var bases = new Set();
-        acts.forEach(function(a) {
-            var p = a.name.split(' - ');
-            bases.add(p.length >= 2 ? p[0] + ' - ' + p[1] : a.name);
-        });
-        bases.forEach(function(b) {
-            actSel.innerHTML += '<option value="' + b + '">' + b + '</option>';
-        });
-    }
 }
 
-function toggleDel() {
-    var type = document.getElementById('d-type')?.value;
-    document.getElementById('d-sec-box').style.display = (type === 'section' || type === 'activity' || type === 'report') ? 'block' : 'none';
-    document.getElementById('d-act-box').style.display = type === 'activity' ? 'block' : 'none';
-}
-
-
+// ====================== ÖĞRENCİ İLERLEMESİ ======================
 function openStudentProgressPage() {
-    var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-        '<div><label style="font-size:13px;color:#cbd5e1;">Sınıf</label>' +
-        '<select id="prog-grade" class="auth-input" onchange="fillProgBranches()"><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></div>' +
-        '<div><label style="font-size:13px;color:#cbd5e1;">Şube</label>' +
-        '<select id="prog-branch" class="auth-input" onchange="fillProgUnits()"><option value="">Seçin</option></select></div>' +
-        '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">' +
-        '<div><label style="font-size:13px;color:#cbd5e1;">Ünite</label>' +
-        '<select id="prog-unit" class="auth-input" onchange="fillProgSections()"><option value="">Tümü</option></select></div>' +
-        '<div><label style="font-size:13px;color:#cbd5e1;">Bölüm</label>' +
-        '<select id="prog-section" class="auth-input" onchange="loadStudentProgress()"><option value="">Tümü</option></select></div>' +
-        '</div>' +
-        '<div id="progress-result" style="margin-top:16px;"></div>';
-    openManagementPage('Öğrenci İlerlemesi', html);
-    setTimeout(fillProgBranches, 50);
+    var html = '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">' +
+        '<select id="prog-grade" class="auth-input" style="width:120px;" onchange="fillProgressBranches()">' +
+            '<option value="5">5. Sınıf</option><option value="6" selected>6. Sınıf</option><option value="7">7. Sınıf</option><option value="8">8. Sınıf</option>' +
+        '</select>' +
+        '<select id="prog-branch" class="auth-input" style="width:140px;" onchange="loadStudentProgressTable()">' +
+            '<option value="">-- Şube Seç --</option>' +
+        '</select>' +
+        '<select id="prog-unit" class="auth-input" style="width:180px;" onchange="loadStudentProgressTable()">' +
+            '<option value="">Tüm Üniteler</option>' +
+        '</select>' +
+    '</div>' +
+    '<div id="prog-table-container"></div>';
+
+    openManagementPage('Öğrenci İlerleme Takibi', html);
+    setTimeout(fillProgressBranches, 50);
 }
 
-function fillProgBranches() {
-    var grade = document.getElementById('prog-grade').value;
+function fillProgressBranches() {
+    var g = document.getElementById('prog-grade')?.value;
     var sel = document.getElementById('prog-branch');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Seçin</option>';
-    var branches = fenData[grade]?.branches || {};
-    Object.keys(branches).forEach(function(b) {
-        sel.innerHTML += '<option value="' + b + '">' + b + '</option>';
+    var unitSel = document.getElementById('prog-unit');
+    if (!sel || !g) return;
+    sel.innerHTML = '<option value="">-- Şube Seç --</option>';
+    var branches = Object.keys(fenData[g]?.branches || {});
+    branches.forEach(function(b) {
+        var short = b.indexOf('/') >= 0 ? b.split('/')[1] : b;
+        sel.innerHTML += '<option value="' + b + '">' + short + '</option>';
     });
-    fillProgUnits();
-}
+    if (branches.length > 0) sel.value = branches[0];
 
-
-function fillProgUnits() {
-    var grade = document.getElementById('prog-grade').value;
-    var sel = document.getElementById('prog-unit');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Tümü</option>';
-    (fenData[grade]?.units || []).forEach(function(u) {
-        sel.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>';
-    });
-    fillProgSections();
-}
-
-function fillProgSections() {
-    var grade = document.getElementById('prog-grade').value;
-    var unit = document.getElementById('prog-unit').value;
-    var sel = document.getElementById('prog-section');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Tümü</option>';
-    if (unit) {
-        var unitObj = (fenData[grade]?.units || []).find(function(u) { return u.name === unit; });
-        if (unitObj) {
-            unitObj.sections.forEach(function(s) {
-                sel.innerHTML += '<option value="' + s + '">' + s + '</option>';
-            });
-        }
+    if (unitSel) {
+        unitSel.innerHTML = '<option value="">Tüm Üniteler</option>';
+        (fenData[g]?.units || []).forEach(function(u) {
+            unitSel.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>';
+        });
     }
-    loadStudentProgress();
+    loadStudentProgressTable();
 }
-async function loadStudentProgress() {
-    var grade = document.getElementById('prog-grade').value;
-    var branch = document.getElementById('prog-branch').value;
-    var unit = document.getElementById('prog-unit').value;
-    var section = document.getElementById('prog-section').value;
-    var result = document.getElementById('progress-result');
-    if (!grade || !branch || !result) return;
-    result.innerHTML = '<p style="color:#94a3b8;">Yükleniyor...</p>';
 
-    var students = fenData[grade]?.branches?.[branch] || [];
-    var lessons = (fenData[grade]?.lessons || []).filter(function(l) {
-        if (unit && l.unit !== unit) return false;
-        if (section && l.section !== section) return false;
-        return true;
-    });
-
-    if (students.length === 0) {
-        result.innerHTML = '<p style="color:#94a3b8;">Öğrenci bulunamadı.</p>';
+async function loadStudentProgressTable() {
+    var g = document.getElementById('prog-grade')?.value;
+    var b = document.getElementById('prog-branch')?.value;
+    var uFilter = document.getElementById('prog-unit')?.value;
+    var cont = document.getElementById('prog-table-container');
+    if (!cont || !g || !b) {
+        if (cont) cont.innerHTML = '<p style="color:#94a3b8;font-size:13px;">Şube seçin.</p>';
         return;
     }
 
-    var html = '<table class="data-table" style="font-size:12px;"><thead><tr><th>Öğrenci</th><th>Video</th><th>Slayt</th><th>Deney</th><th>Quiz</th></tr></thead><tbody>';
+    var students = fenData[g]?.branches?.[b] || [];
+    var allLessons = (fenData[g]?.lessons || []).filter(function(l) {
+        return !uFilter || l.unit === uFilter;
+    });
 
-    for (var s of students) {
-        var progress = {};
-        var quizResults = {};
-        if (supabaseClient && s.id) {
-            var { data: progData } = await supabaseClient.from('student_progress').select('content_id, is_completed').eq('student_id', s.id);
-            (progData || []).forEach(function(p) { progress[p.content_id] = p.is_completed; });
-            var { data: quizData } = await supabaseClient.from('quiz_results').select('content_id, correct_count, total_questions').eq('student_id', s.id);
-            (quizData || []).forEach(function(q) { quizResults[q.content_id] = q; });
-        }
-
-        function getStatus(type) {
-            var typeLessons = lessons.filter(function(l) { return l.type === type; });
-            if (typeLessons.length === 0) return '-';
-            var done = typeLessons.filter(function(l) { return progress[l.id]; }).length;
-            if (done === typeLessons.length) return '<span style="color:#22c55e;">✓</span>';
-            if (done > 0) return '<span style="color:#f59e0b;">' + done + '/' + typeLessons.length + '</span>';
-            return '<span style="color:#ef4444;">✗</span>';
-        }
-
-        function getQuizStatus() {
-            var quizLessons = lessons.filter(function(l) { return l.type === 'quiz'; });
-            if (quizLessons.length === 0) return '-';
-            var results = [];
-            quizLessons.forEach(function(l) {
-                if (quizResults[l.id]) {
-                    results.push(quizResults[l.id].correct_count + '/' + quizResults[l.id].total_questions);
-                }
-            });
-            if (results.length === 0) return '<span style="color:#ef4444;">✗</span>';
-            return '<span style="color:#22c55e;">' + results.join(', ') + '</span>';
-        }
-
-        html += '<tr><td style="text-align:left;">' + s.name + '</td>' +
-            '<td>' + getStatus('video') + '</td>' +
-            '<td>' + getStatus('pptx') + '</td>' +
-            '<td>' + getStatus('experiment') + '</td>' +
-            '<td>' + getQuizStatus() + '</td></tr>';
+    if (students.length === 0) {
+        cont.innerHTML = '<p style="color:#94a3b8;font-size:13px;">Bu şubede öğrenci yok.</p>';
+        return;
     }
-    html += '</tbody></table>';
-    result.innerHTML = html;
+
+    var completedMap = {};
+    if (supabaseClient) {
+        var { data: pRows } = await supabaseClient
+            .from('student_progress')
+            .select('student_id, content_id, is_completed')
+            .eq('grade', g)
+            .eq('branch', b)
+            .eq('is_completed', true);
+        (pRows || []).forEach(function(r) {
+            if (!completedMap[r.student_id]) completedMap[r.student_id] = [];
+            completedMap[r.student_id].push(r.content_id);
+        });
+    }
+
+    var totalContentCount = allLessons.length;
+    var rows = '';
+    students.forEach(function(s) {
+        var doneList = completedMap[s.id] || [];
+        var doneCount = allLessons.filter(function(l) { return doneList.indexOf(l.id) >= 0; }).length;
+        var pct = totalContentCount > 0 ? Math.round((doneCount / totalContentCount) * 100) : 0;
+
+        rows += '<tr>' +
+            '<td>' + s.no + '</td>' +
+            '<td style="text-align:left;font-weight:500;">' + s.name + '</td>' +
+            '<td>' + doneCount + ' / ' + totalContentCount + '</td>' +
+            '<td style="min-width:140px;">' +
+                '<div style="display:flex;align-items:center;gap:8px;">' +
+                    '<div class="progress-bar-container" style="flex:1;margin:0;height:8px;">' +
+                        '<div class="progress-bar-fill" style="width:' + pct + '%"></div>' +
+                    '</div>' +
+                    '<span style="font-size:12px;font-weight:600;min-width:36px;">%' + pct + '</span>' +
+                '</div>' +
+            '</td>' +
+        '</tr>';
+    });
+
+    cont.innerHTML = '<div style="overflow-x:auto;">' +
+        '<table class="data-table">' +
+            '<thead><tr><th>No</th><th style="text-align:left;">Ad Soyad</th><th>Tamamlanan</th><th>İlerleme</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+    '</div>';
+}
+
+function validateScoreInput(el) {
+    if (!el) return;
+    var v = el.value.toUpperCase();
+    if (v === 'G') { el.value = 'G'; return; }
+    var cleaned = v.replace(/[^0-9]/g, '');
+    if (cleaned === '') { el.value = ''; return; }
+    var n = parseInt(cleaned, 10);
+    if (isNaN(n)) { el.value = ''; return; }
+    if (n > 100) n = 100;
+    if (n < 0) n = 0;
+    el.value = n.toString();
 }
 
 function openBulkStudentModal(grade, branchName) {
-    openModal('Toplu Ogrenci (e-Okul)',
-        '<p style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Okul No + Tab + Ad Soyad seklinde yapistirin</p>' +
-        '<textarea id="bulk-text" class="auth-input" style="height:140px;font-family:monospace;"></textarea>',
+    openModal('Toplu Öğrenci Ekle',
+        '<p style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Her satıra: <b>Okul No</b> ve <b>Ad Soyad</b> yazın. (Örn: 125 Ahmet Yılmaz)</p>' +
+        '<textarea id="m-bulk-students" class="auth-input" style="height:180px;font-family:monospace;font-size:12px;" placeholder="101 Ali Veli\n102 Ayşe Kaya\n103 Mehmet Demir"></textarea>',
     async function() {
-        var text = document.getElementById('bulk-text').value.trim();
-        if (!text) return;
-        var lines = text.split('\n');
-        var count = 0;
+        var raw = document.getElementById('m-bulk-students').value.trim();
+        if (!raw) return alert('Lütfen en az bir öğrenci girin');
+        var lines = raw.split(/\r?\n/).map(function(l) { return l.trim(); }).filter(Boolean);
+        var toInsert = [];
         for (var i = 0; i < lines.length; i++) {
-            var parts = lines[i].split('\t');
-            if (parts.length >= 2) {
-                var no = parseInt(parts[0]);
-                var name = parts[1].trim().toUpperCase();
-                if (no && name && supabaseClient) {
-                    await supabaseClient.from('students').insert([{
-                        grade: grade, branch: branchName, school_no: no, name: name, plus: 0, minus: 0, quiz: {}, scale: {}
-                    }]);
-                    count++;
-                }
-            }
+            var m = lines[i].match(/^(\d+)\s+(.+)$/);
+            if (!m) return alert((i + 1) + '. satır hatalı: "' + lines[i] + '". Format: No Ad Soyad');
+            toInsert.push({
+                grade: grade,
+                branch: branchName,
+                school_no: parseInt(m[1], 10),
+                name: m[2].trim()
+            });
+        }
+        if (supabaseClient) {
+            var res = await supabaseClient.from('students').insert(toInsert);
+            if (res.error) return alert('Kayıt hatası: ' + res.error.message);
         }
         await loadAllDataFromSupabase();
         closeModal();
-        alert(count + ' ogrenci eklendi');
-        openBranchDetail(grade, branchName, 'students', false);
+        alert(toInsert.length + ' öğrenci eklendi!');
+        loadBranchTabContent('students', grade, branchName);
     });
 }
+
+// ====================== BAŞLAT ======================
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadAllDataFromSupabase();
+    updateStudentBranches();
+    restoreStateFromSession();
+});
