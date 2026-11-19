@@ -2450,9 +2450,12 @@ async function openContentList(type, grade, branch, unitName, sectionName) {
             if (completedIds.indexOf(prev.id) < 0) locked = true;
         }
         var safeId = String(l.id).replace(/'/g, "");
+        var safeUrl = String(l.experiment_url || '').replace(/'/g, "\\'");
+        var safeUnit = unitName.replace(/'/g, "\\'");
+        var safeSec = sectionName.replace(/'/g, "\\'");
         var onclick = locked ? '' : (l.type === 'experiment' && l.experiment_url
-            ? 'onclick="window.open(\'' + l.experiment_url + '\',\'_blank\');markContentComplete(\'' + safeId + '\',\'' + grade + '\',\'' + branch + '\')"'
-            : 'onclick="openContentViewer(\'' + safeId + '\',\'' + grade + '\',\'' + branch + '\',\'' + unitName.replace(/'/g,"\\'") + '\',\'' + sectionName.replace(/'/g,"\\'") + '\')"');
+            ? 'onclick="window.open(\'' + safeUrl + '\',\'_blank\');markContentComplete(\'' + safeId + '\',\'' + grade + '\',\'' + branch + '\',\'' + safeUnit + '\',\'' + safeSec + '\',\'' + type + '\')"'
+            : 'onclick="openContentViewer(\'' + safeId + '\',\'' + grade + '\',\'' + branch + '\',\'' + safeUnit + '\',\'' + safeSec + '\')"');
         var style = locked ? 'opacity:0.5;cursor:not-allowed;' : '';
         var badge = locked ? '<span style="font-size:11px;color:#f87171;">Kilitli</span>' : (isDone ? '<span class="btn-completed" style="font-size:11px;">✓</span>' : '');
 
@@ -2681,6 +2684,26 @@ function toggleContentViewer(id) {
     var el = document.getElementById('viewer-' + id);
     if (!el) return;
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function markContentComplete(contentId, grade, branch, unitName, sectionName, contentType) {
+    var student = currentStudentContext.student;
+    if (!student || !student.id) return;
+
+    if (supabaseClient) {
+        await supabaseClient.from('student_progress').upsert({
+            student_id: student.id,
+            grade: grade,
+            branch: branch,
+            school_no: student.no,
+            content_id: contentId,
+            is_completed: true,
+            completed_at: new Date().toISOString()
+        }, { onConflict: 'student_id,content_id' });
+    }
+    if (contentType && unitName && sectionName) {
+        await openContentList(contentType, grade, branch, unitName, sectionName);
+    }
 }
 
 async function markContentCompleted(contentId, grade, branch, unitName, sectionName) {
@@ -4090,6 +4113,7 @@ function globalAddReportTemplate() {
         var t = document.getElementById('r-text').value.trim();
         if (!u || !s || !t) return alert('Tum alanlari doldurun');
         if (supabaseClient) {
+            await supabaseClient.from('report_templates').delete().eq('grade', g).eq('unit_name', u).eq('section_name', s);
             await supabaseClient.from('report_templates').insert([{ grade: g, unit_name: u, section_name: s, report_text: t }]);
         }
         closeModal();
@@ -4105,6 +4129,7 @@ function fillRepUnits(grade) {
     (fenData[grade]?.units || []).forEach(function(u) {
         sel.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>';
     });
+    fillRepSections();
 }
 
 function fillRepSections() {
@@ -4121,237 +4146,329 @@ function fillRepSections() {
 
 function globalDeleteManagement() {
     openModal('Silme Yonetimi',
-        '<select id="d-grade" class="auth-input" onchange="fillDelUnits(this.value)"><option value="5">5. Sinif</option><option value="6" selected>6. Sinif</option><option value="7">7. Sinif</option><option value="8">8. Sinif</option></select>' +
-        '<select id="d-type" class="auth-input" onchange="toggleDel()"><option value="unit">Unite Sil</option><option value="section">Bolum Sil</option><option value="activity">Etkinlik Sil</option><option value="report">Rapor Sil</option></select>' +
-        '<div id="d-unit-box"><select id="d-unit" class="auth-input"></select></div>' +
-        '<div id="d-sec-box" style="display:none;"><select id="d-sec-unit" class="auth-input" onchange="fillDelSecs()"><option value="">Unite</option></select><select id="d-sec" class="auth-input"><option value="">Bolum</option></select></div>' +
-        '<div id="d-act-box" style="display:none;"><select id="d-act" class="auth-input"><option value="">Etkinlik</option></select></div>' +
-        '<div id="d-rep-box" style="display:none;"><select id="d-rep" class="auth-input"><option value="">Rapor</option></select></div>',
+        '<select id="d-grade" class="auth-input" onchange="toggleDel()"><option value="5">5. Sinif</option><option value="6">6. Sinif</option><option value="7">7. Sinif</option><option value="8">8. Sinif</option></select>' +
+        '<select id="d-type" class="auth-input" onchange="toggleDel()"><option value="unit">Unite</option><option value="section">Bolum</option><option value="activity">Etkinlik</option><option value="report">Rapor</option></select>' +
+        '<div id="d-target-area" style="margin-top:10px;"></div>',
     async function() {
         var g = document.getElementById('d-grade').value;
-        var type = document.getElementById('d-type').value;
-        if (!confirm('Silmek istediginize emin misiniz?')) return;
-        if (supabaseClient) {
-            if (type === 'unit') {
-                var u = document.getElementById('d-unit').value;
-                if (!u) return alert('Unite secin');
-                await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', u);
-            } else if (type === 'section') {
-                var su = document.getElementById('d-sec-unit').value;
-                var s = document.getElementById('d-sec').value;
-                if (!su || !s) return alert('Bolum secin');
-                await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', su).eq('section_name', s);
-            } else if (type === 'activity') {
-                var a = document.getElementById('d-act').value;
-                if (!a) return alert('Etkinlik secin');
-                await supabaseClient.from('activities').delete().eq('grade', g).eq('activity_name', a);
-            } else if (type === 'report') {
-                var r = document.getElementById('d-rep').value;
-                if (!r) return alert('Rapor secin');
-                await supabaseClient.from('report_templates').delete().eq('id', r);
+        var t = document.getElementById('d-type').value;
+        if (t === 'unit') {
+            var u = document.getElementById('d-unit').value;
+            if (!u) return alert('Unite secin');
+            if (supabaseClient) await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', u);
+            await loadAllDataFromSupabase(); closeModal(); alert('Unite silindi');
+        } else if (t === 'section') {
+            var u2 = document.getElementById('d-unit').value;
+            var s = document.getElementById('d-section').value;
+            if (!u2 || !s) return alert('Unite ve bolum secin');
+            if (supabaseClient) await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', u2).eq('section_name', s);
+            await loadAllDataFromSupabase(); closeModal(); alert('Bolum silindi');
+        } else if (t === 'activity') {
+            var u3 = document.getElementById('d-unit')?.value;
+            var s3 = document.getElementById('d-section')?.value;
+            var a = document.getElementById('d-act')?.value;
+            if (!u3 || !s3 || !a) return alert('Unite, bolum ve etkinlik secin');
+            if (supabaseClient) {
+                var matchingActs = (fenData[g]?.activities || []).filter(function(act) {
+                    if (act.unit !== u3 || act.section !== s3) return false;
+                    var actName = (act.name || '').trim();
+                    var parts = actName.split(' - ');
+                    var baseName = parts.length >= 2 ? (parts[0] + ' - ' + parts[1]).trim() : actName;
+                    return actName === a || baseName === a || actName.indexOf(a + ' -') === 0;
+                });
+                var namesToDelete = Array.from(new Set(matchingActs.map(function(x) { return x.name; }).concat([a])));
+                await supabaseClient
+                    .from('activities')
+                    .delete()
+                    .eq('grade', g)
+                    .eq('unit_name', u3)
+                    .eq('section_name', s3)
+                    .in('activity_name', namesToDelete);
             }
+            await loadAllDataFromSupabase(); closeModal(); alert('Etkinlik ve bagli olcekler silindi');
+        } else if (t === 'report') {
+            var u4 = document.getElementById('d-unit')?.value;
+            var s4 = document.getElementById('d-section')?.value;
+            var id = document.getElementById('d-rep')?.value;
+            if (!u4 || !s4 || !id) return alert('Unite, bolum ve rapor secin');
+            if (supabaseClient) await supabaseClient.from('report_templates').delete().eq('id', id);
+            closeModal(); alert('Rapor silindi');
         }
-        await loadAllDataFromSupabase();
-        closeModal();
-        alert('Silindi');
     });
-    fillDelUnits('6');
+    toggleDel();
 }
 
-function toggleDel() {
+async function toggleDel() {
+    var g = document.getElementById('d-grade').value;
     var t = document.getElementById('d-type').value;
-    document.getElementById('d-unit-box').style.display = t === 'unit' ? 'block' : 'none';
-    document.getElementById('d-sec-box').style.display = t === 'section' ? 'block' : 'none';
-    document.getElementById('d-act-box').style.display = t === 'activity' ? 'block' : 'none';
-    document.getElementById('d-rep-box').style.display = t === 'report' ? 'block' : 'none';
-    fillDelUnits(document.getElementById('d-grade').value);
-}
-
-function fillDelUnits(g) {
+    var area = document.getElementById('d-target-area');
     var units = fenData[g]?.units || [];
-    var u1 = document.getElementById('d-unit');
-    var u2 = document.getElementById('d-sec-unit');
-    if (u1) { u1.innerHTML = '<option value="">Unite</option>'; units.forEach(function(u) { u1.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>'; }); }
-    if (u2) { u2.innerHTML = '<option value="">Unite</option>'; units.forEach(function(u) { u2.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>'; }); }
-    var a = document.getElementById('d-act');
-    if (a) {
-        a.innerHTML = '<option value="">Etkinlik</option>';
-        (fenData[g]?.activities || []).forEach(function(act) {
-            a.innerHTML += '<option value="' + act.name + '">' + act.name + '</option>';
-        });
-    }
-    var r = document.getElementById('d-rep');
-    if (r && supabaseClient) {
-        r.innerHTML = '<option value="">Rapor</option>';
-        supabaseClient.from('report_templates').select('id,unit_name,section_name').eq('grade', g).then(function(res) {
-            if (res.data) res.data.forEach(function(rep) {
-                r.innerHTML += '<option value="' + rep.id + '">' + rep.unit_name + ' - ' + rep.section_name + '</option>';
-            });
-        });
+    if (t === 'unit') {
+        var opts = '<option value="">-- Unite Secin --</option>';
+        units.forEach(function(u) { opts += '<option value="' + u.name + '">' + u.name + '</option>'; });
+        area.innerHTML = '<select id="d-unit" class="auth-input">' + opts + '</select>';
+    } else if (t === 'section') {
+        var opts2 = '<option value="">-- Unite Secin --</option>';
+        units.forEach(function(u) { opts2 += '<option value="' + u.name + '">' + u.name + '</option>'; });
+        area.innerHTML = '<select id="d-unit" class="auth-input" onchange="fillDelSecs()">' + opts2 + '</select><select id="d-section" class="auth-input"><option value="">-- Bolum Secin --</option></select>';
+    } else if (t === 'activity') {
+        var uOptsA = '<option value="">-- Unite Secin --</option>';
+        units.forEach(function(u) { uOptsA += '<option value="' + u.name + '">' + u.name + '</option>'; });
+        area.innerHTML = '<select id="d-unit" class="auth-input" onchange="fillDelSecs()">' + uOptsA + '</select>' +
+            '<select id="d-section" class="auth-input" onchange="fillDelActs()"><option value="">-- Once Unite Secin --</option></select>' +
+            '<select id="d-act" class="auth-input"><option value="">-- Once Bolum Secin --</option></select>';
+    } else if (t === 'report') {
+        var uOptsR = '<option value="">-- Unite Secin --</option>';
+        units.forEach(function(u) { uOptsR += '<option value="' + u.name + '">' + u.name + '</option>'; });
+        area.innerHTML = '<select id="d-unit" class="auth-input" onchange="fillDelSecs()">' + uOptsR + '</select>' +
+            '<select id="d-section" class="auth-input" onchange="fillDelReps()"><option value="">-- Once Unite Secin --</option></select>' +
+            '<select id="d-rep" class="auth-input"><option value="">-- Once Bolum Secin --</option></select>';
     }
 }
 
 function fillDelSecs() {
     var g = document.getElementById('d-grade').value;
-    var u = document.getElementById('d-sec-unit').value;
-    var sel = document.getElementById('d-sec');
-    sel.innerHTML = '<option value="">Bolum</option>';
+    var t = document.getElementById('d-type').value;
+    var u = document.getElementById('d-unit').value;
+    var sel = document.getElementById('d-section');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- Bolum Secin --</option>';
+    if (!u) return;
     var unit = fenData[g]?.units.find(function(x) { return x.name === u; });
-    if (unit) unit.sections.forEach(function(s) {
-        sel.innerHTML += '<option value="' + s + '">' + s + '</option>';
+    if (unit && unit.sections && unit.sections.length > 0) {
+        unit.sections.forEach(function(s) {
+            sel.innerHTML += '<option value="' + s + '">' + s + '</option>';
+        });
+    } else {
+        sel.innerHTML += '<option value="Genel">Genel</option>';
+    }
+    if (t === 'activity') fillDelActs();
+    if (t === 'report') fillDelReps();
+}
+
+function fillDelActs() {
+    var g = document.getElementById('d-grade').value;
+    var u = document.getElementById('d-unit')?.value;
+    var s = document.getElementById('d-section')?.value;
+    var sel = document.getElementById('d-act');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- Etkinlik Secin --</option>';
+    if (!u || !s) return;
+    var acts = (fenData[g]?.activities || []).filter(function(a) {
+        return a.unit === u && a.section === s;
+    });
+    var seen = {};
+    acts.forEach(function(a) {
+        var rawName = (a.name || '').trim();
+        if (!rawName) return;
+        var parts = rawName.split(' - ');
+        var baseName = parts.length >= 2 ? (parts[0] + ' - ' + parts[1]).trim() : rawName;
+        if (!seen[baseName]) {
+            seen[baseName] = true;
+            var opt = document.createElement('option');
+            opt.value = baseName;
+            opt.textContent = baseName;
+            sel.appendChild(opt);
+        }
     });
 }
 
-// ====================== ÖĞRENCİ İLERLEMESİ ======================
+async function fillDelReps() {
+    var g = document.getElementById('d-grade').value;
+    var u = document.getElementById('d-unit')?.value;
+    var s = document.getElementById('d-section')?.value;
+    var sel = document.getElementById('d-rep');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- Rapor Secin --</option>';
+    if (!u || !s || !supabaseClient) return;
+    var res = await supabaseClient.from('report_templates').select('*').eq('grade', g).eq('unit_name', u).eq('section_name', s);
+    (res.data || []).forEach(function(r) {
+        sel.innerHTML += '<option value="' + r.id + '">' + r.unit_name + ' - ' + r.section_name + '</option>';
+    });
+}
+
+function openBulkStudentModal(grade, branchName) {
+    openModal('Toplu Öğrenci Ekle',
+        '<textarea id="m-bulk" class="auth-input" style="height:130px;" placeholder="201 Ali Yılmaz\n202 Ayşe Kaya"></textarea>',
+    async function() {
+        var raw = document.getElementById('m-bulk').value.trim();
+        if (!raw) return;
+        var lines = raw.split(/\r?\n/).map(function(l) { return l.trim(); }).filter(Boolean);
+        var toInsert = [];
+        lines.forEach(function(line) {
+            var m = line.match(/^(\d+)[\s\t\-,;]+(.+)$/);
+            if (m) toInsert.push({ grade: grade, branch: branchName, school_no: parseInt(m[1]), name: m[2].trim() });
+        });
+        if (!toInsert.length) return alert('Format: 201 Ali Yılmaz');
+        if (supabaseClient) {
+            var res = await supabaseClient.from('students').insert(toInsert);
+            if (res.error) return alert(res.error.message);
+        }
+        await loadAllDataFromSupabase();
+        closeModal();
+        loadBranchTabContent('students', grade, branchName);
+    });
+}
+
+function validateScoreInput(el) {
+    var v = el.value.trim().toUpperCase();
+    if (v === '' || v === 'G') return;
+    if (!/^\d{1,3}$/.test(v)) {
+        el.value = v.replace(/[^0-9]/g, '').slice(0, 3);
+    }
+    var n = parseInt(el.value);
+    if (!isNaN(n) && n > 100) el.value = '100';
+}
+
+// ====================== ÖĞRENCİ İLERLEME RAPORU ======================
 function openStudentProgressPage() {
-    var html = '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">' +
-        '<select id="prog-grade" class="auth-input" style="width:120px;" onchange="fillProgressBranches()">' +
-            '<option value="5">5. Sınıf</option><option value="6" selected>6. Sınıf</option><option value="7">7. Sınıf</option><option value="8">8. Sınıf</option>' +
-        '</select>' +
-        '<select id="prog-branch" class="auth-input" style="width:140px;" onchange="loadStudentProgressTable()">' +
-            '<option value="">-- Şube Seç --</option>' +
-        '</select>' +
-        '<select id="prog-unit" class="auth-input" style="width:180px;" onchange="loadStudentProgressTable()">' +
-            '<option value="">Tüm Üniteler</option>' +
-        '</select>' +
-    '</div>' +
-    '<div id="prog-table-container"></div>';
+    var panel = document.getElementById('grade-detail-panel');
+    panel.style.display = 'flex';
+    document.getElementById('teacher-panel').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('student-panel').style.display = 'none';
 
-    openManagementPage('Öğrenci İlerleme Takibi', html);
-    setTimeout(fillProgressBranches, 50);
+    var gradeOpts = '';
+    ['5','6','7','8'].forEach(function(g) {
+        gradeOpts += '<option value="' + g + '">' + g + '. Sınıf</option>';
+    });
+
+    panel.innerHTML =
+        '<header class="teacher-header">' +
+            '<div class="header-brand"><h1>Öğrenci İlerlemesi</h1></div>' +
+            '<div>' +
+                '<button onclick="openManagementMenu()" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="logout()" class="logout-btn">Çıkış</button>' +
+            '</div>' +
+        '</header>' +
+        '<section class="dashboard-content" style="max-width:1000px;margin:0 auto;">' +
+            '<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">' +
+                '<select id="prog-grade" class="auth-input" style="width:auto;" onchange="fillProgBranches()">' + gradeOpts + '</select>' +
+                '<select id="prog-branch" class="auth-input" style="width:auto;" onchange="loadStudentProgressTable()"><option value="">-- Şube Seçin --</option></select>' +
+                '<select id="prog-unit" class="auth-input" style="width:auto;" onchange="loadStudentProgressTable()"><option value="ALL">Tüm Üniteler</option></select>' +
+            '</div>' +
+            '<div id="student-progress-table"></div>' +
+        '</section>';
+
+    fillProgBranches();
 }
 
-function fillProgressBranches() {
-    var g = document.getElementById('prog-grade')?.value;
-    var sel = document.getElementById('prog-branch');
-    var unitSel = document.getElementById('prog-unit');
-    if (!sel || !g) return;
-    sel.innerHTML = '<option value="">-- Şube Seç --</option>';
-    var branches = Object.keys(fenData[g]?.branches || {});
-    branches.forEach(function(b) {
-        var short = b.indexOf('/') >= 0 ? b.split('/')[1] : b;
-        sel.innerHTML += '<option value="' + b + '">' + short + '</option>';
-    });
-    if (branches.length > 0) sel.value = branches[0];
-
-    if (unitSel) {
-        unitSel.innerHTML = '<option value="">Tüm Üniteler</option>';
-        (fenData[g]?.units || []).forEach(function(u) {
-            unitSel.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>';
+function fillProgBranches() {
+    var grade = document.getElementById('prog-grade')?.value || '5';
+    var bSel = document.getElementById('prog-branch');
+    var uSel = document.getElementById('prog-unit');
+    if (bSel) {
+        bSel.innerHTML = '';
+        var branches = Object.keys(fenData[grade]?.branches || {});
+        branches.forEach(function(b) {
+            var short = b.indexOf('/') >= 0 ? b.split('/')[1] : b;
+            bSel.innerHTML += '<option value="' + b + '">' + short + '</option>';
+        });
+    }
+    if (uSel) {
+        uSel.innerHTML = '<option value="ALL">Tüm Üniteler</option>';
+        (fenData[grade]?.units || []).forEach(function(u) {
+            uSel.innerHTML += '<option value="' + u.name + '">' + u.name + '</option>';
         });
     }
     loadStudentProgressTable();
 }
 
 async function loadStudentProgressTable() {
-    var g = document.getElementById('prog-grade')?.value;
-    var b = document.getElementById('prog-branch')?.value;
-    var uFilter = document.getElementById('prog-unit')?.value;
-    var cont = document.getElementById('prog-table-container');
-    if (!cont || !g || !b) {
-        if (cont) cont.innerHTML = '<p style="color:#94a3b8;font-size:13px;">Şube seçin.</p>';
+    var grade = document.getElementById('prog-grade')?.value || '5';
+    var branch = document.getElementById('prog-branch')?.value || '';
+    var unit = document.getElementById('prog-unit')?.value || 'ALL';
+    var container = document.getElementById('student-progress-table');
+    if (!container) return;
+
+    var students = (fenData[grade]?.branches?.[branch] || []).slice().sort(function(a,b){ return parseInt(a.no)-parseInt(b.no); });
+    if (students.length === 0) {
+        container.innerHTML = '<p style="color:#64748b;font-size:13px;">Bu şubede öğrenci bulunamadı.</p>';
         return;
     }
 
-    var students = fenData[g]?.branches?.[b] || [];
-    var allLessons = (fenData[g]?.lessons || []).filter(function(l) {
-        return !uFilter || l.unit === uFilter;
+    var allLessons = (fenData[grade]?.lessons || []).filter(function(l) {
+        return unit === 'ALL' || l.unit === unit;
     });
 
-    if (students.length === 0) {
-        cont.innerHTML = '<p style="color:#94a3b8;font-size:13px;">Bu şubede öğrenci yok.</p>';
-        return;
-    }
+    var typeLessonMap = {
+        pptx: allLessons.filter(function(l) { return l.type === 'pptx'; }),
+        video: allLessons.filter(function(l) { return l.type === 'video'; }),
+        experiment: allLessons.filter(function(l) { return l.type === 'experiment'; }),
+        quiz: allLessons.filter(function(l) { return l.type === 'quiz'; })
+    };
 
-    var completedMap = {};
+    var studentCompletedMap = {};
     if (supabaseClient) {
-        var { data: pRows } = await supabaseClient
-            .from('student_progress')
-            .select('student_id, content_id, is_completed')
-            .eq('grade', g)
-            .eq('branch', b)
-            .eq('is_completed', true);
-        (pRows || []).forEach(function(r) {
-            if (!completedMap[r.student_id]) completedMap[r.student_id] = [];
-            completedMap[r.student_id].push(r.content_id);
-        });
+        var studentIds = students.map(function(s) { return s.id; }).filter(Boolean);
+        if (studentIds.length > 0) {
+            var { data: progRows } = await supabaseClient
+                .from('student_progress')
+                .select('student_id,content_id')
+                .in('student_id', studentIds)
+                .eq('is_completed', true);
+            (progRows || []).forEach(function(r) {
+                if (!studentCompletedMap[r.student_id]) studentCompletedMap[r.student_id] = {};
+                studentCompletedMap[r.student_id][r.content_id] = true;
+            });
+        }
     }
 
-    var totalContentCount = allLessons.length;
+    function renderStatusIcon(doneSet, typeKey) {
+        var list = typeLessonMap[typeKey] || [];
+        if (list.length === 0) {
+            return '<span style="color:#64748b;font-weight:700;">-</span>';
+        }
+        var hasCompleted = list.some(function(item) { return !!doneSet[item.id]; });
+        if (hasCompleted) {
+            return '<span style="color:#22c55e;font-weight:700;font-size:16px;">✓</span>';
+        }
+        return '<span style="color:#ef4444;font-weight:700;font-size:16px;">✗</span>';
+    }
+
     var rows = '';
     students.forEach(function(s) {
-        var doneList = completedMap[s.id] || [];
-        var doneCount = allLessons.filter(function(l) { return doneList.indexOf(l.id) >= 0; }).length;
-        var pct = totalContentCount > 0 ? Math.round((doneCount / totalContentCount) * 100) : 0;
-
+        var doneSet = studentCompletedMap[s.id] || {};
         rows += '<tr>' +
-            '<td>' + s.no + '</td>' +
-            '<td style="text-align:left;font-weight:500;">' + s.name + '</td>' +
-            '<td>' + doneCount + ' / ' + totalContentCount + '</td>' +
-            '<td style="min-width:140px;">' +
-                '<div style="display:flex;align-items:center;gap:8px;">' +
-                    '<div class="progress-bar-container" style="flex:1;margin:0;height:8px;">' +
-                        '<div class="progress-bar-fill" style="width:' + pct + '%"></div>' +
-                    '</div>' +
-                    '<span style="font-size:12px;font-weight:600;min-width:36px;">%' + pct + '</span>' +
-                '</div>' +
-            '</td>' +
+            '<td style="text-align:center;">' + s.no + '</td>' +
+            '<td style="text-align:left;font-weight:600;">' + s.name + '</td>' +
+            '<td style="text-align:center;">' + renderStatusIcon(doneSet, 'pptx') + '</td>' +
+            '<td style="text-align:center;">' + renderStatusIcon(doneSet, 'video') + '</td>' +
+            '<td style="text-align:center;">' + renderStatusIcon(doneSet, 'experiment') + '</td>' +
+            '<td style="text-align:center;">' + renderStatusIcon(doneSet, 'quiz') + '</td>' +
         '</tr>';
     });
 
-    cont.innerHTML = '<div style="overflow-x:auto;">' +
-        '<table class="data-table">' +
-            '<thead><tr><th>No</th><th style="text-align:left;">Ad Soyad</th><th>Tamamlanan</th><th>İlerleme</th></tr></thead>' +
-            '<tbody>' + rows + '</tbody>' +
-        '</table>' +
-    '</div>';
-}
-
-function validateScoreInput(el) {
-    if (!el) return;
-    var v = el.value.toUpperCase();
-    if (v === 'G') { el.value = 'G'; return; }
-    var cleaned = v.replace(/[^0-9]/g, '');
-    if (cleaned === '') { el.value = ''; return; }
-    var n = parseInt(cleaned, 10);
-    if (isNaN(n)) { el.value = ''; return; }
-    if (n > 100) n = 100;
-    if (n < 0) n = 0;
-    el.value = n.toString();
-}
-
-function openBulkStudentModal(grade, branchName) {
-    openModal('Toplu Öğrenci Ekle',
-        '<p style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Her satıra: <b>Okul No</b> ve <b>Ad Soyad</b> yazın. (Örn: 125 Ahmet Yılmaz)</p>' +
-        '<textarea id="m-bulk-students" class="auth-input" style="height:180px;font-family:monospace;font-size:12px;" placeholder="101 Ali Veli\n102 Ayşe Kaya\n103 Mehmet Demir"></textarea>',
-    async function() {
-        var raw = document.getElementById('m-bulk-students').value.trim();
-        if (!raw) return alert('Lütfen en az bir öğrenci girin');
-        var lines = raw.split(/\r?\n/).map(function(l) { return l.trim(); }).filter(Boolean);
-        var toInsert = [];
-        for (var i = 0; i < lines.length; i++) {
-            var m = lines[i].match(/^(\d+)\s+(.+)$/);
-            if (!m) return alert((i + 1) + '. satır hatalı: "' + lines[i] + '". Format: No Ad Soyad');
-            toInsert.push({
-                grade: grade,
-                branch: branchName,
-                school_no: parseInt(m[1], 10),
-                name: m[2].trim()
-            });
-        }
-        if (supabaseClient) {
-            var res = await supabaseClient.from('students').insert(toInsert);
-            if (res.error) return alert('Kayıt hatası: ' + res.error.message);
-        }
-        await loadAllDataFromSupabase();
-        closeModal();
-        alert(toInsert.length + ' öğrenci eklendi!');
-        loadBranchTabContent('students', grade, branchName);
-    });
+    container.innerHTML =
+        '<div style="overflow-x:auto;">' +
+            '<table class="data-table">' +
+                '<thead><tr>' +
+                    '<th>No</th>' +
+                    '<th style="text-align:left;">Ad Soyad</th>' +
+                    '<th>Konu Anlatımı</th>' +
+                    '<th>Video</th>' +
+                    '<th>Deney</th>' +
+                    '<th>Quiz</th>' +
+                '</tr></thead>' +
+                '<tbody>' + rows + '</tbody>' +
+            '</table>' +
+        '</div>';
 }
 
 // ====================== BAŞLAT ======================
-document.addEventListener('DOMContentLoaded', async function() {
+window.addEventListener('DOMContentLoaded', async function() {
+    var tEmail = document.getElementById('teacher-email');
+    var tPass = document.getElementById('teacher-password');
+    if (tEmail) {
+        tEmail.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); teacherLogin(); }
+        });
+    }
+    if (tPass) {
+        tPass.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); teacherLogin(); }
+        });
+    }
     await loadAllDataFromSupabase();
     updateStudentBranches();
     restoreStateFromSession();
