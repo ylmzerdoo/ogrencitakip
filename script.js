@@ -366,6 +366,71 @@ function logout() {
     renderAuthScreenView(false);
 }
 
+function showStudentScaleDetail(grade, branch, activityName, unit, section) {
+    var student = null;
+    try {
+        var st = JSON.parse(sessionStorage.getItem('fen_app_state') || '{}');
+        student = st.student;
+    } catch(e){}
+    if (!student) return alert('Öğrenci bilgisi bulunamadı.');
+
+    var scales = (fenData[grade]?.activities || []).filter(function(a) {
+        return a.unit === unit && a.section === section && (a.name === activityName || a.name.indexOf(activityName + ' -') === 0);
+    });
+
+    if (scales.length === 0) return alert('Bu etkinlik için ölçek bulunamadı.');
+
+    saveState({ type: "student-scale-detail", grade: grade, branch: branch, student: student, activityName: activityName, unit: unit, section: section });
+
+    var panel = document.getElementById('student-panel');
+    var html = '<header class="teacher-header">' +
+        '<div class="header-brand"><h1>Ölçek Detayları</h1></div>' +
+        '<div>' +
+            '<button onclick="openStudentActivities(\'' + grade + '\',\'' + branch + '\')" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+            '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
+        '</div>' +
+    '</header>' +
+    '<section class="dashboard-content" style="max-width:1000px;margin:0 auto;padding:20px;">' +
+        '<div style="background:#1e293b;padding:16px;border-radius:12px;margin-bottom:20px;">' +
+            '<h2 style="margin:0 0 8px 0;color:#fff;">' + activityName + '</h2>' +
+            '<p style="color:#94a3b8;font-size:14px;margin:0;">' + unit + '</p>' +
+            '<p style="color:#64748b;font-size:13px;margin:4px 0 0;">' + section + '</p>' +
+        '</div>';
+
+    scales.forEach(function(sc) {
+        var stored = student.scale?.[sc.name] || {};
+        var criteria = (sc.criteria || []).filter(function(c) {
+            return c && String(c).indexOf('Değerlendiren') < 0 && String(c).indexOf('Akran') < 0;
+        });
+        var scaleType = sc.scale_type || '1-4';
+        var scaleName = sc.name.split(' - ').pop();
+        var isAkran = scaleName.toLowerCase().indexOf('akran') >= 0;
+        
+        html += '<div style="background:#0f172a;padding:16px;border-radius:12px;margin-bottom:16px;border:1px solid #334155;">';
+        html += '<h3 style="margin:0 0 8px 0;color:#60a5fa;font-size:16px;">' + scaleName + '</h3>';
+        html += '<p style="font-size:12px;color:#94a3b8;margin-bottom:12px;padding:8px;background:#1e293b;border-radius:6px;">';
+        if (scaleType === '1-4') html += 'Kodlama: 4=Çok İyi | 3=İyi | 2=Geliştirilmeli | 1=Yetersiz';
+        else if (scaleType === 'evet-hayir') html += 'Kodlama: 3=Evet | 2=Kısmen | 1=Hayır';
+        else html += 'Kodlama: 1=Var | 0=Yok';
+        html += '</p>';
+        html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="border-bottom:1px solid #334155;">';
+        criteria.forEach(function(c) { 
+            html += '<th style="padding:10px 4px;text-align:center;font-size:10px;font-weight:500;color:#94a3b8;min-width:60px;max-width:100px;white-space:normal;word-break:break-word;line-height:1.3;">' + c + '</th>'; 
+        });
+        html += '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:500;color:#94a3b8;min-width:60px;">Toplam</th></tr></thead><tbody><tr>';
+        criteria.forEach(function(_, i) {
+            var val = stored[i] !== undefined ? stored[i] : '-';
+            html += '<td style="padding:14px 6px;text-align:center;font-size:16px;font-weight:700;color:#fff;">' + val + '</td>';
+        });
+        var total = stored.totalScore !== undefined ? stored.totalScore : '-';
+        html += '<td style="padding:14px 6px;text-align:center;">' + getScaleBadge(total) + '</td>';
+        html += '</tr></tbody></table></div></div>';
+    });
+
+    html += '</section>';
+    panel.innerHTML = html;
+}
+
 function logoutStudent() {
     sessionStorage.removeItem('fen_app_state');
     history.pushState({ type: 'auth' }, '', '#giris');
@@ -451,8 +516,41 @@ function openManagementMenu() {
                 '<div class="grade-card" onclick="openStudentProgressPage()" style="border-top-color:#a855f7;">' +
                     '<h3>Öğrenci İlerlemesi</h3><span class="card-action">Git →</span>' +
                 '</div>' +
+                '<div class="grade-card" onclick="openTeacherInfoPage()" style="border-top-color:#ec4899;">' +
+                    '<h3>Öğretmen Bilgileri</h3><span class="card-action">Git →</span>' +
+                '</div>' +
             '</div>' +
         '</section>';
+}
+
+function openTeacherInfoPage() {
+    var schoolName = localStorage.getItem('fen_school_name') || '';
+    var academicYear = localStorage.getItem('fen_academic_year') || '2025-2026';
+    
+    openModal('Öğretmen Bilgileri',
+        '<div style="margin-bottom:12px;">' +
+            '<label style="display:block;margin-bottom:4px;font-size:13px;color:#94a3b8;">Okul Adı</label>' +
+            '<input type="text" id="school-name" class="auth-input" value="' + schoolName + '" placeholder="Örn: Atatürk Ortaokulu">' +
+        '</div>' +
+        '<div style="margin-bottom:12px;">' +
+            '<label style="display:block;margin-bottom:4px;font-size:13px;color:#94a3b8;">Eğitim-Öğretim Yılı</label>' +
+            '<input type="text" id="academic-year" class="auth-input" value="' + academicYear + '" placeholder="Örn: 2025-2026">' +
+        '</div>' +
+        '<p style="font-size:12px;color:#64748b;">Bu bilgiler PDF ve Word belgelerinde resmi başlık olarak kullanılacak.</p>',
+    function() {
+        var name = document.getElementById('school-name').value.trim();
+        var year = document.getElementById('academic-year').value.trim();
+        if (name) localStorage.setItem('fen_school_name', name);
+        if (year) localStorage.setItem('fen_academic_year', year);
+        closeModal();
+        alert('Bilgiler kaydedildi!');
+    });
+}
+
+function getSchoolHeader() {
+    var schoolName = localStorage.getItem('fen_school_name') || 'OKUL ADI';
+    var academicYear = localStorage.getItem('fen_academic_year') || '2025-2026';
+    return academicYear + ' EĞİTİM-ÖĞRETİM YILI<br><span style="font-size:14px;">' + schoolName + '</span>';
 }
 
 function openManagementPage(title, contentHtml) {
@@ -1471,10 +1569,10 @@ function openStudentQuizResults(grade, branch) {
         '</header>' +
         '<section class="dashboard-content" style="max-width:800px;margin:0 auto;">' +
             '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;">' +
-                '<button onclick="exportTableToWord(\'quiz-print\',\'' + student.name.replace(/'/g,"") + '_Quiz\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#2563eb;">Word</button>' +
-                '<button onclick="exportTableToPDF(\'quiz-print\',\'' + student.name.replace(/'/g,"") + '_Quiz\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#dc2626;">PDF</button>' +
+                '<button onclick="exportTableToWord(\'student-quiz-print\',\'' + student.name.replace(/'/g,"") + '_Quiz\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#2563eb;">Word</button>' +
+                '<button onclick="exportTableToPDF(\'student-quiz-print\',\'' + student.name.replace(/'/g,"") + '_Quiz\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#dc2626;">PDF</button>' +
             '</div>' +
-            '<div id="quiz-print" class="print-area">' +
+            '<div id="student-quiz-print" class="print-area">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">' +
                 '<div style="background:rgba(30,41,59,0.7);padding:10px 14px;border-radius:12px;display:flex;align-items:center;gap:10px;">' +
                     '<span style="font-size:28px;">' + getFenBadge(avg).icon + '</span>' +
@@ -1540,6 +1638,7 @@ function openStudentActivityResults(grade, branch) {
                         '<span style="font-size:12px;color:#60a5fa;">' + baseName + '</span>' +
                     '</td>' +
                     '<td>' + getScaleBadge(avg) + '</td>' +
+                    '<td><button onclick="showStudentScaleDetail(\'' + grade + '\',\'' + branch + '\',\'' + baseName.replace(/'/g, "\\'") + '\',\'' + group.unit.replace(/'/g, "\\'") + '\',\'' + group.section.replace(/'/g, "\\'") + '\')" class="auth-btn" style="width:auto;padding:4px 10px;font-size:11px;background:#3b82f6;">Ölçek Gör</button></td>' +
                 '</tr>';
                 sSum += avg; sCnt++;
             });
@@ -1605,7 +1704,7 @@ function openStudentActivityResults(grade, branch) {
             '</div>' +
             chartHtml +
             '<table class="data-table">' +
-                '<thead><tr><th style="text-align:left;">Ünite / Bölüm / Etkinlik</th><th>Ort</th></tr></thead>' +
+                '<thead><tr><th style="text-align:left;">Ünite / Bölüm / Etkinlik</th><th>Ort</th><th style="width:80px;">Detay</th></tr></thead>' +
                 '<tbody>' + (rows || '<tr><td colspan="2">Henüz etkinlik sonucu yok</td></tr>') + '</tbody>' +
             '</table>' +
             '</div>' +
@@ -2608,7 +2707,7 @@ function renderQuizTable(grade, branchName) {
     });
     cont.innerHTML =
         '<div id="quiz-print" class="print-area">' +
-            '<div class="print-header"><h2>FENOMENAL FEN BILIMLERI</h2><h3>' + grade + '. Sinif (' + branchName + ') - Quiz</h3></div>' +
+            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">FEN BİLİMLERİ DERSİ</p><h3>' + grade + '. Sinif (' + branchName + ') - Quiz</h3></div>' +
             '<div class="print-info">' +
                 '<p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p>' +
                 '<p><b>Unite:</b> ' + unit + '</p>' +
@@ -2727,8 +2826,12 @@ function renderActivityTable(grade, branchName) {
     if (selected && selected !== '--TUM--') {
         var scale = subScales.find(function(a) { return a.name === selected; });
         if (!scale) return;
-        var criteria = scale.criteria || ['1. Kriter','2. Kriter','3. Kriter','4. Kriter'];
+        var criteria = (scale.criteria || ['1. Kriter','2. Kriter','3. Kriter','4. Kriter']).filter(function(c) {
+            return c && String(c).indexOf('Değerlendiren') < 0 && String(c).indexOf('Akran') < 0;
+        });
+        var isAkran = (scale.name || '').toLowerCase().indexOf('akran') >= 0;
         var head = '<th style="width:50px;">No</th><th style="min-width:140px; text-align:left;">Ad Soyad</th>';
+        if (isAkran) head += '<th style="min-width:120px; font-size:10px;">Değerlendiren</th>';
         criteria.forEach(function(c) {
             head += '<th style="min-width:65px; max-width:90px; font-size:10px; white-space:normal; word-break:break-word; line-height:1.25;">' + c + '</th>';
         });
@@ -2737,6 +2840,17 @@ function renderActivityTable(grade, branchName) {
         students.forEach(function(s, sIdx) {
             var stored = s.scale?.[selected] || {};
             var cells = '<td style="white-space:nowrap;">' + s.no + '</td><td style="white-space:nowrap; text-align:left;">' + s.name + '</td>';
+            // Akran değerlendirme için rastgele sınıf arkadaşı
+            if (isAkran) {
+                var classmates = students.filter(function(st) { return st.no !== s.no; });
+                var akranName = '-';
+                if (classmates.length > 0) {
+                    var seed = parseInt(s.no) || sIdx;
+                    var idx = seed % classmates.length;
+                    akranName = classmates[idx].name;
+                }
+                cells += '<td style="font-size:11px; color:#60a5fa;">' + akranName + '</td>';
+            }
             criteria.forEach(function(_, cIdx) {
                 var val = stored[cIdx] !== undefined ? stored[cIdx] : '';
                 cells += '<td><input type="text" id="crit-' + sIdx + '-' + cIdx + '" data-no="' + s.no + '" class="auth-input" style="width:45px; padding:5px; text-align:center; font-size:12px;" value="' + val + '" oninput="validateScoreInput(this)"></td>';
@@ -2747,8 +2861,13 @@ function renderActivityTable(grade, branchName) {
         });
         cont.innerHTML =
             '<div id="act-print" class="print-area">' +
-                '<div class="print-header"><h2>FENOMENAL FEN BILIMLERI</h2><h3>Tekil Olcek</h3></div>' +
+                '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">FEN BİLİMLERİ DERSİ</p></div>' +
                 '<div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Olcek:</b> ' + scale.name + '</p></div>' +
+                '<div style="background:#1e293b;padding:8px 12px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#94a3b8;">' +
+                    (scale.scale_type === '1-4' ? 'Kodlama: 4=Cok Iyi | 3=Iyi | 2=Gelistirilmeli | 1=Yetersiz' : 
+                     scale.scale_type === 'var-yok' ? 'Kodlama: 1=Var | 0=Yok' : 
+                     'Kodlama: 3=Evet | 2=Kismen | 1=Hayir') +
+                '</div>' +
                 '<div style="overflow-x:auto;"><table class="data-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
             '</div>' +
             '<div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">' +
@@ -2779,7 +2898,7 @@ function renderActivityTable(grade, branchName) {
     });
     cont.innerHTML =
         '<div id="act-print" class="print-area">' +
-            '<div class="print-header"><h2>FENOMENAL FEN BILIMLERI</h2><h3>Tum Olcekler</h3></div><div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Etkinlik:</b> ' + base + '</p></div>' +
+            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">FEN BİLİMLERİ DERSİ</p><h3>Tum Olcekler</h3></div><div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Etkinlik:</b> ' + base + '</p></div>' +
             '<div style="overflow-x:auto;"><table class="data-table"><thead><tr>' + head2 + '</tr></thead><tbody>' + body2 + '</tbody></table></div>' +
         '</div>' +
         '<div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">' +
@@ -2859,19 +2978,25 @@ async function saveGroupScales(grade, branchName, baseName) {
                 if (isNaN(target)) return;
                 if (target < 0) target = 0;
                 if (target > 100) target = 100;
-                if (sc.scale_type === '1-4') {
-                    var max = critCount * 4;
-                    var score = Math.round((target / 100) * max);
-                    var baseVal = Math.floor(score / critCount);
-                    var rem = score % critCount;
-                    for (var c2 = 0; c2 < critCount; c2++) {
-                        var v2 = baseVal + (c2 < rem ? 1 : 0);
-                        if (v2 < 1) v2 = 1; if (v2 > 4) v2 = 4;
-                        s.scale[sc.name][c2] = v2;
-                    }
-                } else {
-                    var score2 = Math.round((target / 100) * critCount);
-                    for (var c3 = 0; c3 < critCount; c3++) s.scale[sc.name][c3] = c3 < score2 ? 1 : 0;
+                var minVal = 1, maxVal = 4;
+                var st = (sc.scale_type || '').toLowerCase();
+                var nm = (sc.name || '').toLowerCase();
+                // Hem scale_type hem de ölçek adından kontrol et
+                if (st.indexOf('1-4') >= 0 || nm.indexOf('rubrik') >= 0 || nm.indexOf('analitik') >= 0 || nm.indexOf('holistik') >= 0) { minVal = 1; maxVal = 4; }
+                else if (st.indexOf('evet') >= 0 || st.indexOf('formu') >= 0 || nm.indexOf('formu') >= 0 || nm.indexOf('gozlem') >= 0 || nm.indexOf('gözlem') >= 0 || nm.indexOf('oz') >= 0 || nm.indexOf('öz') >= 0 || nm.indexOf('akran') >= 0) { minVal = 1; maxVal = 3; }
+                else if (st.indexOf('var') >= 0 || st.indexOf('kontrol') >= 0 || nm.indexOf('kontrol') >= 0 || nm.indexOf('liste') >= 0 || nm.indexOf('listesi') >= 0) { minVal = 0; maxVal = 1; }
+                
+                // Hedef yüzdeye göre toplam puan hesapla ve kriterlere dağıt
+                var maxTotal = critCount * maxVal;
+                var targetTotal = Math.round((target / 100) * maxTotal);
+                var baseVal = Math.floor(targetTotal / critCount);
+                var remainder = targetTotal % critCount;
+                
+                for (var c2 = 0; c2 < critCount; c2++) {
+                    var v = baseVal + (c2 < remainder ? 1 : 0);
+                    if (v < minVal) v = minVal;
+                    if (v > maxVal) v = maxVal;
+                    s.scale[sc.name][c2] = v;
                 }
                 s.scale[sc.name].totalScore = Math.round(target);
             }
@@ -3008,7 +3133,7 @@ async function renderReport(grade, branchName) {
     var high = genList.filter(function(g) { return g >= 70; }).length;
     cont.innerHTML =
         '<div id="report-print" class="print-area">' +
-            '<div class="print-header"><h2>FENOMENAL FEN BILIMLERI</h2><h3>Analiz Raporu</h3></div>' +
+            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">FEN BİLİMLERİ DERSİ</p><h3>Analiz Raporu</h3></div>' +
             '<div class="print-info">' +
                 '<p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p>' +
                 '<p><b>Unite:</b> ' + unit + '</p>' +
@@ -3034,10 +3159,43 @@ async function renderReport(grade, branchName) {
         '</div>';
 }
 
+function getScoreLabel(val, scaleType) {
+    if (val === '' || val === '-') return '-';
+    var n = parseInt(val);
+    if (isNaN(n)) return val;
+    if (scaleType === '1-4') {
+        if (n === 4) return '4 - Cok Iyi';
+        if (n === 3) return '3 - Iyi';
+        if (n === 2) return '2 - Gelistirilmeli';
+        if (n === 1) return '1 - Yetersiz';
+    } else if (scaleType === 'evet-hayir') {
+        if (n === 3) return '3 - Evet';
+        if (n === 2) return '2 - Kismen';
+        if (n === 1) return '1 - Hayir';
+    } else if (scaleType === 'var-yok') {
+        if (n === 1) return '1 - Var';
+        if (n === 0) return '0 - Yok';
+    }
+    return val;
+}
+
 function exportTableToWord(elementId, filename) {
     var element = document.getElementById(elementId);
     if (!element) return alert('Icerik bulunamadi!');
     var clone = element.cloneNode(true);
+    // SVG grafikleri kaldır (Word'de bozuluyor)
+    clone.querySelectorAll('svg').forEach(function(svg) { svg.remove(); });
+    clone.querySelectorAll('div').forEach(function(div) {
+        if (div.innerText && div.innerText.indexOf('Grafiği') >= 0 && div.querySelector('svg') === null) {
+            div.remove();
+        }
+    });
+    // Ölçek tipini kodlama metninden algıla
+    var allText = element.innerText || '';
+    var scaleType = '1-4';
+    if (allText.indexOf('Evet') >= 0 && allText.indexOf('Kismen') >= 0) scaleType = 'evet-hayir';
+    else if (allText.indexOf('Var') >= 0 && allText.indexOf('Yok') >= 0) scaleType = 'var-yok';
+    
     var rows = element.querySelectorAll('tbody tr');
     var cloneRows = clone.querySelectorAll('tbody tr');
     for (var r = 0; r < rows.length; r++) {
@@ -3046,9 +3204,10 @@ function exportTableToWord(elementId, filename) {
         for (var i = 0; i < inputs.length; i++) {
             var span = document.createElement('span');
             var val = inputs[i].value.trim();
-            span.innerText = val === '' ? '-' : val;
+            span.innerText = getScoreLabel(val, scaleType);
             span.style.color = '#000';
             span.style.fontWeight = 'bold';
+            span.style.fontSize = '10px';
             if (cloneInputs[i]) cloneInputs[i].parentNode.replaceChild(span, cloneInputs[i]);
         }
     }
@@ -3090,6 +3249,12 @@ async function exportTableToPDF(elementId, filename) {
     var jsPDF = getJsPDF();
     if (!jsPDF) return alert('jsPDF yuklenemedi');
     var clone = el.cloneNode(true);
+    // Ölçek tipini kodlama metninden algıla
+    var allText = el.innerText || '';
+    var scaleType = '1-4';
+    if (allText.indexOf('Evet') >= 0 && allText.indexOf('Kismen') >= 0) scaleType = 'evet-hayir';
+    else if (allText.indexOf('Var') >= 0 && allText.indexOf('Yok') >= 0) scaleType = 'var-yok';
+    
     var rows = el.querySelectorAll('tbody tr');
     var cloneRows = clone.querySelectorAll('tbody tr');
     for (var r = 0; r < rows.length; r++) {
@@ -3098,8 +3263,8 @@ async function exportTableToPDF(elementId, filename) {
         for (var i = 0; i < inputs.length; i++) {
             var span = document.createElement('span');
             var val = inputs[i].value.trim();
-            span.textContent = val === '' ? '-' : val;
-            span.style.cssText = 'color:#000;font-weight:bold;';
+            span.textContent = getScoreLabel(val, scaleType);
+            span.style.cssText = 'color:#000;font-weight:bold;font-size:10px;';
             if (cloneInputs[i]) cloneInputs[i].parentNode.replaceChild(span, cloneInputs[i]);
         }
     }
@@ -3260,9 +3425,9 @@ function globalAddActivity() {
                         // Ölçek başlığı (📋 ile başlayan)
                         if (firstCell.indexOf('📋') >= 0 || firstCell.toUpperCase().indexOf('RUBRİK') >= 0 || firstCell.toUpperCase().indexOf('LİSTESİ') >= 0 || firstCell.toUpperCase().indexOf('FORMU') >= 0) {
                             currentScale = firstCell.replace(/📋/g, '').trim();
-                            var upper = currentScale.toUpperCase();
-                            if (upper.indexOf('KONTROL') >= 0 || upper.indexOf('LİSTESİ') >= 0) currentType = 'var-yok';
-                            else if (upper.indexOf('FORMU') >= 0 || upper.indexOf('GÖZLEM') >= 0) currentType = 'evet-hayir';
+                            var upper = currentScale.toUpperCase().replace(/İ/g,'I').replace(/Ş/g,'S').replace(/Ğ/g,'G').replace(/Ü/g,'U').replace(/Ö/g,'O').replace(/Ç/g,'C');
+                            if (upper.indexOf('KONTROL') >= 0 || upper.indexOf('LISTESI') >= 0 || upper.indexOf('LISTE') >= 0) currentType = 'var-yok';
+                            else if (upper.indexOf('FORMU') >= 0 || upper.indexOf('GOZLEM') >= 0 || upper.indexOf('OZ') >= 0 || upper.indexOf('AKRAN') >= 0) currentType = 'evet-hayir';
                             else currentType = '1-4';
                             continue;
                         }
@@ -3270,7 +3435,9 @@ function globalAddActivity() {
                         // Kriter satırı
                         if (currentScale && row.some(function(c) { return c && (String(c).indexOf('Okul No') >= 0 || String(c).indexOf('Adı Soyadı') >= 0); })) {
                             var crits = row.filter(function(c) {
-                                return c && String(c).indexOf('Okul No') < 0 && String(c).indexOf('Adı Soyadı') < 0 && String(c).indexOf('TOPLAM') < 0 && String(c).indexOf('BAŞARI') < 0;
+                                if (!c) return false;
+                                var s = String(c);
+                                return s.indexOf('Okul No') < 0 && s.indexOf('Adı Soyadı') < 0 && s.indexOf('TOPLAM') < 0 && s.indexOf('BAŞARI') < 0 && s.indexOf('Değerlendiren') < 0 && s.indexOf('Akran') < 0;
                             });
                             if (crits.length && supabaseClient) {
                                 await supabaseClient.from('activities').insert([{
