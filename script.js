@@ -463,6 +463,18 @@ async function openTransferBranch(grade, branchName) {
     });
 }
 
+function currentPortalYear() {
+    var saved = '';
+    (portalCatalog.schools || []).some(function(s) {
+        if (s.academic_year) {
+            saved = s.academic_year;
+            return true;
+        }
+        return false;
+    });
+    return saved || localStorage.getItem('fen_academic_year') || DEFAULT_YEAR;
+}
+
 function openSchoolTeacherAdmin() {
     if (!currentTeacher || !currentTeacher.is_admin) return alert('Bu alan sadece yöneticide.');
     saveState({ type: 'admin-users' });
@@ -472,18 +484,12 @@ function openSchoolTeacherAdmin() {
     var subjectOpts = SUBJECTS.map(function(s) {
         return '<option value="' + s.id + '">' + s.id + '</option>';
     }).join('');
+    var portalYear = String(currentPortalYear()).replace(/"/g, '');
     var schoolList = portalCatalog.schools.map(function(s) {
         var mine = currentTeacher && s.id === currentTeacher.school_id;
-        var year = (s.academic_year || DEFAULT_YEAR).replace(/"/g, '');
         return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;">' +
-            '<div style="flex:1;min-width:0;">' +
-                '<div>' + s.name + (mine ? ' <span style="color:#fdba74;">· Senin okulun</span>' : '') + '</div>' +
-                '<input id="school-year-' + s.id + '" class="auth-input" value="' + year + '" placeholder="2027-2028" style="margin-top:6px;">' +
-            '</div>' +
-            '<div style="display:flex;flex-direction:column;gap:6px;">' +
-                '<button onclick="updateSchoolYear(\'' + s.id + '\')" class="auth-btn" style="width:auto;padding:8px 12px;">Yılı Kaydet</button>' +
-                (mine ? '' : '<button onclick="deleteSchoolRecord(\'' + s.id + '\')" class="btn-pastel-red">Sil</button>') +
-            '</div>' +
+            '<span>' + s.name + (mine ? ' <span style="color:#fdba74;">· Senin okulun</span>' : '') + '</span>' +
+            (mine ? '' : '<button onclick="deleteSchoolRecord(\'' + s.id + '\')" class="btn-pastel-red">Sil</button>') +
         '</div>';
     }).join('') || '<p style="color:#94a3b8;">Henüz okul yok.</p>';
     var list = portalCatalog.teachers.map(function(t) {
@@ -494,11 +500,16 @@ function openSchoolTeacherAdmin() {
             (mine ? '<span style="color:#fdba74;">Sen</span>' : '<button onclick="deleteTeacherRecord(\'' + t.id + '\')" class="btn-pastel-red">Sil</button>') +
         '</div>';
     }).join('') || '<p style="color:#94a3b8;">Henüz öğretmen yok.</p>';
-    var html = '<h3 style="margin:0 0 10px;font-size:15px;">Okullar</h3>' + schoolList +
+    var html = '<h3 style="margin:0 0 10px;font-size:15px;">Eğitim yılı</h3>' +
+        '<p style="font-size:12px;color:#94a3b8;margin:0 0 8px;">Bu yıl bütün okullara ve öğretmen belgelerine yazılır.</p>' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">' +
+            '<input id="global-school-year" class="auth-input" value="' + portalYear + '" placeholder="2027-2028" style="margin:0;">' +
+            '<button onclick="updateSchoolYear()" class="auth-btn" style="width:auto;padding:8px 12px;white-space:nowrap;">Yılı Kaydet</button>' +
+        '</div>' +
+        '<h3 style="margin:0 0 10px;font-size:15px;">Okullar</h3>' + schoolList +
         '<h3 style="margin:18px 0 10px;font-size:15px;">Öğretmenler</h3>' + list +
         '<h3 style="margin:18px 0 10px;font-size:15px;">Yeni okul</h3>' +
         '<input id="new-school-name" class="auth-input" placeholder="Okul adı">' +
-        '<input id="new-school-year" class="auth-input" placeholder="Eğitim yılı" value="' + DEFAULT_YEAR + '">' +
         '<button onclick="saveNewSchool()" class="auth-btn" style="margin-bottom:16px;">Okulu Kaydet</button>' +
         '<h3 style="margin:8px 0 10px;font-size:15px;">Yeni öğretmen</h3>' +
         '<input id="nt-name" class="auth-input" placeholder="Ad Soyad">' +
@@ -512,8 +523,8 @@ function openSchoolTeacherAdmin() {
 
 async function saveNewSchool() {
     var name = document.getElementById('new-school-name').value.trim();
-    var year = document.getElementById('new-school-year').value.trim() || DEFAULT_YEAR;
     if (!name) return alert('Okul adı gir.');
+    var year = currentPortalYear();
     var res = await supabaseClient.from('schools').insert([{ name: name, academic_year: year }]);
     if (res.error) return alert(res.error.message);
     await loadPortalCatalog();
@@ -561,19 +572,21 @@ async function deleteAuthAccount(email) {
     return await supabaseClient.rpc('delete_auth_user', { target_email: email });
 }
 
-async function updateSchoolYear(id) {
+async function updateSchoolYear() {
     if (!currentTeacher || !currentTeacher.is_admin) return;
-    var input = document.getElementById('school-year-' + id);
+    var input = document.getElementById('global-school-year');
     var year = input ? input.value.trim() : '';
     if (!year) return alert('Eğitim yılını yaz. Örnek: 2027-2028');
-    var res = await supabaseClient.from('schools').update({ academic_year: year }).eq('id', id);
-    if (res.error) return alert(res.error.message);
-    if (currentTeacher.school_id === id) {
-        currentTeacher.academic_year = year;
-        localStorage.setItem('fen_academic_year', year);
+    var schools = portalCatalog.schools || [];
+    if (!schools.length) return alert('Önce bir okul kaydet.');
+    for (var i = 0; i < schools.length; i++) {
+        var res = await supabaseClient.from('schools').update({ academic_year: year }).eq('id', schools[i].id);
+        if (res.error) return alert(res.error.message);
     }
+    currentTeacher.academic_year = year;
+    localStorage.setItem('fen_academic_year', year);
     await loadPortalCatalog();
-    alert('Eğitim yılı kaydedildi. Öğretmen ve veriler duruyor.');
+    alert('Eğitim yılı bütün okullara kaydedildi. Öğretmenler ve notlar duruyor.');
     openSchoolTeacherAdmin();
 }
 
@@ -1180,10 +1193,17 @@ function openTeacherInfoPage() {
         if (name) localStorage.setItem('fen_school_name', name);
         if (year) localStorage.setItem('fen_academic_year', year);
         if (supabaseClient && currentTeacher && currentTeacher.school_id && name) {
-            var res = await supabaseClient.from('schools').update({ name: name, academic_year: year || DEFAULT_YEAR }).eq('id', currentTeacher.school_id);
+            var res = await supabaseClient.from('schools').update({ name: name }).eq('id', currentTeacher.school_id);
             if (res.error) return alert(res.error.message);
             currentTeacher.school_name = name;
-            currentTeacher.academic_year = year || DEFAULT_YEAR;
+        }
+        if (supabaseClient && year) {
+            var schools = portalCatalog.schools || [];
+            for (var i = 0; i < schools.length; i++) {
+                var yearRes = await supabaseClient.from('schools').update({ academic_year: year }).eq('id', schools[i].id);
+                if (yearRes.error) return alert(yearRes.error.message);
+            }
+            currentTeacher.academic_year = year;
         }
         closeModal();
         alert('Bilgiler kaydedildi!');
