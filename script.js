@@ -28,6 +28,541 @@ function normTR(str) {
         .replace(/ü/g, 'U').replace(/ö/g, 'O').replace(/ç/g, 'C');
 }
 
+
+// ====================== OKUL / ÖĞRETMEN / BRANŞ ======================
+var SUBJECTS = [
+    { id: 'Fen', title: 'FEN BİLİMLERİ DERSİ' },
+    { id: 'Türkçe', title: 'TÜRKÇE DERSİ' },
+    { id: 'Matematik', title: 'MATEMATİK DERSİ' },
+    { id: 'İngilizce', title: 'İNGİLİZCE DERSİ' },
+    { id: 'Sosyal Bilgiler', title: 'SOSYAL BİLGİLER DERSİ' },
+    { id: 'Din Kültürü', title: 'DİN KÜLTÜRÜ DERSİ' }
+];
+
+var BADGE_TITLES = {
+    'Fen': ['Fen Ustası', 'Bilim İnsanı', 'Araştırmacı', 'Meraklı'],
+    'Türkçe': ['Dil Ustası', 'Yazar', 'Kitap Kurdu', 'Meraklı'],
+    'Matematik': ['Matematik Ustası', 'Problem Avcısı', 'Hesapçı', 'Meraklı'],
+    'İngilizce': ['İngilizce Ustası', 'Konuşmacı', 'Kelime Avcısı', 'Meraklı'],
+    'Sosyal Bilgiler': ['Sosyal Ustası', 'Tarihçi', 'Gözlemci', 'Meraklı'],
+    'Din Kültürü': ['Din Kültürü Ustası', 'Bilge', 'Araştırmacı', 'Meraklı']
+};
+
+var currentTeacher = null;
+var studentScope = null;
+var portalCatalog = { schools: [], teachers: [], branches: [] };
+
+function subjectTitle(subject) {
+    var found = SUBJECTS.find(function(s) { return s.id === subject; });
+    return found ? found.title : 'DERS';
+}
+
+function activeSubject() {
+    if (studentScope && studentScope.subject) return studentScope.subject;
+    if (currentTeacher && currentTeacher.subject) return currentTeacher.subject;
+    return 'Fen';
+}
+
+function getSubjectLine() {
+    return subjectTitle(activeSubject());
+}
+
+function getBrandTitle() {
+    return 'FENOMENAL';
+}
+
+function ownerId() {
+    if (currentTeacher && currentTeacher.id) return currentTeacher.id;
+    if (studentScope && studentScope.teacherId) return studentScope.teacherId;
+    return null;
+}
+
+function ownerSchoolId() {
+    if (currentTeacher && currentTeacher.school_id) return currentTeacher.school_id;
+    if (studentScope && studentScope.schoolId) return studentScope.schoolId;
+    return null;
+}
+
+function rowVisible(row) {
+    var oid = ownerId();
+    if (!oid) return false;
+    if (!row || !row.teacher_id) return !!(currentTeacher && currentTeacher.is_admin);
+    return row.teacher_id === oid;
+}
+
+function stampList(list) {
+    var arr = Array.isArray(list) ? list : [list];
+    return arr.map(function(row) {
+        var copy = Object.assign({}, row);
+        var id = ownerId();
+        var sid = ownerSchoolId();
+        if (id) copy.teacher_id = id;
+        if (sid) copy.school_id = sid;
+        return copy;
+    });
+}
+
+function saveStudentScope() {
+    if (studentScope) sessionStorage.setItem('fen_student_scope', JSON.stringify(studentScope));
+    else sessionStorage.removeItem('fen_student_scope');
+}
+
+function readStudentScope() {
+    try {
+        var raw = sessionStorage.getItem('fen_student_scope');
+        studentScope = raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        studentScope = null;
+    }
+}
+
+async function loadPortalCatalog() {
+    portalCatalog = { schools: [], teachers: [], branches: [] };
+    if (!supabaseClient) return;
+    var schools = await supabaseClient.from('schools').select('*').order('name');
+    var teachers = await supabaseClient.from('teachers').select('*');
+    var branches = await supabaseClient.from('branches').select('grade, branch_name, teacher_id, school_id');
+    if (schools.error || teachers.error) return;
+    portalCatalog.schools = schools.data || [];
+    portalCatalog.teachers = teachers.data || [];
+    portalCatalog.branches = branches.data || [];
+    fillStudentSchools();
+}
+
+function fillStudentSchools() {
+    var sel = document.getElementById('student-school');
+    if (!sel) return;
+    var current = sel.value;
+    sel.innerHTML = '<option value="">-- Okul Seçin --</option>';
+    portalCatalog.schools.forEach(function(s) {
+        sel.innerHTML += '<option value="' + s.id + '">' + s.name + '</option>';
+    });
+    if (current) sel.value = current;
+    fillStudentSubjects();
+}
+
+function fillStudentSubjects() {
+    var schoolId = document.getElementById('student-school')?.value || '';
+    var sel = document.getElementById('student-subject');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- Branş Seçin --</option>';
+    var seen = {};
+    portalCatalog.teachers.forEach(function(t) {
+        if (t.school_id !== schoolId || seen[t.subject]) return;
+        seen[t.subject] = true;
+        sel.innerHTML += '<option value="' + t.subject + '">' + t.subject + '</option>';
+    });
+    fillStudentGrades();
+}
+
+function fillStudentGrades() {
+    var schoolId = document.getElementById('student-school')?.value || '';
+    var subject = document.getElementById('student-subject')?.value || '';
+    var sel = document.getElementById('student-grade');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- Sınıf Seçin --</option>';
+    var teacherIds = portalCatalog.teachers.filter(function(t) {
+        return t.school_id === schoolId && t.subject === subject;
+    }).map(function(t) { return t.id; });
+    var grades = {};
+    portalCatalog.branches.forEach(function(b) {
+        if (teacherIds.indexOf(b.teacher_id) >= 0) grades[b.grade] = true;
+    });
+    ['5', '6', '7', '8'].forEach(function(g) {
+        if (grades[g]) sel.innerHTML += '<option value="' + g + '">' + g + '. Sınıf</option>';
+    });
+    fillStudentBranchList();
+}
+
+function fillStudentBranchList() {
+    var schoolId = document.getElementById('student-school')?.value || '';
+    var subject = document.getElementById('student-subject')?.value || '';
+    var grade = document.getElementById('student-grade')?.value || '';
+    var sel = document.getElementById('student-branch');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- Şube Seçin --</option>';
+    var teacherIds = portalCatalog.teachers.filter(function(t) {
+        return t.school_id === schoolId && t.subject === subject;
+    }).map(function(t) { return t.id; });
+    portalCatalog.branches.forEach(function(b) {
+        if (b.grade !== grade || teacherIds.indexOf(b.teacher_id) < 0) return;
+        var short = (b.branch_name || '').indexOf('/') >= 0 ? b.branch_name.split('/')[1] : b.branch_name;
+        var opt = document.createElement('option');
+        opt.value = b.teacher_id + '||' + b.branch_name;
+        opt.textContent = short + ' Şubesi';
+        sel.appendChild(opt);
+    });
+}
+
+function updateStudentBranches() {
+    fillStudentGrades();
+}
+
+async function claimLegacy() {
+    if (!currentTeacher || !currentTeacher.is_admin || !supabaseClient) return;
+    var tables = ['branches', 'students', 'units_sections', 'activities', 'lesson_contents', 'report_templates'];
+    for (var i = 0; i < tables.length; i++) {
+        var res = await supabaseClient.from(tables[i]).update({
+            teacher_id: currentTeacher.id,
+            school_id: currentTeacher.school_id
+        }).is('teacher_id', null);
+        if (res.error) {
+            if (!window._schemaWarned) {
+                window._schemaWarned = true;
+                alert('Veritabanı güncellemesi gerekli. schema.sql dosyasını Supabase SQL editöründe bir kez çalıştır.');
+            }
+            return;
+        }
+    }
+}
+
+function applyTeacherRecord(row) {
+    var school = row.schools || {};
+    currentTeacher = {
+        id: row.id,
+        user_id: row.user_id,
+        full_name: row.full_name,
+        email: row.email,
+        school_id: row.school_id,
+        school_name: school.name || '',
+        academic_year: school.academic_year || '2025-2026',
+        subject: row.subject,
+        is_admin: !!row.is_admin
+    };
+    studentScope = null;
+    sessionStorage.removeItem('fen_student_scope');
+    if (currentTeacher.school_name) localStorage.setItem('fen_school_name', currentTeacher.school_name);
+    if (currentTeacher.academic_year) localStorage.setItem('fen_academic_year', currentTeacher.academic_year);
+}
+
+async function bindTeacher(user) {
+    if (!supabaseClient || !user) return false;
+    var res = await supabaseClient.from('teachers').select('*').eq('user_id', user.id);
+    if (res.error) {
+        alert('Öğretmen tablosu okunamadı: ' + res.error.message);
+        return false;
+    }
+    var row = (res.data || [])[0];
+    if (!row && user.email) {
+        var byEmail = await supabaseClient.from('teachers').select('*').ilike('email', user.email);
+        if (byEmail.error) {
+            alert('Öğretmen tablosu okunamadı: ' + byEmail.error.message);
+            return false;
+        }
+        row = (byEmail.data || [])[0];
+        if (row) {
+            await supabaseClient.from('teachers').update({ user_id: user.id }).eq('id', row.id);
+            row.user_id = user.id;
+        }
+    }
+    if (!row) {
+        var countRes = await supabaseClient.from('teachers').select('id');
+        if (countRes.error) {
+            alert('Öğretmen tablosu okunamadı: ' + countRes.error.message);
+            return false;
+        }
+        if (!(countRes.data || []).length) {
+            openFirstAdminSetup(user);
+            return false;
+        }
+        alert('Bu hesap bir öğretmene bağlı değil. Yöneticiden eklenmesini iste.');
+        await supabaseClient.auth.signOut();
+        return false;
+    }
+    if (row.school_id) {
+        var schoolRes = await supabaseClient.from('schools').select('*').eq('id', row.school_id);
+        if (schoolRes.data && schoolRes.data[0]) row.schools = schoolRes.data[0];
+    }
+    if (!row.school_id || !row.subject) {
+        openFinishTeacherSetup(user, row);
+        return false;
+    }
+    applyTeacherRecord(row);
+    await claimLegacy();
+    await loadPortalCatalog();
+    return true;
+}
+
+function openFinishTeacherSetup(user, row) {
+    var yearPrefill = localStorage.getItem('fen_academic_year') || '2025-2026';
+    var opts = SUBJECTS.map(function(s) {
+        var selected = (row.subject || 'Fen') === s.id ? ' selected' : '';
+        return '<option value="' + s.id + '"' + selected + '>' + s.id + '</option>';
+    }).join('');
+    openModal('Okulunu Bağla',
+        '<p style="font-size:13px;color:#cbd5e1;margin-bottom:8px;">' + (row.full_name || '') + ' kaydı var. Okul ve branş seçilince panele girersin.</p>' +
+        '<input id="setup-school" class="auth-input" placeholder="Okul adı">' +
+        '<input id="setup-year" class="auth-input" placeholder="Eğitim yılı" value="' + yearPrefill.replace(/"/g, '') + '">' +
+        '<select id="setup-subject" class="auth-input">' + opts + '</select>',
+    async function() {
+        var schoolName = document.getElementById('setup-school').value.trim();
+        var year = document.getElementById('setup-year').value.trim() || '2025-2026';
+        var subject = document.getElementById('setup-subject').value;
+        if (!schoolName) return alert('Okul adı gerekli.');
+        var schoolRes = await supabaseClient.from('schools').insert([{ name: schoolName, academic_year: year }]).select().single();
+        if (schoolRes.error) return alert(schoolRes.error.message);
+        var admins = await supabaseClient.from('teachers').select('id').eq('is_admin', true);
+        var makeAdmin = !(admins.data || []).length;
+        var upd = await supabaseClient.from('teachers').update({
+            user_id: user.id,
+            school_id: schoolRes.data.id,
+            subject: subject,
+            is_admin: makeAdmin
+        }).eq('id', row.id).select('*').single();
+        if (upd.error) return alert(upd.error.message);
+        upd.data.schools = { name: schoolName, academic_year: year };
+        closeModal();
+        applyTeacherRecord(upd.data);
+        await claimLegacy();
+        await loadAllDataFromSupabase();
+        await loadPortalCatalog();
+        renderTeacherPanelView(true);
+    });
+}
+
+function openFirstAdminSetup(user) {
+    var schoolPrefill = localStorage.getItem('fen_school_name') || '';
+    var yearPrefill = localStorage.getItem('fen_academic_year') || '2025-2026';
+    var opts = SUBJECTS.map(function(s) {
+        return '<option value="' + s.id + '"' + (s.id === 'Fen' ? ' selected' : '') + '>' + s.id + '</option>';
+    }).join('');
+    openModal('İlk Kurulum',
+        '<p style="font-size:13px;color:#cbd5e1;margin-bottom:8px;">Bu hesap yönetici olacak. Mevcut Fen verisi sana bağlanır.</p>' +
+        '<input id="setup-name" class="auth-input" placeholder="Ad Soyad" value="Erdoğan Yılmaz">' +
+        '<input id="setup-school" class="auth-input" placeholder="Okul adı" value="' + schoolPrefill.replace(/"/g, '') + '">' +
+        '<input id="setup-year" class="auth-input" placeholder="Eğitim yılı" value="' + yearPrefill.replace(/"/g, '') + '">' +
+        '<select id="setup-subject" class="auth-input">' + opts + '</select>',
+    async function() {
+        var name = document.getElementById('setup-name').value.trim();
+        var schoolName = document.getElementById('setup-school').value.trim();
+        var year = document.getElementById('setup-year').value.trim() || '2025-2026';
+        var subject = document.getElementById('setup-subject').value;
+        if (!name || !schoolName) return alert('Ad ve okul gerekli.');
+        var schoolRes = await supabaseClient.from('schools').insert([{ name: schoolName, academic_year: year }]).select().single();
+        if (schoolRes.error) return alert(schoolRes.error.message);
+        var teacherRes = await supabaseClient.from('teachers').insert([{
+            user_id: user.id,
+            full_name: name,
+            email: user.email || '',
+            school_id: schoolRes.data.id,
+            subject: subject,
+            is_admin: true
+        }]).select('*').single();
+        if (teacherRes.error) return alert(teacherRes.error.message);
+        teacherRes.data.schools = { name: schoolName, academic_year: year };
+        closeModal();
+        applyTeacherRecord(teacherRes.data);
+        await claimLegacy();
+        await loadAllDataFromSupabase();
+        await loadPortalCatalog();
+        renderTeacherPanelView(true);
+    });
+}
+
+function paintTeacherHome() {
+    var h = document.querySelector('#teacher-panel .header-brand h1');
+    if (h) h.textContent = (currentTeacher && currentTeacher.subject ? currentTeacher.subject : 'Öğretmen') + ' Paneli';
+    var grid = document.querySelector('#teacher-panel .grade-cards-grid');
+    var old = document.getElementById('admin-entry-card');
+    if (old) old.remove();
+    if (currentTeacher && currentTeacher.is_admin && grid) {
+        var card = document.createElement('div');
+        card.id = 'admin-entry-card';
+        card.className = 'grade-card';
+        card.style.borderTopColor = '#f97316';
+        card.onclick = function() { openSchoolTeacherAdmin(); };
+        card.innerHTML = '<h3>Okul ve Öğretmen</h3><p>Okul ekle, öğretmen kaydet</p><span class="card-action">Gir →</span>';
+        grid.insertBefore(card, grid.firstChild);
+    }
+}
+
+async function sameSubjectTeachers() {
+    if (!currentTeacher) return [];
+    if (!portalCatalog.teachers.length) await loadPortalCatalog();
+    return portalCatalog.teachers.filter(function(t) {
+        return t.school_id === currentTeacher.school_id && t.subject === currentTeacher.subject && t.id !== currentTeacher.id;
+    });
+}
+
+async function branchTaken(grade, fullName) {
+    if (!supabaseClient || !currentTeacher) return false;
+    var rows = await supabaseClient.from('branches').select('teacher_id, branch_name, grade').eq('grade', grade).eq('branch_name', fullName);
+    var teachers = await supabaseClient.from('teachers').select('id, school_id, subject');
+    return (rows.data || []).some(function(r) {
+        var t = (teachers.data || []).find(function(x) { return x.id === r.teacher_id; });
+        return t && t.school_id === currentTeacher.school_id && t.subject === currentTeacher.subject;
+    });
+}
+
+async function openTransferBranch(grade, branchName) {
+    var others = await sameSubjectTeachers();
+    if (!others.length) return alert('Aynı okul ve branşta devredilecek başka öğretmen yok.');
+    var opts = others.map(function(t) {
+        return '<option value="' + t.id + '">' + t.full_name + ' (' + t.subject + ')</option>';
+    }).join('');
+    openModal('Şubeyi Devret',
+        '<p style="font-size:13px;color:#cbd5e1;margin-bottom:8px;">' + branchName + ' ve içindeki öğrenciler seçilen öğretmene geçer. Eski öğretmen bu şubeyi bir daha görmez.</p>' +
+        '<select id="transfer-teacher" class="auth-input">' + opts + '</select>',
+    async function() {
+        var newId = document.getElementById('transfer-teacher').value;
+        var oldId = currentTeacher.id;
+        var schoolId = currentTeacher.school_id;
+        var bRes = await supabaseClient.from('branches').update({ teacher_id: newId, school_id: schoolId }).eq('teacher_id', oldId).eq('grade', grade).eq('branch_name', branchName);
+        if (bRes.error) return alert(bRes.error.message);
+        await supabaseClient.from('students').update({ teacher_id: newId, school_id: schoolId }).eq('teacher_id', oldId).eq('grade', grade).eq('branch', branchName);
+        var left = await supabaseClient.from('branches').select('id').eq('teacher_id', oldId).eq('grade', grade);
+        var stillHas = !!(left.data && left.data.length);
+        var tables = ['units_sections', 'activities', 'lesson_contents', 'report_templates'];
+        for (var i = 0; i < tables.length; i++) {
+            var table = tables[i];
+            var q = await supabaseClient.from(table).select('*').eq('teacher_id', oldId).eq('grade', grade);
+            var rows = q.data || [];
+            if (!rows.length) continue;
+            if (!stillHas) {
+                await supabaseClient.from(table).update({ teacher_id: newId, school_id: schoolId }).eq('teacher_id', oldId).eq('grade', grade);
+            } else {
+                var copies = rows.map(function(r) {
+                    var c = Object.assign({}, r);
+                    delete c.id;
+                    delete c.created_at;
+                    delete c.updated_at;
+                    c.teacher_id = newId;
+                    c.school_id = schoolId;
+                    return c;
+                });
+                await supabaseClient.from(table).insert(copies);
+            }
+        }
+        closeModal();
+        await loadAllDataFromSupabase();
+        await loadPortalCatalog();
+        alert('Şube devredildi.');
+        openGradeManagement(grade, false);
+    });
+}
+
+function openSchoolTeacherAdmin() {
+    if (!currentTeacher || !currentTeacher.is_admin) return alert('Bu alan sadece yöneticide.');
+    saveState({ type: 'admin-users' });
+    var schoolOpts = portalCatalog.schools.map(function(s) {
+        return '<option value="' + s.id + '">' + s.name + '</option>';
+    }).join('');
+    var subjectOpts = SUBJECTS.map(function(s) {
+        return '<option value="' + s.id + '">' + s.id + '</option>';
+    }).join('');
+    var schoolList = portalCatalog.schools.map(function(s) {
+        var mine = currentTeacher && s.id === currentTeacher.school_id;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;">' +
+            '<span>' + s.name + (s.academic_year ? ' · ' + s.academic_year : '') + '</span>' +
+            (mine ? '<span style="color:#fdba74;">Senin okulun</span>' : '<button onclick="deleteSchoolRecord(\'' + s.id + '\')" class="btn-pastel-red">Sil</button>') +
+        '</div>';
+    }).join('') || '<p style="color:#94a3b8;">Henüz okul yok.</p>';
+    var list = portalCatalog.teachers.map(function(t) {
+        var school = portalCatalog.schools.find(function(s) { return s.id === t.school_id; });
+        var mine = currentTeacher && t.id === currentTeacher.id;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;">' +
+            '<span>' + t.full_name + ' · ' + (t.subject || 'Branş yok') + ' · ' + (school ? school.name : 'Okul yok') + '</span>' +
+            (mine ? '<span style="color:#fdba74;">Sen</span>' : '<button onclick="deleteTeacherRecord(\'' + t.id + '\')" class="btn-pastel-red">Sil</button>') +
+        '</div>';
+    }).join('') || '<p style="color:#94a3b8;">Henüz öğretmen yok.</p>';
+    var html = '<h3 style="margin:0 0 10px;font-size:15px;">Okullar</h3>' + schoolList +
+        '<h3 style="margin:18px 0 10px;font-size:15px;">Öğretmenler</h3>' + list +
+        '<h3 style="margin:18px 0 10px;font-size:15px;">Yeni okul</h3>' +
+        '<input id="new-school-name" class="auth-input" placeholder="Okul adı">' +
+        '<input id="new-school-year" class="auth-input" placeholder="Eğitim yılı" value="2025-2026">' +
+        '<button onclick="saveNewSchool()" class="auth-btn" style="margin-bottom:16px;">Okulu Kaydet</button>' +
+        '<h3 style="margin:8px 0 10px;font-size:15px;">Yeni öğretmen</h3>' +
+        '<input id="nt-name" class="auth-input" placeholder="Ad Soyad">' +
+        '<input id="nt-email" class="auth-input" placeholder="E-posta">' +
+        '<input id="nt-pass" class="auth-input" type="password" placeholder="Şifre">' +
+        '<select id="nt-school" class="auth-input"><option value="">-- Okul --</option>' + schoolOpts + '</select>' +
+        '<select id="nt-subject" class="auth-input">' + subjectOpts + '</select>' +
+        '<button onclick="saveNewTeacher()" class="auth-btn">Öğretmeni Kaydet</button>';
+    openManagementPage('Okul ve Öğretmen', html);
+}
+
+async function saveNewSchool() {
+    var name = document.getElementById('new-school-name').value.trim();
+    var year = document.getElementById('new-school-year').value.trim() || '2025-2026';
+    if (!name) return alert('Okul adı gir.');
+    var res = await supabaseClient.from('schools').insert([{ name: name, academic_year: year }]);
+    if (res.error) return alert(res.error.message);
+    await loadPortalCatalog();
+    alert('Okul kaydedildi.');
+    openSchoolTeacherAdmin();
+}
+
+async function saveNewTeacher() {
+    var name = document.getElementById('nt-name').value.trim();
+    var email = document.getElementById('nt-email').value.trim();
+    var password = document.getElementById('nt-pass').value.trim();
+    var schoolId = document.getElementById('nt-school').value;
+    var subject = document.getElementById('nt-subject').value;
+    if (!name || !email || !password || !schoolId || !subject) return alert('Tüm alanları doldur.');
+    if (password.length < 6) return alert('Şifre en az 6 karakter olsun.');
+    var created = await supabaseClient.rpc('create_teacher_login', {
+        target_email: email,
+        target_password: password
+    });
+    if (created.error) return alert(created.error.message);
+    var uid = created.data;
+    if (!uid) return alert('Giriş hesabı açılamadı.');
+    var byUser = await supabaseClient.from('teachers').select('id').eq('user_id', uid);
+    var byEmail = await supabaseClient.from('teachers').select('id').ilike('email', email);
+    var found = (byUser.data && byUser.data[0]) || (byEmail.data && byEmail.data[0]);
+    var payload = {
+        user_id: uid,
+        full_name: name,
+        email: email,
+        school_id: schoolId,
+        subject: subject,
+        is_admin: false
+    };
+    var ins = found
+        ? await supabaseClient.from('teachers').update(payload).eq('id', found.id)
+        : await supabaseClient.from('teachers').insert([payload]);
+    if (ins.error) return alert(ins.error.message);
+    await loadPortalCatalog();
+    alert('Öğretmen kaydedildi. Kendi e-posta ve şifresiyle girer.');
+    openSchoolTeacherAdmin();
+}
+
+async function deleteAuthAccount(email) {
+    if (!email || !supabaseClient) return null;
+    return await supabaseClient.rpc('delete_auth_user', { target_email: email });
+}
+
+async function deleteTeacherRecord(id) {
+    if (!currentTeacher || !currentTeacher.is_admin) return;
+    if (id === currentTeacher.id) return alert('Kendi hesabını silemezsin.');
+    var row = portalCatalog.teachers.find(function(t) { return t.id === id; });
+    if (!confirm('Öğretmen ve giriş hesabı silinsin mi?')) return;
+    var res = await supabaseClient.from('teachers').delete().eq('id', id);
+    if (res.error) return alert(res.error.message);
+    if (row && row.email) {
+        var authRes = await deleteAuthAccount(row.email);
+        if (authRes && authRes.error) return alert('Listeden silindi. Giriş hesabı silinemedi: ' + authRes.error.message);
+    }
+    await loadPortalCatalog();
+    openSchoolTeacherAdmin();
+}
+
+async function deleteSchoolRecord(id) {
+    if (!currentTeacher || !currentTeacher.is_admin) return;
+    if (id === currentTeacher.school_id) return alert('Kendi okulunu silemezsin.');
+    var people = portalCatalog.teachers.filter(function(t) { return t.school_id === id; });
+    if (!confirm(people.length ? 'Okul, öğretmenleri ve giriş hesapları silinsin mi?' : 'Okul silinsin mi?')) return;
+    for (var i = 0; i < people.length; i++) {
+        if (people[i].id === currentTeacher.id) continue;
+        await supabaseClient.from('teachers').delete().eq('id', people[i].id);
+        if (people[i].email) await deleteAuthAccount(people[i].email);
+    }
+    var res = await supabaseClient.from('schools').delete().eq('id', id);
+    if (res.error) return alert(res.error.message);
+    await loadPortalCatalog();
+    openSchoolTeacherAdmin();
+}
+
 // ====================== VERİ YÜKLEME ======================
 async function loadAllDataFromSupabase() {
     if (!supabaseClient) return;
@@ -43,6 +578,7 @@ async function loadAllDataFromSupabase() {
         const { data: branchRows } = await supabaseClient.from('branches').select('*');
         if (branchRows) {
             branchRows.forEach(function(row) {
+                if (!rowVisible(row)) return;
                 if (!row.grade || !row.branch_name) return;
                 if (!fenData[row.grade]) fenData[row.grade] = { units:[], activities:[], branches:{}, lessons:[] };
                 if (!fenData[row.grade].branches[row.branch_name]) {
@@ -55,6 +591,7 @@ async function loadAllDataFromSupabase() {
         const { data: studentRows } = await supabaseClient.from('students').select('*');
         if (studentRows) {
             studentRows.forEach(function(row) {
+                if (!rowVisible(row)) return;
                 if (!row.grade || !row.branch) return;
                 if (!fenData[row.grade]) fenData[row.grade] = { units:[], activities:[], branches:{}, lessons:[] };
                 if (!fenData[row.grade].branches[row.branch]) fenData[row.grade].branches[row.branch] = [];
@@ -80,6 +617,7 @@ async function loadAllDataFromSupabase() {
         if (unitRows) {
             const unitMap = {};
             unitRows.forEach(function(row) {
+                if (!rowVisible(row)) return;
                 if (!row.grade || !row.unit_name) return;
                 if (!unitMap[row.grade]) unitMap[row.grade] = {};
                 if (!unitMap[row.grade][row.unit_name]) unitMap[row.grade][row.unit_name] = [];
@@ -99,6 +637,7 @@ async function loadAllDataFromSupabase() {
         const { data: actRows } = await supabaseClient.from('activities').select('*');
         if (actRows) {
             actRows.forEach(function(row) {
+                if (!rowVisible(row)) return;
                 if (!row.grade) return;
                 if (!fenData[row.grade].activities) fenData[row.grade].activities = [];
                 fenData[row.grade].activities.push({
@@ -120,6 +659,7 @@ async function loadAllDataFromSupabase() {
 
         if (lessonRows) {
             lessonRows.forEach(function(row) {
+                if (!rowVisible(row)) return;
                 if (!row.grade) return;
                 if (!fenData[row.grade]) fenData[row.grade] = { units:[], activities:[], branches:{}, lessons:[] };
                 fenData[row.grade].lessons.push({
@@ -264,6 +804,9 @@ function applyState(state, push) {
         case 'add-section':
             openAddSectionPage();
             break;
+        case 'admin-users':
+            openSchoolTeacherAdmin();
+            break;
         default:
             renderAuthScreenView(false);
     }
@@ -307,47 +850,42 @@ function switchAuthTab(role) {
     }
 }
 
-function updateStudentBranches() {
-    var gradeSel = document.getElementById('student-grade');
-    var branchSel = document.getElementById('student-branch');
-    if (!gradeSel || !branchSel) return;
-    var grade = gradeSel.value;
-    branchSel.innerHTML = '<option value="">-- Şube Seçin --</option>';
-    if (!grade || !fenData[grade] || !fenData[grade].branches) return;
-    var branches = Object.keys(fenData[grade].branches);
-    if (branches.length === 0) {
-        branchSel.innerHTML += '<option value="" disabled>Şube bulunamadı</option>';
-        return;
-    }
-    branches.forEach(function(b) {
-        var short = b.indexOf('/') >= 0 ? b.split('/')[1] : b;
-        var opt = document.createElement('option');
-        opt.value = b;
-        opt.textContent = short + ' Şubesi';
-        branchSel.appendChild(opt);
-    });
-}
-
 async function teacherLogin() {
     var email = document.getElementById('teacher-email')?.value.trim();
     var password = document.getElementById('teacher-password')?.value.trim();
     if (!email || !password) return alert('E-posta ve şifre girin.');
     try {
-        if (supabaseClient) {
-            var res = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
-            if (res.error) return alert('Giriş başarısız: ' + res.error.message);
-        }
+        if (!supabaseClient) return alert('Bağlantı yok.');
+        var res = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
+        if (res.error) return alert('Giriş başarısız: ' + res.error.message);
+        var ok = await bindTeacher(res.data.user);
+        if (!ok) return;
         await loadAllDataFromSupabase();
         renderTeacherPanelView(true);
     } catch (e) { alert('Giriş hatası'); }
 }
 
 async function studentLogin() {
+    var schoolId = document.getElementById('student-school')?.value;
+    var subject = document.getElementById('student-subject')?.value;
     var grade = document.getElementById('student-grade')?.value;
-    var branch = document.getElementById('student-branch')?.value;
+    var branchVal = document.getElementById('student-branch')?.value;
     var no = parseInt(document.getElementById('student-number')?.value);
     var nameRaw = document.getElementById('student-name')?.value.trim();
-    if (!grade || !branch || !no || !nameRaw) return alert('Tüm alanları doldurun.');
+    if (!schoolId || !subject || !grade || !branchVal || !no || !nameRaw) return alert('Tüm alanları doldurun.');
+    var parts = branchVal.split('||');
+    var teacherId = parts[0];
+    var branch = parts.slice(1).join('||');
+    var school = portalCatalog.schools.find(function(s) { return s.id === schoolId; });
+    currentTeacher = null;
+    studentScope = {
+        teacherId: teacherId,
+        schoolId: schoolId,
+        subject: subject,
+        schoolName: school ? school.name : '',
+        academicYear: school ? (school.academic_year || '2025-2026') : '2025-2026'
+    };
+    saveStudentScope();
     await loadAllDataFromSupabase();
     var list = fenData[grade]?.branches?.[branch] || [];
     var name = normTR(nameRaw);
@@ -355,6 +893,8 @@ async function studentLogin() {
         return parseInt(s.no) === no && normTR(s.name) === name;
     });
     if (!found) {
+        studentScope = null;
+        saveStudentScope();
         return alert('Öğrenci bulunamadı.');
     }
     renderStudentPanelView(grade, branch, found, true);
@@ -362,7 +902,10 @@ async function studentLogin() {
 
 function logout() {
     if (supabaseClient) supabaseClient.auth.signOut();
+    currentTeacher = null;
+    studentScope = null;
     sessionStorage.removeItem('fen_app_state');
+    sessionStorage.removeItem('fen_student_scope');
     history.pushState({ type: 'auth' }, '', '#giris');
     renderAuthScreenView(false);
 }
@@ -387,7 +930,7 @@ function showStudentScaleDetail(grade, branch, activityName, unit, section) {
     var html = '<header class="teacher-header">' +
         '<div class="header-brand"><h1>Ölçek Detayları</h1></div>' +
         '<div>' +
-            '<button onclick="openStudentActivities(\'' + grade + '\',\'' + branch + '\')" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+            '<button onclick="openStudentActivities(\'' + grade + '\',\'' + branch + '\')" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
             '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
         '</div>' +
     '</header>' +
@@ -407,7 +950,7 @@ function showStudentScaleDetail(grade, branch, activityName, unit, section) {
         var scaleName = sc.name.split(' - ').pop();
 
         html += '<div style="background:#0f172a;padding:16px;border-radius:12px;margin-bottom:16px;border:1px solid #334155;">';
-        html += '<h3 style="margin:0 0 8px 0;color:#60a5fa;font-size:16px;">' + scaleName + '</h3>';
+        html += '<h3 style="margin:0 0 8px 0;color:#fdba74;font-size:16px;">' + scaleName + '</h3>';
         html += '<p style="font-size:12px;color:#94a3b8;margin-bottom:12px;padding:8px;background:#1e293b;border-radius:6px;">';
         if (scaleType === '1-4') html += 'Kodlama: 4=Çok İyi | 3=İyi | 2=Geliştirilmeli | 1=Yetersiz';
         else if (scaleType === 'evet-hayir') html += 'Kodlama: 3=Evet | 2=Kısmen | 1=Hayır';
@@ -415,7 +958,7 @@ function showStudentScaleDetail(grade, branch, activityName, unit, section) {
         html += '</p>';
         html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="border-bottom:1px solid #334155;">';
         criteria.forEach(function(c) {
-            html += '<th style="padding:10px 4px;text-align:center;font-size:10px;font-weight:500;color:#94a3b8;min-width:60px;max-width:100px;white-space:normal;overflow-wrap:break-word;hyphens:auto;line-height:1.3;">' + c + '</th>';
+            html += '<th style="padding:8px 4px;text-align:center;font-size:10px;font-weight:500;color:#94a3b8;white-space:normal;word-break:normal;overflow-wrap:normal;line-height:1.25;vertical-align:bottom;">' + criterionHeader(c) + '</th>';
         });
         html += '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:500;color:#94a3b8;min-width:60px;">Toplam</th></tr></thead><tbody><tr>';
         criteria.forEach(function(_, i) {
@@ -432,9 +975,12 @@ function showStudentScaleDetail(grade, branch, activityName, unit, section) {
 }
 
 function logoutStudent() {
+    studentScope = null;
     sessionStorage.removeItem('fen_app_state');
+    sessionStorage.removeItem('fen_student_scope');
     history.pushState({ type: 'auth' }, '', '#giris');
     renderAuthScreenView(false);
+    loadPortalCatalog();
 }
 
 function renderAuthScreenView(push) {
@@ -453,6 +999,7 @@ function renderTeacherPanelView(push) {
     document.getElementById('student-panel').style.display = 'none';
     document.getElementById('teacher-panel').style.display = 'flex';
     closeModal();
+    paintTeacherHome();
 }
 
 function toggleTeacherActionsCard() {
@@ -492,7 +1039,7 @@ function openManagementMenu() {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>Yönetim İşlemleri</h1></div>' +
             '<div>' +
-                '<button onclick="renderTeacherPanelView(false)" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="renderTeacherPanelView(false)" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logout()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -537,19 +1084,35 @@ function openTeacherInfoPage() {
             '<input type="text" id="academic-year" class="auth-input" value="' + academicYear + '" placeholder="Örn: 2025-2026">' +
         '</div>' +
         '<p style="font-size:12px;color:#64748b;">Bu bilgiler PDF ve Word belgelerinde resmi başlık olarak kullanılacak.</p>',
-    function() {
+    async function() {
         var name = document.getElementById('school-name').value.trim();
         var year = document.getElementById('academic-year').value.trim();
         if (name) localStorage.setItem('fen_school_name', name);
         if (year) localStorage.setItem('fen_academic_year', year);
+        if (supabaseClient && currentTeacher && currentTeacher.school_id && name) {
+            var res = await supabaseClient.from('schools').update({ name: name, academic_year: year || '2025-2026' }).eq('id', currentTeacher.school_id);
+            if (res.error) return alert(res.error.message);
+            currentTeacher.school_name = name;
+            currentTeacher.academic_year = year || currentTeacher.academic_year;
+        }
         closeModal();
         alert('Bilgiler kaydedildi!');
     });
 }
 
+function studentPrintHeader(title, student, grade, branch) {
+    var sube = String(branch || '');
+    var short = sube.indexOf('/') >= 0 ? sube.split('/').pop() : sube;
+    return '<div style="text-align:center;margin:0 0 14px;line-height:1.35;">' +
+        '<div style="font-size:15px;font-weight:700;">' + getSchoolHeader() + '</div>' +
+        '<div style="font-size:14px;font-weight:700;margin-top:4px;">' + getSubjectLine() + '</div>' +
+        '<div style="font-size:16px;font-weight:800;margin-top:6px;">' + title + '</div>' +
+        '<div style="font-size:12px;margin-top:4px;">' + (student.name || '') + ' · No ' + (student.no || '') + ' · ' + grade + '. Sınıf / ' + short + '</div>' +
+    '</div>';
+}
 function getSchoolHeader() {
-    var schoolName = localStorage.getItem('fen_school_name') || 'OKUL ADI';
-    var academicYear = localStorage.getItem('fen_academic_year') || '2025-2026';
+    var schoolName = (currentTeacher && currentTeacher.school_name) || (studentScope && studentScope.schoolName) || localStorage.getItem('fen_school_name') || 'OKUL ADI';
+    var academicYear = (currentTeacher && currentTeacher.academic_year) || (studentScope && studentScope.academicYear) || localStorage.getItem('fen_academic_year') || '2025-2026';
     return academicYear + ' EĞİTİM-ÖĞRETİM YILI<br><span style="font-size:14px;">' + schoolName + '</span>';
 }
 
@@ -564,7 +1127,7 @@ function openManagementPage(title, contentHtml) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>' + title + '</h1></div>' +
             '<div>' +
-                '<button onclick="renderTeacherPanelView(false)" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="renderTeacherPanelView(false)" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logout()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -611,7 +1174,7 @@ async function saveNewUnit() {
     var name = document.getElementById('mgmt-unit').value.trim();
     if (!name) return alert('Ünite adı girin');
     if (supabaseClient) {
-        var res = await supabaseClient.from('units_sections').insert([{ grade: grade, unit_name: name, section_name: 'Genel' }]);
+        var res = await supabaseClient.from('units_sections').insert(stampList([{ grade: grade, unit_name: name, section_name: 'Genel' }]));
         if (res.error) return alert(res.error.message);
     }
     await loadAllDataFromSupabase();
@@ -625,7 +1188,7 @@ async function saveNewSection() {
     var section = document.getElementById('mgmt-section').value.trim();
     if (!unit || !section) return alert('Ünite ve bölüm girin');
     if (supabaseClient) {
-        var res = await supabaseClient.from('units_sections').insert([{ grade: grade, unit_name: unit, section_name: section }]);
+        var res = await supabaseClient.from('units_sections').insert(stampList([{ grade: grade, unit_name: unit, section_name: section }]));
         if (res.error) return alert(res.error.message);
     }
     await loadAllDataFromSupabase();
@@ -646,7 +1209,7 @@ function openGradeManagement(grade, push) {
     branches.forEach(function(b) {
         var short = b.indexOf('/') >= 0 ? b.split('/')[1] : b;
         var count = (fenData[grade].branches[b] || []).length;
-        branchCards += '<div class="grade-card" onclick="openBranchMenu(\'' + grade + '\',\'' + b + '\', true)" style="border-top-color:#3b82f6;">' +
+        branchCards += '<div class="grade-card" onclick="openBranchMenu(\'' + grade + '\',\'' + b + '\', true)" style="border-top-color:#f97316;">' +
             '<h3>' + short + ' Şubesi</h3>' +
             '<p>' + count + ' öğrenci</p>' +
             '<span class="card-action">Gir</span>' +
@@ -664,7 +1227,7 @@ function openGradeManagement(grade, push) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>' + grade + '. Sınıflar</h1></div>' +
             '<div>' +
-                '<button onclick="renderTeacherPanelView(false)" class="logout-btn" style="background:#3b82f6; margin-right:6px;">Geri</button>' +
+                '<button onclick="renderTeacherPanelView(false)" class="logout-btn" style="background:#f97316; margin-right:6px;">Geri</button>' +
                 '<button onclick="logout()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -682,8 +1245,9 @@ function addNewBranchModal(grade) {
         var name = document.getElementById('modal-branch-name').value.trim().toUpperCase();
         if (!name) return;
         var full = grade + '/' + name;
+        if (await branchTaken(grade, full)) return alert('Bu şube bu branşta başka öğretmende.');
         if (supabaseClient) {
-            var res = await supabaseClient.from('branches').insert([{ grade: grade, branch_name: full }]);
+            var res = await supabaseClient.from('branches').insert(stampList([{ grade: grade, branch_name: full }]));
             if (res.error) return alert(res.error.message);
         }
         await loadAllDataFromSupabase();
@@ -695,8 +1259,8 @@ function addNewBranchModal(grade) {
 async function deleteBranch(grade, bName) {
     if (!confirm(bName + ' şubesini silmek istediğinize emin misiniz?')) return;
     if (supabaseClient) {
-        await supabaseClient.from('branches').delete().eq('grade', grade).eq('branch_name', bName);
-        await supabaseClient.from('students').delete().eq('grade', grade).eq('branch', bName);
+        await supabaseClient.from('branches').delete().eq('teacher_id', ownerId()).eq('grade', grade).eq('branch_name', bName);
+        await supabaseClient.from('students').delete().eq('teacher_id', ownerId()).eq('grade', grade).eq('branch', bName);
     }
     await loadAllDataFromSupabase();
     openGradeManagement(grade, false);
@@ -714,13 +1278,13 @@ function openBranchMenu(grade, branchName, push) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>' + grade + '. Sınıf - ' + branchName + '</h1></div>' +
             '<div>' +
-                '<button onclick="openGradeManagement(\'' + grade + '\', false)" class="logout-btn" style="background:#3b82f6; margin-right:6px;">Geri</button>' +
+                '<button onclick="openGradeManagement(\'' + grade + '\', false)" class="logout-btn" style="background:#f97316; margin-right:6px;">Geri</button>' +
                 '<button onclick="logout()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
         '<section class="dashboard-content">' +
             '<div class="grade-cards-grid">' +
-                '<div class="grade-card" onclick="openBranchDetail(\'' + grade + '\',\'' + branchName + '\',\'students\', true)" style="border-top-color:#3b82f6;">' +
+                '<div class="grade-card" onclick="openBranchDetail(\'' + grade + '\',\'' + branchName + '\',\'students\', true)" style="border-top-color:#f97316;">' +
                     '<div style="font-size:24px; margin-bottom:6px;">1</div><h3>Sınıf Listesi</h3><span class="card-action">Git</span>' +
                 '</div>' +
                 '<div class="grade-card" onclick="openBranchDetail(\'' + grade + '\',\'' + branchName + '\',\'quizzes\', true)" style="border-top-color:#8b5cf6;">' +
@@ -731,6 +1295,9 @@ function openBranchMenu(grade, branchName, push) {
                 '</div>' +
                 '<div class="grade-card" onclick="openBranchDetail(\'' + grade + '\',\'' + branchName + '\',\'reports\', true)" style="border-top-color:#f59e0b;">' +
                     '<div style="font-size:24px; margin-bottom:6px;">4</div><h3>Raporlar</h3><span class="card-action">Git</span>' +
+                '</div>' +
+                '<div class="grade-card" onclick="openTransferBranch(\'' + grade + '\',\'' + branchName + '\')" style="border-top-color:#f97316;">' +
+                    '<div style="font-size:24px; margin-bottom:6px;">5</div><h3>Şubeyi Devret</h3><span class="card-action">Devret</span>' +
                 '</div>' +
             '</div>' +
         '</section>';
@@ -749,7 +1316,7 @@ function openLessonOperations(grade, push) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>' + grade + '. Sınıf - Ders İşlemleri</h1></div>' +
             '<div>' +
-                '<button onclick="openGradeManagement(\'' + grade + '\', false)" class="logout-btn" style="background:#3b82f6; margin-right:6px;">Geri</button>' +
+                '<button onclick="openGradeManagement(\'' + grade + '\', false)" class="logout-btn" style="background:#f97316; margin-right:6px;">Geri</button>' +
                 '<button onclick="logout()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -1081,7 +1648,7 @@ function openAddContentModal(grade, type) {
                 }
             }
 
-            var { error } = await supabaseClient.from('lesson_contents').insert([payload]);
+            var { error } = await supabaseClient.from('lesson_contents').insert(stampList([payload]));
             if (error) {
                 console.error('DB insert error:', error);
                 if (btn) { btn.disabled = false; btn.textContent = 'Kaydet'; }
@@ -1155,7 +1722,7 @@ async function openBatchPdfCropperModal() {
                 '<span id="bc-page-info" style="color:#f8fafc;font-size:13px;font-weight:600;min-width:110px;text-align:center;">Sayfa 1 / ' + batchCropState.numPages + '</span>' +
                 '<button type="button" onclick="changeBatchCropPage(1)" class="logout-btn" style="background:#334155;">Sonraki Sayfa ▶</button>' +
             '</div>' +
-            '<div id="bc-active-badge" style="color:#60a5fa;font-size:13px;font-weight:600;">Sıradaki Kırpılacak: 1. Soru</div>' +
+            '<div id="bc-active-badge" style="color:#fdba74;font-size:13px;font-weight:600;">Sıradaki Kırpılacak: 1. Soru</div>' +
             '<div style="display:flex;gap:8px;">' +
                 '<button type="button" onclick="closeBatchPdfCropperModal(false)" class="logout-btn" style="background:#475569;">İptal</button>' +
                 '<button type="button" onclick="closeBatchPdfCropperModal(true)" class="auth-btn" style="width:auto;padding:8px 16px;background:#059669;">Kırpmaları Onayla</button>' +
@@ -1223,13 +1790,13 @@ function redrawBatchCropCanvas(dragRect) {
         var h = box.hRatio * canvas.height;
 
         ctx.save();
-        ctx.strokeStyle = isActive ? '#2563eb' : '#059669';
+        ctx.strokeStyle = isActive ? '#ea580c' : '#059669';
         ctx.lineWidth = isActive ? 3 : 2;
         ctx.fillStyle = isActive ? 'rgba(37, 99, 235, 0.14)' : 'rgba(5, 150, 105, 0.10)';
         ctx.fillRect(x, y, w, h);
         ctx.strokeRect(x, y, w, h);
 
-        ctx.fillStyle = isActive ? '#2563eb' : '#059669';
+        ctx.fillStyle = isActive ? '#ea580c' : '#059669';
         ctx.fillRect(x, Math.max(0, y - 20), 66, 20);
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 12px Arial';
@@ -1342,7 +1909,7 @@ function renderBatchQuestionList() {
         var isActive = i === batchCropState.activeIndex;
         var done = !!box;
         html += '<button type="button" onclick="selectBatchQuestion(' + i + ')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:6px;border:1px solid ' +
-            (isActive ? '#3b82f6' : (done ? '#059669' : '#334155')) + ';background:' +
+            (isActive ? '#f97316' : (done ? '#059669' : '#334155')) + ';background:' +
             (isActive ? 'rgba(59,130,246,0.22)' : '#1e293b') + ';color:#f8fafc;font-size:12px;cursor:pointer;">' +
             '<span><b>' + (i + 1) + '. Soru</b></span>' +
             '<span style="color:' + (done ? '#34d399' : '#94a3b8') + ';">' + (done ? 'S.' + box.page + ' ✓' : 'Bekliyor') + '</span>' +
@@ -1752,13 +2319,13 @@ function renderStudentPanelView(grade, branch, student, push) {
 
     panel.innerHTML =
         '<header class="teacher-header">' +
-            '<div class="header-brand"><h1>' + student.name + '</h1></div>' +
+            '<div class="header-brand"><h1>' + student.name + ' · ' + activeSubject() + '</h1></div>' +
             '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
         '</header>' +
         '<section class="dashboard-content" style="max-width:900px; margin:0 auto;">' +
             '<h3 style="margin-bottom:14px; font-size:15px; color:#94a3b8;">Ana Menü</h3>' +
             '<div class="grade-cards-grid">' +
-                '<div class="grade-card" onclick="openStudentLessons(\'' + grade + '\',\'' + branch + '\')" style="border-top-color:#3b82f6;">' +
+                '<div class="grade-card" onclick="openStudentLessons(\'' + grade + '\',\'' + branch + '\')" style="border-top-color:#f97316;">' +
                     '<h3>📚 Ders</h3><p>Konu, Video, Deney, Quiz</p><span class="card-action">Gir →</span>' +
                 '</div>' +
                 '<div class="grade-card" onclick="openStudentQuizResults(\'' + grade + '\',\'' + branch + '\')" style="border-top-color:#8b5cf6;">' +
@@ -1787,7 +2354,7 @@ function generateSimpleChart(labels, values, title) {
         var x = pad + i * stepX;
         var y = h - pad - (v / maxY) * (h - pad * 2);
         points += (i === 0 ? '' : ' ') + x + ',' + y;
-        circles += '<circle cx="' + x + '" cy="' + y + '" r="5" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>';
+        circles += '<circle cx="' + x + '" cy="' + y + '" r="5" fill="#f97316" stroke="#fff" stroke-width="1.5"/>';
         circles += '<text x="' + x + '" y="' + (y - 12) + '" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">' + v + '</text>';
         var lab = labels[i] || '';
         if (lab.length > 12) lab = lab.substring(0, 10) + '...';
@@ -1802,7 +2369,7 @@ function generateSimpleChart(labels, values, title) {
             '<text x="6" y="' + (pad+4) + '" fill="#64748b" font-size="10">100</text>' +
             '<text x="6" y="' + (h/2+3) + '" fill="#64748b" font-size="10">50</text>' +
             '<text x="10" y="' + (h-pad+3) + '" fill="#64748b" font-size="10">0</text>' +
-            '<polyline points="' + points + '" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round"/>' +
+            '<polyline points="' + points + '" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linejoin="round"/>' +
             circles + xLabels +
         '</svg></div>';
 }
@@ -1834,7 +2401,7 @@ function downloadQuizPDF(grade, branch) {
         '<p><b>Öğrenci:</b> ' + student.name + ' &nbsp;&nbsp; <b>No:</b> ' + student.no + ' &nbsp;&nbsp; <b>Sınıf:</b> ' + grade + '/' + (branch.split('/')[1]||branch) + '</p>' +
         '<p><b>Ortalama:</b> ' + avg + '</p>' +
         '<table><thead><tr><th>Ünite / Bölüm</th><th style="width:60px;text-align:center;">Not</th></tr></thead><tbody>' + (rows || '<tr><td colspan="2">Sonuç yok</td></tr>') + '</tbody></table>' +
-        '<p style="margin-top:20px;font-size:11px;color:#666;">Fenomenal Fen Bilimleri</p>' +
+        '<p style="margin-top:20px;font-size:11px;color:#666;">FENOMENAL Eğitim Portalı</p>' +
         '<script>window.onload=function(){window.print();}<\/script>' +
         '</body></html>';
 
@@ -1872,7 +2439,7 @@ function downloadActivityPDF(grade, branch) {
                 var group = activityGroups[baseName];
                 if (group.scores.length === 0) return;
                 var avg = Math.round(group.scores.reduce(function(a,b){return a+b;},0) / group.scores.length);
-                rows += '<tr><td><b>' + u.name + '</b><br><span style="font-size:11px;color:#666;">' + sec + '</span><br><span style="color:#3b82f6;">' + baseName + '</span></td><td style="text-align:center;font-weight:bold;">%' + avg + '</td></tr>';
+                rows += '<tr><td><b>' + u.name + '</b><br><span style="font-size:11px;color:#666;">' + sec + '</span><br><span style="color:#f97316;">' + baseName + '</span></td><td style="text-align:center;font-weight:bold;">%' + avg + '</td></tr>';
             });
         });
     });
@@ -1882,7 +2449,7 @@ function downloadActivityPDF(grade, branch) {
         '<h2>Etkinlik Notları</h2>' +
         '<p><b>Öğrenci:</b> ' + student.name + ' &nbsp;&nbsp; <b>No:</b> ' + student.no + ' &nbsp;&nbsp; <b>Sınıf:</b> ' + grade + '/' + (branch.split('/')[1]||branch) + '</p>' +
         '<table><thead><tr><th>Ünite / Bölüm / Etkinlik</th><th style="width:70px;text-align:center;">Ort</th></tr></thead><tbody>' + (rows || '<tr><td colspan="2">Not yok</td></tr>') + '</tbody></table>' +
-        '<p style="margin-top:20px;font-size:11px;color:#666;">Fenomenal Fen Bilimleri</p>' +
+        '<p style="margin-top:20px;font-size:11px;color:#666;">FENOMENAL Eğitim Portalı</p>' +
         '<script>window.onload=function(){window.print();}<\/script>' +
         '</body></html>';
 
@@ -1956,11 +2523,11 @@ function downloadStudentKarne(grade, branch) {
         '.info{margin:16px 0;font-size:14px;line-height:1.6;}' +
         'table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;}' +
         'th,td{border:1px solid #ccc;padding:6px 8px;}' +
-        'th{background:#3b82f6;color:#fff;}' +
+        'th{background:#f97316;color:#fff;}' +
         'h3{font-size:15px;margin:18px 0 6px;}' +
         '@media print{body{padding:10px;}}' +
         '</style></head><body>' +
-        '<h1>FENOMENAL FEN BİLİMLERİ</h1>' +
+        '<h1>' + getBrandTitle() + '</h1>' +
         '<h2>Öğrenci Karnesi</h2>' +
         '<div class="info">' +
             '<div><b>Ad:</b> ' + student.name + '</div>' +
@@ -1989,13 +2556,14 @@ function downloadStudentKarne(grade, branch) {
 }
 
 function getFenBadge(avg) {
+    var names = BADGE_TITLES[activeSubject()] || BADGE_TITLES['Fen'];
     if (avg === '-' || avg == null) return { icon: '⭐', title: 'Başlangıç', color: '#64748b' };
     var n = parseFloat(avg);
     if (isNaN(n)) return { icon: '⭐', title: 'Başlangıç', color: '#64748b' };
-    if (n >= 90) return { icon: '🏆', title: 'Fen Ustası', color: '#f59e0b' };
-    if (n >= 80) return { icon: '🥇', title: 'Bilim İnsanı', color: '#eab308' };
-    if (n >= 70) return { icon: '🥈', title: 'Araştırmacı', color: '#94a3b8' };
-    if (n >= 50) return { icon: '🥉', title: 'Meraklı', color: '#d97706' };
+    if (n >= 90) return { icon: '🏆', title: names[0], color: '#f59e0b' };
+    if (n >= 80) return { icon: '🥇', title: names[1], color: '#eab308' };
+    if (n >= 70) return { icon: '🥈', title: names[2], color: '#94a3b8' };
+    if (n >= 50) return { icon: '🥉', title: names[3], color: '#d97706' };
     return { icon: '🌱', title: 'Gelişiyor', color: '#10b981' };
 }
 
@@ -2019,7 +2587,7 @@ function openStudentPlusMinus(grade, branch) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>Puanlarım</h1></div>' +
             '<div>' +
-                '<button onclick="renderStudentPanelView(\'' + grade + '\',\'' + branch + '\', ' + JSON.stringify(student).replace(/"/g, '"') + ', false)" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="renderStudentPanelView(\'' + grade + '\',\'' + branch + '\', ' + JSON.stringify(student).replace(/"/g, '"') + ', false)" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -2035,9 +2603,9 @@ function openStudentPlusMinus(grade, branch) {
                     '<h3 style="font-size:28px;color:#ef4444;margin:8px 0;">' + minus + '</h3>' +
                     '<p>Eksi Puan</p>' +
                 '</div>' +
-                '<div class="grade-card" style="border-top-color:#3b82f6;text-align:center;grid-column:1/-1;">' +
+                '<div class="grade-card" style="border-top-color:#f97316;text-align:center;grid-column:1/-1;">' +
                     '<div style="font-size:36px;">⚖️</div>' +
-                    '<h3 style="font-size:28px;color:#3b82f6;margin:8px 0;">' + total + '</h3>' +
+                    '<h3 style="font-size:28px;color:#f97316;margin:8px 0;">' + total + '</h3>' +
                     '<p>Net Puan</p>' +
                 '</div>' +
             '</div>' +
@@ -2100,16 +2668,17 @@ function openStudentQuizResults(grade, branch) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>Quiz Sonuçları</h1></div>' +
             '<div>' +
-                '<button onclick="renderStudentPanelView(\'' + grade + '\',\'' + branch + '\', ' + JSON.stringify(student).replace(/"/g, '"') + ', false)" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="renderStudentPanelView(\'' + grade + '\',\'' + branch + '\', ' + JSON.stringify(student).replace(/"/g, '"') + ', false)" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
         '<section class="dashboard-content" style="max-width:800px;margin:0 auto;">' +
             '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;">' +
-                '<button onclick="exportTableToWord(\'student-quiz-print\',\'' + student.name.replace(/'/g,"") + '_Quiz\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#2563eb;">Word</button>' +
+                '<button onclick="exportTableToWord(\'student-quiz-print\',\'' + student.name.replace(/'/g,"") + '_Quiz\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#ea580c;">Word</button>' +
                 '<button onclick="exportTableToPDF(\'student-quiz-print\',\'' + student.name.replace(/'/g,"") + '_Quiz\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#dc2626;">PDF</button>' +
             '</div>' +
             '<div id="student-quiz-print" class="print-area">' +
+            studentPrintHeader('QUİZ KARNESİ', student, grade, branch) +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">' +
                 '<div style="background:rgba(30,41,59,0.7);padding:10px 14px;border-radius:12px;display:flex;align-items:center;gap:10px;">' +
                     '<span style="font-size:28px;">' + getFenBadge(avg).icon + '</span>' +
@@ -2172,10 +2741,10 @@ function openStudentActivityResults(grade, branch) {
                     '<td style="text-align:left;line-height:1.35;padding:8px 6px;">' +
                         '<b style="font-size:13px;">' + group.unit + '</b><br>' +
                         '<span style="font-size:12px;color:#94a3b8;">' + group.section + '</span><br>' +
-                        '<span style="font-size:12px;color:#60a5fa;">' + baseName + '</span>' +
+                        '<span style="font-size:12px;color:#fdba74;">' + baseName + '</span>' +
                     '</td>' +
                     '<td>' + getScaleBadge(avg) + '</td>' +
-                    '<td><button onclick="showStudentScaleDetail(\'' + grade + '\',\'' + branch + '\',\'' + baseName.replace(/'/g, "\\'") + '\',\'' + group.unit.replace(/'/g, "\\'") + '\',\'' + group.section.replace(/'/g, "\\'") + '\')" class="auth-btn" style="width:auto;padding:4px 10px;font-size:11px;background:#3b82f6;">Ölçek Gör</button></td>' +
+                    '<td><button onclick="showStudentScaleDetail(\'' + grade + '\',\'' + branch + '\',\'' + baseName.replace(/'/g, "\\'") + '\',\'' + group.unit.replace(/'/g, "\\'") + '\',\'' + group.section.replace(/'/g, "\\'") + '\')" class="auth-btn" style="width:auto;padding:4px 10px;font-size:11px;background:#f97316;">Ölçek Gör</button></td>' +
                 '</tr>';
                 sSum += avg; sCnt++;
             });
@@ -2221,16 +2790,17 @@ function openStudentActivityResults(grade, branch) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>Etkinlik Sonuçları</h1></div>' +
             '<div>' +
-                '<button onclick="renderStudentPanelView(\'' + grade + '\',\'' + branch + '\', ' + JSON.stringify(student).replace(/"/g, '"') + ', false)" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="renderStudentPanelView(\'' + grade + '\',\'' + branch + '\', ' + JSON.stringify(student).replace(/"/g, '"') + ', false)" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
         '<section class="dashboard-content" style="max-width:800px;margin:0 auto;">' +
             '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;">' +
-                '<button onclick="exportTableToWord(\'activity-print\',\'' + student.name.replace(/'/g,"") + '_Etkinlik\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#2563eb;">Word</button>' +
+                '<button onclick="exportTableToWord(\'activity-print\',\'' + student.name.replace(/'/g,"") + '_Etkinlik\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#ea580c;">Word</button>' +
                 '<button onclick="exportTableToPDF(\'activity-print\',\'' + student.name.replace(/'/g,"") + '_Etkinlik\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#dc2626;">PDF</button>' +
             '</div>' +
             '<div id="activity-print" class="print-area">' +
+            studentPrintHeader('ETKİNLİK KARNESİ', student, grade, branch) +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">' +
                 '<div style="background:rgba(30,41,59,0.7);padding:10px 14px;border-radius:12px;display:flex;align-items:center;gap:10px;">' +
                     '<span style="font-size:28px;">' + getFenBadge(sCnt ? sAvg : '-').icon + '</span>' +
@@ -2275,7 +2845,7 @@ function openStudentLessons(grade, branch) {
     var unitCards = '';
     units.forEach(function(u) {
         var count = lessons.filter(function(l) { return l.unit === u.name; }).length;
-        unitCards += '<div class="grade-card" onclick="openStudentUnit(\'' + grade + '\',\'' + branch + '\',\'' + u.name.replace(/'/g, "\\'") + '\')" style="border-top-color:#3b82f6;">' +
+        unitCards += '<div class="grade-card" onclick="openStudentUnit(\'' + grade + '\',\'' + branch + '\',\'' + u.name.replace(/'/g, "\\'") + '\')" style="border-top-color:#f97316;">' +
             '<h3>' + u.name + '</h3>' +
             '<p>' + count + ' içerik</p>' +
             '<span class="card-action">Gir →</span>' +
@@ -2286,7 +2856,7 @@ function openStudentLessons(grade, branch) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>Ders</h1></div>' +
             '<div>' +
-                '<button onclick="renderStudentPanelView(\'' + grade + '\',\'' + branch + '\',' + JSON.stringify(student).replace(/"/g,'&quot;') + ',false)" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="renderStudentPanelView(\'' + grade + '\',\'' + branch + '\',' + JSON.stringify(student).replace(/"/g,'&quot;') + ',false)" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -2323,7 +2893,7 @@ async function openStudentUnit(grade, branch, unitName) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>' + unitName + '</h1></div>' +
             '<div>' +
-                '<button onclick="openStudentLessons(\'' + grade + '\',\'' + branch + '\')" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="openStudentLessons(\'' + grade + '\',\'' + branch + '\')" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -2405,7 +2975,7 @@ async function openStudentSection(grade, branch, unitName, sectionName) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>' + sectionName + '</h1></div>' +
             '<div>' +
-                '<button onclick="openStudentUnit(\'' + grade + '\',\'' + branch + '\',\'' + unitName.replace(/'/g,"\\'") + '\')" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="openStudentUnit(\'' + grade + '\',\'' + branch + '\',\'' + unitName.replace(/'/g,"\\'") + '\')" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -2439,7 +3009,7 @@ async function openContentList(type, grade, branch, unitName, sectionName) {
     var typeNames = { video: 'Videolar', pptx: 'Slaytlar', experiment: 'Deneyler', quiz: 'Quizler' };
     var typeColors = { video: '#0891b2', pptx: '#7c3aed', experiment: '#059669', quiz: '#d97706' };
     var title = typeNames[type] || 'İçerikler';
-    var color = typeColors[type] || '#3b82f6';
+    var color = typeColors[type] || '#f97316';
 
     var cards = '';
     lessons.forEach(function(l, idx) {
@@ -2472,7 +3042,7 @@ async function openContentList(type, grade, branch, unitName, sectionName) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>' + title + '</h1></div>' +
             '<div>' +
-                '<button onclick="openStudentSection(\'' + grade + '\',\'' + branch + '\',\'' + unitName.replace(/'/g,"\\'") + '\',\'' + sectionName.replace(/'/g,"\\'") + '\')" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="openStudentSection(\'' + grade + '\',\'' + branch + '\',\'' + unitName.replace(/'/g,"\\'") + '\',\'' + sectionName.replace(/'/g,"\\'") + '\')" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -2610,7 +3180,7 @@ async function openContentViewer(contentId, grade, branch, unitName, sectionName
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>' + (lesson.title || 'İçerik') + '</h1></div>' +
             '<div>' +
-                '<button onclick="openStudentSection(\'' + grade + '\',\'' + branch + '\',\'' + safeUnit + '\',\'' + safeSec + '\')" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="openStudentSection(\'' + grade + '\',\'' + branch + '\',\'' + safeUnit + '\',\'' + safeSec + '\')" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -2649,7 +3219,7 @@ function renderContentBody(lesson) {
             viewer = '<iframe src="' + lesson.file_url + '#toolbar=1" style="width:100%;height:520px;border:none;border-radius:10px;background:#0f172a;" allowfullscreen></iframe>';
         }
         return '<div>' +
-            '<button onclick="toggleContentViewer(\'' + id + '\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#3b82f6;margin-bottom:8px;">' + label + '</button>' +
+            '<button onclick="toggleContentViewer(\'' + id + '\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#f97316;margin-bottom:8px;">' + label + '</button>' +
             '<div id="viewer-' + id + '" style="display:none;margin-top:8px;">' + viewer +
                 '<div style="margin-top:8px;"><a href="' + lesson.file_url + '" target="_blank" class="auth-btn" style="width:auto;padding:6px 12px;background:#475569;display:inline-block;text-decoration:none;">İndir</a></div>' +
             '</div></div>';
@@ -2843,7 +3413,7 @@ function showPreviousQuizResult(result, lesson) {
     panel.innerHTML =
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>Quiz Sonucun</h1></div>' +
-            '<button onclick="history.back()" class="logout-btn" style="background:#3b82f6;">Geri</button>' +
+            '<button onclick="history.back()" class="logout-btn" style="background:#f97316;">Geri</button>' +
         '</header>' +
         '<section class="dashboard-content" style="max-width:700px;margin:0 auto;">' +
             '<div style="background:rgba(30,41,59,0.7);padding:16px;border-radius:12px;margin-bottom:16px;text-align:center;">' +
@@ -2922,7 +3492,7 @@ function renderQuizScreen() {
                 (idx > 0 ? '<button onclick="prevQuizQuestion()" class="auth-btn" style="width:auto;padding:10px 18px;background:#475569;">← Önceki</button>' : '<div></div>') +
                 (isLast
                     ? '<button onclick="submitQuiz()" class="auth-btn" style="width:auto;padding:10px 18px;background:#059669;" ' + (!hasAnswer ? 'disabled' : '') + '>Quiz\'i Bitir</button>'
-                    : '<button onclick="nextQuizQuestion()" class="auth-btn" style="width:auto;padding:10px 18px;background:#3b82f6;" ' + (!hasAnswer ? 'disabled' : '') + '>Sonraki →</button>') +
+                    : '<button onclick="nextQuizQuestion()" class="auth-btn" style="width:auto;padding:10px 18px;background:#f97316;" ' + (!hasAnswer ? 'disabled' : '') + '>Sonraki →</button>') +
             '</div>' +
         '</section>';
 
@@ -3027,7 +3597,7 @@ function showQuizResults(state, correct, total, score) {
     panel.innerHTML =
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>Quiz Sonucu</h1></div>' +
-            '<button onclick="openStudentLessons(currentStudentContext.grade, currentStudentContext.branch)" class="logout-btn" style="background:#3b82f6;">Geri</button>' +
+            '<button onclick="openStudentLessons(currentStudentContext.grade, currentStudentContext.branch)" class="logout-btn" style="background:#f97316;">Geri</button>' +
         '</header>' +
         '<section class="dashboard-content" style="max-width:800px;margin:0 auto;">' +
             '<div style="background:rgba(30,41,59,0.7);padding:16px;border-radius:12px;margin-bottom:16px;text-align:center;">' +
@@ -3058,7 +3628,7 @@ function openBranchDetail(grade, branchName, tab, push) {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>' + grade + '. Sınıf - ' + branchName + '</h1></div>' +
             '<div>' +
-                '<button onclick="openBranchMenu(\'' + grade + '\',\'' + branchName + '\', false)" class="logout-btn" style="background:#3b82f6; margin-right:6px;">Menü</button>' +
+                '<button onclick="openBranchMenu(\'' + grade + '\',\'' + branchName + '\', false)" class="logout-btn" style="background:#f97316; margin-right:6px;">Menü</button>' +
                 '<button onclick="logout()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -3094,7 +3664,7 @@ function loadBranchTabContent(tab, grade, branchName) {
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">' +
                 '<h3 style="margin:0; font-size:15px;">Öğrenci Listesi</h3>' +
                 '<div style="display:flex; gap:6px;">' +
-                    '<button onclick="openBulkStudentModal(\'' + grade + '\',\'' + branchName + '\')" class="auth-btn" style="width:auto; padding:6px 10px; background:#059669; font-size:12px;">Toplu</button><button onclick="addStudentModal(\'' + grade + '\',\'' + branchName + '\')" class="auth-btn" style="width:auto; padding:6px 10px; background:#2563eb; font-size:12px;">+ Öğrenci</button>' +
+                    '<button onclick="openBulkStudentModal(\'' + grade + '\',\'' + branchName + '\')" class="auth-btn" style="width:auto; padding:6px 10px; background:#059669; font-size:12px;">Toplu</button><button onclick="addStudentModal(\'' + grade + '\',\'' + branchName + '\')" class="auth-btn" style="width:auto; padding:6px 10px; background:#ea580c; font-size:12px;">+ Öğrenci</button>' +
                 '</div>' +
             '</div>' +
             '<div style="overflow-x:auto;">' +
@@ -3222,11 +3792,11 @@ function loadActivityTable(grade, branchName) {
         rows += '<td><span class="badge ' + badge + '">%' + pct + '</span></td></tr>';
     });
     area.innerHTML = '<div style="background:rgba(30,41,59,0.7);padding:16px;border-radius:12px;margin-top:12px;" id="act-print-area">' +
-        '<div style="text-align:center;margin-bottom:12px;"><b>FENOMENAL FEN BİLİMLERİ</b><br><span style="font-size:13px;color:#94a3b8;">Tekil Ölçek</span></div>' +
+        '<div style="text-align:center;margin-bottom:12px;"><b>' + getBrandTitle() + '</b><br><span style="font-size:13px;color:#94a3b8;">Tekil Ölçek</span></div>' +
         '<p style="font-size:13px;"><b>Ölçek:</b> ' + scaleName + '</p>' +
         '<div style="overflow-x:auto;"><table class="data-table"><thead><tr>' + header + '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
         '<div style="margin-top:12px;display:flex;gap:8px;">' +
-            '<button onclick="alert(\'Kaydedildi\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#3b82f6;">Kaydet</button>' +
+            '<button onclick="alert(\'Kaydedildi\')" class="auth-btn" style="width:auto;padding:8px 16px;background:#f97316;">Kaydet</button>' +
             '<button onclick="downloadActTable()" class="auth-btn" style="width:auto;padding:8px 16px;background:#dc2626;">PDF</button>' +
         '</div></div>';
 }
@@ -3302,8 +3872,12 @@ function renderQuizTable(grade, branchName) {
         '</tr>';
     });
     cont.innerHTML =
+        '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;">' +
+            '<button onclick="exportTableToWord(\'quiz-print\',\'' + fileSafe(unit + ' ' + section + ' Quiz') + '\')" class="auth-btn" style="background:#ea580c; width:auto; padding:8px 14px;">Word</button>' +
+            '<button onclick="exportTableToPDF(\'quiz-print\',\'' + fileSafe(unit + ' ' + section + ' Quiz') + '\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
+        '</div>' +
         '<div id="quiz-print" class="print-area">' +
-            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">FEN BİLİMLERİ DERSİ</p><h3>' + grade + '. Sinif (' + branchName + ') - Quiz</h3></div>' +
+            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine() + '</p><h3>' + grade + '. Sinif (' + branchName + ') - Quiz</h3></div>' +
             '<div class="print-info">' +
                 '<p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p>' +
                 '<p><b>Unite:</b> ' + unit + '</p>' +
@@ -3318,8 +3892,6 @@ function renderQuizTable(grade, branchName) {
         '</div>' +
         '<div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">' +
             '<button onclick="saveQuiz(\'' + grade + '\',\'' + branchName + '\')" class="auth-btn" style="width:auto; padding:8px 14px;">Kaydet</button>' +
-            '<button onclick="exportTableToWord(\'quiz-print\',\'' + branchName + '_Quiz\')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">Word</button>' +
-            '<button onclick="exportTableToPDF(\'quiz-print\',\'' + branchName + '_Quiz\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
         '</div>';
 }
 
@@ -3391,7 +3963,7 @@ function loadSubScales(grade, branchName) {
     var subs = (fenData[grade]?.activities || []).filter(function(a) {
         return a.unit === unit && a.section === section && (a.name === base || a.name.indexOf(base + ' -') === 0);
     });
-    var typeNames = { '1-4': 'ANALİTİK RUBRİK', 'var-yok': 'KONTROL LİSTESİ', 'evet-hayir': 'ÖZ DEĞERLENDİRME' };
+    var typeNames = { '1-4': 'ANALİTİK RUBRİK', '1-5': 'BÜTÜNCÜL RUBRİK', '1-3': '1-3 ÖLÇEK', 'eh': 'KONTROL LİSTESİ', 'var-yok': 'KONTROL LİSTESİ', 'evet-hayir': 'ÖZ DEĞERLENDİRME' };
     subs.forEach(function(s) {
         var short = s.name.replace(base, '').replace(/^[\s-]+/, '');
         if (!short || short === s.name) {
@@ -3400,6 +3972,18 @@ function loadSubScales(grade, branchName) {
         sel.innerHTML += '<option value="' + s.name + '">' + short + '</option>';
     });
     renderActivityTable(grade, branchName);
+}
+
+function criterionHeader(text) {
+    return String(text || '')
+        .replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>')
+        .split(/\s+/)
+        .filter(Boolean)
+        .join('<br>');
+}
+
+function fileSafe(name) {
+    return String(name || 'Olcek').replace(/[\\/:*?"<>|']/g, '').replace(/\s+/g, ' ').trim().substring(0, 90) || 'Olcek';
 }
 
 function renderActivityTable(grade, branchName) {
@@ -3429,7 +4013,7 @@ function renderActivityTable(grade, branchName) {
         var head = '<th style="width:50px;">No</th><th style="min-width:140px; text-align:left;">Ad Soyad</th>';
         if (isAkran) head += '<th style="min-width:120px; font-size:10px;">Değerlendiren</th>';
         criteria.forEach(function(c) {
-            head += '<th style="min-width:65px; max-width:90px; font-size:10px; white-space:normal; word-break:break-word; line-height:1.25;">' + c + '</th>';
+            head += '<th style="font-size:10px; white-space:normal; word-break:normal; overflow-wrap:normal; line-height:1.25; vertical-align:bottom; padding:6px 4px;">' + criterionHeader(c) + '</th>';
         });
         head += '<th style="min-width:60px;">Toplam</th>';
         var body = '';
@@ -3444,7 +4028,7 @@ function renderActivityTable(grade, branchName) {
                     var idx = seed % classmates.length;
                     akranName = classmates[idx].name;
                 }
-                cells += '<td style="font-size:11px; color:#60a5fa;">' + akranName + '</td>';
+                cells += '<td style="font-size:11px; color:#fdba74;">' + akranName + '</td>';
             }
             criteria.forEach(function(_, cIdx) {
                 var val = stored[cIdx] !== undefined ? stored[cIdx] : '';
@@ -3455,11 +4039,18 @@ function renderActivityTable(grade, branchName) {
             body += '<tr>' + cells + '</tr>';
         });
         cont.innerHTML =
+            '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;">' +
+                '<button onclick="exportTableToWord(\'act-print\',\'' + fileSafe(scale.name) + '\')" class="auth-btn" style="background:#ea580c; width:auto; padding:8px 14px;">Word</button>' +
+                '<button onclick="exportTableToPDF(\'act-print\',\'' + fileSafe(scale.name) + '\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
+            '</div>' +
             '<div id="act-print" class="print-area">' +
-                '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">FEN BİLİMLERİ DERSİ</p></div>' +
+                '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine() + '</p></div>' +
                 '<div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Olcek:</b> ' + scale.name + '</p></div>' +
                 '<div style="background:#1e293b;padding:8px 12px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#94a3b8;">' +
-                    (scale.scale_type === '1-4' ? 'Kodlama: 4=Cok Iyi | 3=Iyi | 2=Gelistirilmeli | 1=Yetersiz' :
+                    (scale.scale_type === '1-5' ? 'Kodlama: 5=Cok iyi | 4=Iyi | 3=Yeterli | 2=Gelistirmeli | 1=Yetersiz' :
+                     scale.scale_type === '1-4' ? 'Kodlama: 4=Cok Iyi | 3=Iyi | 2=Gelistirilmeli | 1=Yetersiz' :
+                     scale.scale_type === '1-3' ? 'Kodlama: 3 | 2 | 1' :
+                     scale.scale_type === 'eh' ? 'Kodlama: 1=Evet | 0=Hayir' :
                      scale.scale_type === 'var-yok' ? 'Kodlama: 1=Var | 0=Yok' :
                      'Kodlama: 3=Evet | 2=Kismen | 1=Hayir') +
                 '</div>' +
@@ -3467,8 +4058,6 @@ function renderActivityTable(grade, branchName) {
             '</div>' +
             '<div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">' +
                 '<button onclick="saveSingleScale(\'' + grade + '\',\'' + branchName + '\',\'' + selected + '\',' + criteria.length + ')" class="auth-btn" style="width:auto; padding:8px 14px;">Kaydet</button>' +
-                '<button onclick="exportTableToWord(\'act-print\',\'' + branchName + '_Tekil\')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">Word</button>' +
-                '<button onclick="exportTableToPDF(\'act-print\',\'' + branchName + '_Tekil\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
             '</div>';
         return;
     }
@@ -3492,14 +4081,16 @@ function renderActivityTable(grade, branchName) {
         body2 += '<tr>' + cells + '</tr>';
     });
     cont.innerHTML =
+        '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;">' +
+            '<button onclick="exportTableToWord(\'act-print\',\'' + fileSafe(base) + '\')" class="auth-btn" style="background:#ea580c; width:auto; padding:8px 14px;">Word</button>' +
+            '<button onclick="exportTableToPDF(\'act-print\',\'' + fileSafe(base) + '\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
+        '</div>' +
         '<div id="act-print" class="print-area">' +
-            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">FEN BİLİMLERİ DERSİ</p><h3>Tum Olcekler</h3></div><div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Etkinlik:</b> ' + base + '</p></div>' +
+            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine() + '</p><h3>Tum Olcekler</h3></div><div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Etkinlik:</b> ' + base + '</p></div>' +
             '<div style="overflow-x:auto;"><table class="data-table"><thead><tr>' + head2 + '</tr></thead><tbody>' + body2 + '</tbody></table></div>' +
         '</div>' +
         '<div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">' +
             '<button onclick="saveGroupScales(\'' + grade + '\',\'' + branchName + '\',\'' + base + '\')" class="auth-btn" style="width:auto; padding:8px 14px;">Kaydet</button>' +
-            '<button onclick="exportTableToWord(\'act-print\',\'' + branchName + '_Tum\')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">Word</button>' +
-            '<button onclick="exportTableToPDF(\'act-print\',\'' + branchName + '_Tum\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
         '</div>';
 }
 
@@ -3534,7 +4125,8 @@ async function saveSingleScale(grade, branchName, scaleName, critCount) {
             sum += n;
         }
         if (has) {
-            var max = type === '1-4' ? critCount * 4 : critCount;
+            var per = type === '1-5' ? 5 : type === '1-4' ? 4 : (type === '1-3' || type === 'evet-hayir') ? 3 : 1;
+            var max = critCount * per;
             s.scale[scaleName].totalScore = Math.round((sum / max) * 100);
         }
         if (supabaseClient && s.no) {
@@ -3576,9 +4168,14 @@ async function saveGroupScales(grade, branchName, baseName) {
                 var minVal = 1, maxVal = 4;
                 var st = (sc.scale_type || '').toLowerCase();
                 var nm = (sc.name || '').toLowerCase();
-                if (st.indexOf('1-4') >= 0 || nm.indexOf('rubrik') >= 0 || nm.indexOf('analitik') >= 0 || nm.indexOf('holistik') >= 0) { minVal = 1; maxVal = 4; }
-                else if (st.indexOf('evet') >= 0 || st.indexOf('formu') >= 0 || nm.indexOf('formu') >= 0 || nm.indexOf('gozlem') >= 0 || nm.indexOf('gözlem') >= 0 || nm.indexOf('oz') >= 0 || nm.indexOf('öz') >= 0 || nm.indexOf('akran') >= 0) { minVal = 1; maxVal = 3; }
-                else if (st.indexOf('var') >= 0 || st.indexOf('kontrol') >= 0 || nm.indexOf('kontrol') >= 0 || nm.indexOf('liste') >= 0 || nm.indexOf('listesi') >= 0) { minVal = 0; maxVal = 1; }
+                if (st === 'eh' || st === 'var-yok') { minVal = 0; maxVal = 1; }
+                else if (st === '1-5') { minVal = 1; maxVal = 5; }
+                else if (st === '1-3' || st === 'evet-hayir') { minVal = 1; maxVal = 3; }
+                else if (st === '1-4') { minVal = 1; maxVal = 4; }
+                else if (nm.indexOf('bütüncül') >= 0 || nm.indexOf('butuncul') >= 0) { minVal = 1; maxVal = 5; }
+                else if (nm.indexOf('rubrik') >= 0 || nm.indexOf('analitik') >= 0 || nm.indexOf('holistik') >= 0) { minVal = 1; maxVal = 4; }
+                else if (nm.indexOf('formu') >= 0 || nm.indexOf('gozlem') >= 0 || nm.indexOf('gözlem') >= 0 || nm.indexOf('oz') >= 0 || nm.indexOf('öz') >= 0 || nm.indexOf('akran') >= 0) { minVal = 1; maxVal = 3; }
+                else if (nm.indexOf('kontrol') >= 0 || nm.indexOf('liste') >= 0 || nm.indexOf('listesi') >= 0) { minVal = 0; maxVal = 1; }
 
                 var maxTotal = critCount * maxVal;
                 var targetTotal = Math.round((target / 100) * maxTotal);
@@ -3640,12 +4237,12 @@ function addStudentModal(grade, branchName) {
         var name = document.getElementById('m-name').value.trim();
         if (!no || !name) return alert('Tüm alanları doldurun');
         if (supabaseClient) {
-            await supabaseClient.from('students').insert([{
+            await supabaseClient.from('students').insert(stampList([{
                 grade: grade,
                 branch: branchName,
                 school_no: no,
                 name: name
-            }]);
+            }]));
         }
         await loadAllDataFromSupabase();
         closeModal();
@@ -3677,7 +4274,7 @@ async function renderReport(grade, branchName) {
     var reportText = 'Bu bolum icin henuz rapor sablonu eklenmemis.';
     if (supabaseClient) {
         var res = await supabaseClient.from('report_templates')
-            .select('report_text').eq('grade', grade).eq('unit_name', unit).eq('section_name', section).single();
+            .select('report_text').eq('teacher_id', ownerId()).eq('grade', grade).eq('unit_name', unit).eq('section_name', section).maybeSingle();
         if (res.data?.report_text) reportText = res.data.report_text;
     }
     var students = fenData[grade]?.branches[branchName] || [];
@@ -3724,8 +4321,12 @@ async function renderReport(grade, branchName) {
     var mid = genList.filter(function(g) { return g >= 45 && g < 70; }).length;
     var high = genList.filter(function(g) { return g >= 70; }).length;
     cont.innerHTML =
+        '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;">' +
+            '<button onclick="exportReportToWord(\'' + fileSafe(unit + ' ' + section + ' Rapor') + '\')" class="auth-btn" style="background:#ea580c; width:auto; padding:8px 14px;">Word</button>' +
+            '<button onclick="exportFullReportPDF(\'' + fileSafe(unit + ' ' + section + ' Rapor') + '\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
+        '</div>' +
         '<div id="report-print" class="print-area">' +
-            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">FEN BİLİMLERİ DERSİ</p><h3>Analiz Raporu</h3></div>' +
+            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine() + '</p><h3>Analiz Raporu</h3></div>' +
             '<div class="print-info">' +
                 '<p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p>' +
                 '<p><b>Unite:</b> ' + unit + '</p>' +
@@ -3744,10 +4345,6 @@ async function renderReport(grade, branchName) {
                 '<span class="badge badge-mid">45-70: ' + mid + '</span>' +
                 '<span class="badge badge-high">70-100: ' + high + '</span>' +
             '</div>' +
-        '</div>' +
-        '<div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">' +
-            '<button onclick="exportReportToWord(\'' + branchName + '_Rapor\')" class="auth-btn" style="background:#2563eb; width:auto; padding:8px 14px;">Word</button>' +
-            '<button onclick="exportFullReportPDF(\'' + branchName + '_Rapor\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
         '</div>';
 }
 
@@ -3755,11 +4352,24 @@ function getScoreLabel(val, scaleType) {
     if (val === '' || val === '-') return '-';
     var n = parseInt(val);
     if (isNaN(n)) return val;
-    if (scaleType === '1-4') {
+    if (scaleType === '1-5') {
+        if (n === 5) return '5 - Cok iyi';
+        if (n === 4) return '4 - Iyi';
+        if (n === 3) return '3 - Yeterli';
+        if (n === 2) return '2 - Gelistirmeli';
+        if (n === 1) return '1 - Yetersiz';
+    } else if (scaleType === '1-4') {
         if (n === 4) return '4 - Cok Iyi';
         if (n === 3) return '3 - Iyi';
         if (n === 2) return '2 - Gelistirilmeli';
         if (n === 1) return '1 - Yetersiz';
+    } else if (scaleType === '1-3') {
+        if (n === 3) return '3';
+        if (n === 2) return '2';
+        if (n === 1) return '1';
+    } else if (scaleType === 'eh') {
+        if (n === 1) return '1 - Evet';
+        if (n === 0) return '0 - Hayir';
     } else if (scaleType === 'evet-hayir') {
         if (n === 3) return '3 - Evet';
         if (n === 2) return '2 - Kismen';
@@ -3783,7 +4393,10 @@ function exportTableToWord(elementId, filename) {
     });
     var allText = element.innerText || '';
     var scaleType = '1-4';
-    if (allText.indexOf('Evet') >= 0 && allText.indexOf('Kismen') >= 0) scaleType = 'evet-hayir';
+    if (allText.indexOf('1=Evet') >= 0) scaleType = 'eh';
+    else if (allText.indexOf('5=Cok iyi') >= 0 || allText.indexOf('5=Cok Iyi') >= 0) scaleType = '1-5';
+    else if (allText.indexOf('Kodlama: 3 | 2 | 1') >= 0) scaleType = '1-3';
+    else if (allText.indexOf('Evet') >= 0 && allText.indexOf('Kismen') >= 0) scaleType = 'evet-hayir';
     else if (allText.indexOf('Var') >= 0 && allText.indexOf('Yok') >= 0) scaleType = 'var-yok';
 
     var rows = element.querySelectorAll('tbody tr');
@@ -3802,7 +4415,7 @@ function exportTableToWord(elementId, filename) {
         }
     }
     clone.querySelectorAll('button').forEach(function(b) { b.remove(); });
-    var styles = '<style>@page{size:A4;margin:1.5cm;}body{font-family:Times New Roman,serif;color:#000;}table{width:100%;border-collapse:collapse;margin-top:10px;}th,td{border:1px solid #000;padding:6px 4px;font-size:11px;text-align:center;}th{background:#f2f2f2;font-weight:bold;}td:nth-child(2){text-align:left;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:10px;}.print-info{border:1px solid #666;padding:8px;margin-bottom:10px;font-size:12px;}</style>';
+    var styles = '<style>@page{size:A4 landscape;margin:1.2cm;}body{font-family:Times New Roman,serif;color:#000;}table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:auto;}th,td{border:1px solid #000;padding:6px 4px;font-size:11px;text-align:center;word-break:normal;overflow-wrap:normal;}th{background:#f2f2f2;font-weight:bold;white-space:normal;line-height:1.25;vertical-align:bottom;}td:nth-child(2){text-align:left;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:10px;}.print-info{border:1px solid #666;padding:8px;margin-bottom:10px;font-size:12px;}</style>';
     var html = '<html><head><meta charset="utf-8"><title>Rapor</title>' + styles + '</head><body>' + clone.outerHTML + '</body></html>';
     saveAs(new Blob(['\ufeff' + html], { type: 'application/msword' }), filename + '.doc');
 }
@@ -3841,7 +4454,10 @@ async function exportTableToPDF(elementId, filename) {
     var clone = el.cloneNode(true);
     var allText = el.innerText || '';
     var scaleType = '1-4';
-    if (allText.indexOf('Evet') >= 0 && allText.indexOf('Kismen') >= 0) scaleType = 'evet-hayir';
+    if (allText.indexOf('1=Evet') >= 0) scaleType = 'eh';
+    else if (allText.indexOf('5=Cok iyi') >= 0 || allText.indexOf('5=Cok Iyi') >= 0) scaleType = '1-5';
+    else if (allText.indexOf('Kodlama: 3 | 2 | 1') >= 0) scaleType = '1-3';
+    else if (allText.indexOf('Evet') >= 0 && allText.indexOf('Kismen') >= 0) scaleType = 'evet-hayir';
     else if (allText.indexOf('Var') >= 0 && allText.indexOf('Yok') >= 0) scaleType = 'var-yok';
 
     var rows = el.querySelectorAll('tbody tr');
@@ -3862,26 +4478,42 @@ async function exportTableToPDF(elementId, filename) {
     var cols = table ? table.querySelectorAll('th').length : 0;
     var isWide = cols > 5 || filename.indexOf('Olcek') >= 0 || filename.indexOf('Tum') >= 0 || filename.indexOf('Tekil') >= 0;
     var container = document.createElement('div');
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + (isWide ? '1200px' : '850px') + ';background:#ffffff;color:#000;padding:20px;font-family:Arial,sans-serif;z-index:99999;';
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:max-content;background:#ffffff;color:#000;padding:20px;font-family:Arial,sans-serif;z-index:99999;';
     var style = document.createElement('style');
-    style.textContent = '*{color:#000!important;background:#ffffff!important;}table{width:100%!important;border-collapse:collapse!important;}th,td{border:1px solid #222!important;padding:7px 5px!important;font-size:12px!important;text-align:center;font-weight:600!important;}th{background:#e8e8e8!important;}td:nth-child(2){text-align:left!important;}.badge,span{background:transparent!important;color:#000!important;font-weight:700!important;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:10px;}.print-info{border:1px solid #555;padding:8px;margin-bottom:10px;font-size:11px;background:#f8f8f8!important;}';
+    style.textContent = '*{color:#000!important;background:#ffffff!important;}table{width:100%!important;border-collapse:collapse!important;table-layout:auto!important;}th,td{border:1px solid #222!important;padding:8px 6px!important;font-size:13px!important;text-align:center;font-weight:600!important;word-break:normal!important;overflow-wrap:normal!important;hyphens:none!important;}th{background:#e8e8e8!important;white-space:normal!important;line-height:1.25!important;vertical-align:bottom!important;}td:nth-child(2){text-align:left!important;white-space:nowrap!important;}.badge,span{background:transparent!important;color:#000!important;font-weight:700!important;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:10px;}.print-info{width:100%!important;border:1px solid #555;padding:8px;margin:0 auto 10px auto!important;font-size:13px;background:#f8f8f8!important;box-sizing:border-box;}';
     container.appendChild(style);
     container.appendChild(clone);
     document.body.appendChild(container);
     await new Promise(function(r) { setTimeout(r, 400); });
+    var contentH = Math.max(container.scrollHeight, 400);
+    var ratio = isWide ? (277 / 190) : (190 / 277);
+    var target = Math.round(contentH * ratio);
+    var minW = isWide ? 1200 : 860;
+    var maxW = isWide ? 1700 : 1100;
+    if (target < minW) target = minW;
+    if (target > maxW) target = maxW;
+    container.style.width = target + 'px';
+    var mainTable = clone.querySelector('table');
+    if (mainTable) mainTable.style.setProperty('width', '100%', 'important');
+    clone.querySelectorAll('.print-info').forEach(function(info) {
+        info.style.setProperty('width', '100%', 'important');
+    });
+    await new Promise(function(r) { setTimeout(r, 80); });
     try {
         var canvas = await html2canvas(container, { scale: 2.5, useCORS: true, backgroundColor: '#ffffff', logging: false });
         var pdf = new jsPDF({ orientation: isWide ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
         var pw = pdf.internal.pageSize.getWidth();
         var ph = pdf.internal.pageSize.getHeight();
-        var margin = 10;
-        var imgW = pw - margin * 2;
+        var margin = 8;
+        var maxW = pw - margin * 2;
+        var maxH = ph - margin * 2;
+        var imgW = maxW;
         var imgH = (canvas.height * imgW) / canvas.width;
-        if (imgH > ph - margin * 2) {
-            imgH = ph - margin * 2;
+        if (imgH > maxH) {
+            imgH = maxH;
             imgW = (canvas.width * imgH) / canvas.height;
         }
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', (pw - imgW) / 2, (ph - imgH) / 2, imgW, imgH);
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', (pw - imgW) / 2, margin, imgW, imgH);
         pdf.save(filename + '.pdf');
     } catch (e) {
         alert('PDF hatasi: ' + e.message);
@@ -3903,18 +4535,27 @@ async function exportFullReportPDF(filename) {
     var usable = ph - margin * 2;
     var c1 = document.createElement('div');
     c1.style.cssText = 'position:fixed;left:-9999px;width:850px;background:#ffffff;padding:20px;font-family:Arial;z-index:99999;';
-    c1.innerHTML = '<style>*{color:#000!important;background:#ffffff!important;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:5px;font-size:10px;text-align:center;font-weight:600;}th{background:#e8e8e8;}td:nth-child(2){text-align:left;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:8px;}.print-info{border:1px solid #666;padding:7px;margin-bottom:8px;font-size:10px;background:#f8f8f8;}.badge{background:transparent!important;color:#000!important;font-weight:700;}</style>';
+    c1.innerHTML = '<style>*{color:#000!important;background:#ffffff!important;}table{width:100%!important;border-collapse:collapse;}th,td{border:1px solid #333;padding:6px;font-size:11px;text-align:center;font-weight:600;}th{background:#e8e8e8;}td:nth-child(2){text-align:left;}.print-header{text-align:center;border-bottom:2px solid #000;margin-bottom:8px;}.print-info{border:1px solid #666;padding:7px;margin:0 auto 8px auto;font-size:11px;background:#f8f8f8;box-sizing:border-box;}.badge{background:transparent!important;color:#000!important;font-weight:700;}</style>';
     c1.appendChild(p1.cloneNode(true));
     document.body.appendChild(c1);
     await new Promise(function(r) { setTimeout(r, 350); });
+    var repTable = c1.querySelector('table');
+    if (repTable) {
+        c1.querySelectorAll('.print-info').forEach(function(info) {
+            info.style.width = repTable.offsetWidth + 'px';
+            info.style.marginLeft = 'auto';
+            info.style.marginRight = 'auto';
+        });
+    }
     var canvas1 = await html2canvas(c1, { scale: 2.5, backgroundColor: '#ffffff', logging: false });
     var imgW = pw - margin * 2;
     var imgH = (canvas1.height * imgW) / canvas1.width;
     if (imgH > usable) {
         var sc = usable / imgH;
-        pdf.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW * sc, usable);
+        var drawW = imgW * sc;
+        pdf.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', (pw - drawW) / 2, margin, drawW, usable);
     } else {
-        pdf.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW, imgH);
+        pdf.addImage(canvas1.toDataURL('image/jpeg', 0.95), 'JPEG', (pw - imgW) / 2, margin, imgW, imgH);
     }
     document.body.removeChild(c1);
     if (p2) {
@@ -3947,7 +4588,7 @@ function globalAddUnit() {
         var u = document.getElementById('m-unit-name').value.trim();
         if (!u) return alert('Ünite adı girin');
         if (supabaseClient) {
-            await supabaseClient.from('units_sections').insert([{ grade: g, unit_name: u, section_name: 'Genel' }]);
+            await supabaseClient.from('units_sections').insert(stampList([{ grade: g, unit_name: u, section_name: 'Genel' }]));
         }
         await loadAllDataFromSupabase();
         closeModal();
@@ -3966,7 +4607,7 @@ function globalAddSection() {
         var s = document.getElementById('m-sec-name').value.trim();
         if (!u || !s) return alert('Tüm alanları doldurun');
         if (supabaseClient) {
-            await supabaseClient.from('units_sections').insert([{ grade: g, unit_name: u, section_name: s }]);
+            await supabaseClient.from('units_sections').insert(stampList([{ grade: g, unit_name: u, section_name: s }]));
         }
         await loadAllDataFromSupabase();
         closeModal();
@@ -3984,12 +4625,374 @@ function fillModalUnits(grade) {
     });
 }
 
+async function parseScalesFromPdf(buf) {
+    var pdfjs = await ensurePdfJsLoaded();
+    if (!pdfjs) throw new Error('PDF okunamadı.');
+    var doc = await pdfjs.getDocument({ data: buf }).promise;
+    function fold(s) {
+      return String(s || '').toLocaleLowerCase('tr-TR')
+        .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c');
+    }
+    function intOf(item) {
+      var m = String(item.t).match(/^(\d{1,2})\.?$/);
+      return m ? parseInt(m[1], 10) : 0;
+    }
+    function junk(text, allowShort) {
+      var f = fold(text);
+      if (!text || text.length < (allowShort ? 3 : 8)) return true;
+      if (/^[.\-_\s]+$/.test(text)) return true;
+      if (f.indexOf('toplam') >= 0 || f.indexOf('formdan') >= 0 || f.indexOf('ogretmen gorus') >= 0) return true;
+      if (f.indexOf('tercih edilen') >= 0 || f.indexOf('puan araligi') >= 0 || f.indexOf('genel degerlendirme') >= 0) return true;
+      if (f.indexOf('adi soyad') >= 0 || f.indexOf('kanit') >= 0) return true;
+      if (/^(a|b|c|d|e|f)\)/.test(f)) return true;
+      if (f === 'olcutler' || f === 'olcut' || f === 'puanlama' || f === 'gozlenecek davranis') return true;
+      if (f.indexOf('degerlendirme olcut') >= 0 || f.indexOf('basari duzeyi') >= 0) return true;
+      if (f.indexOf('kontrol list') >= 0) return true;
+      return false;
+    }
+    function findScoreHeader(items) {
+      var groups = {};
+      items.forEach(function(i) {
+        var n = intOf(i);
+        if (n < 1 || n > 5) return;
+        var key = Math.round(i.y / 3) * 3;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(i);
+      });
+      var best = null;
+      Object.keys(groups).forEach(function(k) {
+        var seen = {};
+        groups[k].forEach(function(i) { var n = intOf(i); if (!seen[n] || i.x < seen[n].x) seen[n] = i; });
+        var nums = Object.keys(seen).map(Number).sort(function(a, b) { return a - b; });
+        if (nums.length < 3) return;
+        var xs = nums.map(function(n) { return seen[n].x; });
+        var span = Math.max.apply(null, xs) - Math.min.apply(null, xs);
+        if (span < 30) return;
+        var max = nums[nums.length - 1];
+        if (!best || nums.length > best.nums.length) {
+          best = { y: parseInt(k, 10), nums: nums, max: max, xCut: Math.min.apply(null, xs) };
+        }
+      });
+      return best;
+    }
+    function findYesNo(items) {
+      function exact(word) { return items.filter(function(i) { return i.f === word; }); }
+      var evet = exact('evet'), hayir = exact('hayir'), kismen = exact('kismen');
+      var vary = exact('var'), yok = exact('yok');
+      function pair(a, b) {
+        var hit = null;
+        a.forEach(function(x) {
+          b.forEach(function(y) {
+            if (Math.abs(x.y - y.y) < 8) {
+              var row = { y: Math.max(x.y, y.y), xCut: Math.min(x.x, y.x) };
+              if (!hit || row.xCut < hit.xCut) hit = row;
+            }
+          });
+        });
+        return hit;
+      }
+      var eh = pair(evet, hayir);
+      if (eh) return { y: eh.y, xCut: eh.xCut, mode: kismen.length ? 'evet-hayir' : 'eh' };
+      var vy = pair(vary, yok);
+      if (vy) return { y: vy.y, xCut: vy.xCut, mode: 'var-yok' };
+      return null;
+    }
+    function titleOn(items, fallback) {
+      var blob = items.map(function(i) { return i.t; }).join(' ');
+      var f = fold(blob);
+      if (f.indexOf('butuncul') >= 0) return 'Bütüncül Puanlama Anahtarı';
+      if (f.indexOf('analitik dereceli') >= 0) return 'Analitik Dereceli Puanlama Anahtarı';
+      if (f.indexOf('oz degerlendirme') >= 0) return 'Öz Değerlendirme Formu';
+      if (f.indexOf('akran') >= 0 && f.indexOf('form') >= 0) return 'Akran Değerlendirme Formu';
+      if (f.indexOf('gozlem formu') >= 0) {
+        var head = items.filter(function(i) { return fold(i.t).indexOf('gozlem formu') >= 0; }).sort(function(a, b) { return b.y - a.y; })[0];
+        return head ? head.t : 'Gözlem Formu';
+      }
+      if (f.indexOf('kontrol list') >= 0) return 'Kontrol Listesi';
+      return fallback;
+    }
+    function numberedCriteria(items, textXMax, headerY) {
+      var pool = items.filter(function(i) {
+        var n = intOf(i);
+        return n >= 1 && n <= 40 && i.x < textXMax - 30 && (headerY == null || i.y < headerY - 6);
+      });
+      var cols = {};
+      pool.forEach(function(i) {
+        var key = Math.round(i.x / 12) * 12;
+        if (!cols[key]) cols[key] = [];
+        cols[key].push(i);
+      });
+      var nums = [];
+      Object.keys(cols).forEach(function(k) {
+        var seq = cols[k].slice().sort(function(a, b) { return b.y - a.y; });
+        var inc = 0;
+        for (var i = 1; i < seq.length; i++) if (intOf(seq[i]) === intOf(seq[i - 1]) + 1) inc++;
+        if (seq.length >= 3 && inc >= seq.length - 2 && (!nums.length || seq.length > nums.length)) nums = seq;
+      });
+      if (nums.length < 3) return [];
+      var out = [];
+      nums.forEach(function(num) {
+        var bits = items.filter(function(i) {
+          if (i === num || intOf(i)) return false;
+          if (i.x < num.x + 8 || i.x >= textXMax - 8) return false;
+          return Math.abs(i.y - num.y) <= 16;
+        }).sort(function(a, b) { return b.y - a.y || a.x - b.x; });
+        var text = bits.map(function(i) { return i.t; }).join(' ').replace(/\s+/g, ' ').trim();
+        text = text.replace(/([A-Za-zÇĞİÖŞÜçğıöşü])\s*-\s+([a-zçğıöşü])/g, '$1$2');
+        if (!junk(text)) out.push(text);
+      });
+      return out;
+    }
+    function leftNames(items, header) {
+      var pool = items.filter(function(i) {
+        return i.y < header.y - 8 && i.x < header.xCut - 8 && !intOf(i) && i.t.length > 1;
+      });
+      var groups = {};
+      pool.forEach(function(i) {
+        var key = Math.round(i.x / 20) * 20;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(i);
+      });
+      var chosen = null;
+      Object.keys(groups).map(Number).sort(function(a, b) { return a - b; }).forEach(function(k) {
+        if (chosen == null && groups[k].length >= 2) chosen = k;
+      });
+      if (chosen == null) return [];
+      var xs = groups[chosen].map(function(i) { return i.x; }).sort(function(a, b) { return a - b; });
+      var med = xs[Math.floor(xs.length / 2)];
+      var rows = {};
+      pool.forEach(function(i) {
+        if (Math.abs(i.x - med) > 36) return;
+        var key = Math.round(i.y);
+        if (!rows[key]) rows[key] = [];
+        rows[key].push(i);
+      });
+      var ys = Object.keys(rows).map(Number).sort(function(a, b) { return b - a; });
+      var clusters = [];
+      var cur = [];
+      var last = null;
+      ys.forEach(function(y) {
+        if (last != null && last - y > 22) {
+          if (cur.length) clusters.push(cur);
+          cur = [];
+        }
+        cur.push(y);
+        last = y;
+      });
+      if (cur.length) clusters.push(cur);
+      var names = [];
+      clusters.forEach(function(group) {
+        var text = group.map(function(y) {
+          return rows[y].sort(function(a, b) { return a.x - b.x; }).map(function(i) { return i.t; }).join(' ');
+        }).join(' ').replace(/\s+/g, ' ').trim();
+        if (!junk(text, true) && text.length < 80) names.push(text);
+      });
+      return names;
+    }
+    function questionCriteria(items, header) {
+      var rows = {};
+      items.forEach(function(i) {
+        if (i.y > header.y - 4) return;
+        if (i.x >= header.xCut - 8) return;
+        var key = Math.round(i.y);
+        if (!rows[key]) rows[key] = [];
+        rows[key].push(i);
+      });
+      var lines = Object.keys(rows).map(Number).sort(function(a, b) { return b - a; }).map(function(y) {
+        return rows[y].sort(function(a, b) { return a.x - b.x; }).map(function(i) { return i.t; }).join(' ').replace(/\s+/g, ' ').trim();
+      }).filter(function(t) { return t && !junk(t); });
+      var blob = lines.join(' ');
+      var criteria = [];
+      if ((blob.match(/\?/g) || []).length >= 2) {
+        blob.split('?').forEach(function(part) {
+          var q = part.replace(/\s+/g, ' ').trim();
+          if (q.length > 12 && !junk(q)) criteria.push(q + '?');
+        });
+      } else {
+        lines.forEach(function(t) { if (t.length > 12) criteria.push(t); });
+      }
+      return criteria;
+    }
+    function verticalHolistic(items) {
+      var cols = {};
+      items.forEach(function(i) {
+        var n = intOf(i);
+        if (n < 1 || n > 5) return;
+        var key = Math.round(i.x / 8) * 8;
+        if (!cols[key]) cols[key] = [];
+        cols[key].push(i);
+      });
+      var levels = null;
+      Object.keys(cols).forEach(function(k) {
+        var seen = {};
+        cols[k].forEach(function(i) { seen[intOf(i)] = i; });
+        var nums = Object.keys(seen).map(Number).sort(function(a, b) { return a - b; });
+        if (nums.length < 3 || nums.length > 5) return;
+        for (var i = 0; i < nums.length; i++) if (nums[i] !== i + 1) return;
+        var arr = nums.map(function(n) { return seen[n]; });
+        if (!levels || arr.length > levels.length) levels = arr;
+      });
+      if (!levels) return null;
+      var max = levels[levels.length - 1];
+      var x0 = levels[0].x;
+      var ys = levels.map(function(i) { return i.y; }).sort(function(a, b) { return b - a; });
+      var lines = items.filter(function(i) {
+        if (intOf(i) || i.x < x0 + 18 || i.x > x0 + 280) return false;
+        if (i.y > ys[0] + 28 || i.y < ys[ys.length - 1] - 55) return false;
+        return true;
+      }).map(function(i) {
+        return { y: i.y, t: i.t };
+      }).filter(function(i) { return !junk(i.t); });
+      if (lines.length < levels.length * 3) return null;
+      var bounds = [];
+      for (var b = 0; b < ys.length - 1; b++) bounds.push((ys[b] + ys[b + 1]) / 2 - 14);
+      var top = [];
+      lines.forEach(function(line) {
+        var idx = 0;
+        while (idx < bounds.length && line.y <= bounds[idx]) idx++;
+        if (idx === ys.length - 1) top.push(line);
+      });
+      top.sort(function(a, b) { return b.y - a.y; });
+      var criteria = [];
+      top.forEach(function(line) {
+        var prev = criteria[criteria.length - 1];
+        var done = prev && /[.?!]$/.test(prev.t.trim());
+        if (!prev || prev.y - line.y > 22 || done) criteria.push({ y: line.y, t: line.t });
+        else prev.t += ' ' + line.t;
+      });
+      var names = criteria.map(function(c) { return c.t.replace(/\s+/g, ' ').trim(); }).filter(function(t) { return t.length > 8; });
+      if (names.length < 2) return null;
+      return { title: titleOn(items, 'Bütüncül Puanlama Anahtarı'), criteria: names, scale_type: '1-' + intOf(max) };
+    }
+    function holistic(items) {
+      var blob = fold(items.map(function(i) { return i.t; }).join(' '));
+      if (blob.indexOf('cok iyi') < 0 || blob.indexOf('puan') < 0) return null;
+      var rows = {};
+      items.forEach(function(i) {
+        var key = Math.round(i.y);
+        if (!rows[key]) rows[key] = [];
+        rows[key].push(i);
+      });
+      var list = Object.keys(rows).map(Number).sort(function(a, b) { return b - a; }).map(function(y) {
+        var arr = rows[y].sort(function(a, b) { return a.x - b.x; });
+        return {
+          y: y,
+          level: arr.filter(function(i) { return i.x < 140; }).map(function(i) { return i.t; }).join(' '),
+          crit: arr.filter(function(i) { return i.x >= 145 && i.x < 370; }).map(function(i) { return i.t; }).join(' ')
+        };
+      });
+      var centers = [];
+      var pending = '', pendingY = 0;
+      list.forEach(function(r) {
+        if (!r.level) return;
+        if (!pending || Math.abs(r.y - pendingY) > 24) pending = r.level;
+        else pending += ' ' + r.level;
+        pendingY = r.y;
+        var f = fold(pending);
+        var num = pending.match(/(\d+)\s*puan/i);
+        if (num && (f.indexOf('iyi') >= 0 || f.indexOf('yeter') >= 0 || f.indexOf('gelis') >= 0 || f.indexOf('yeters') >= 0)) {
+          centers.push({ y: r.y, score: parseInt(num[1], 10) });
+          pending = '';
+        }
+      });
+      if (!centers.length) return null;
+      function joinWrap(prev, next) {
+        var token = next.split(/\s+/)[0];
+        var stem = token.replace(/[.,;:]+$/, '');
+        var punct = token.slice(stem.length);
+        var after = next.slice(token.length).replace(/^\s*/, '');
+        var flat = fold(stem);
+        if (/^(tir|mistir|dur|dir|de|da|te|ta)$/.test(flat)) return (prev + stem + punct + (after ? ' ' + after : '')).replace(/\s+/g, ' ').trim();
+        return (prev + ' ' + next).replace(/\s+/g, ' ').trim();
+      }
+      var bullets = [];
+      list.forEach(function(r) {
+        if (!r.crit || fold(r.crit) === 'olcutler') return;
+        var text = r.crit.replace(/^[●•]\s*/, '').trim();
+        if (!text) return;
+        var isNew = /^[●•]/.test(r.crit);
+        if (isNew || !bullets.length) bullets.push({ y: r.y, text: text });
+        else bullets[bullets.length - 1].text = joinWrap(bullets[bullets.length - 1].text, text);
+      });
+      var maxScore = centers.reduce(function(m, c) { return Math.max(m, c.score); }, 0);
+      var criteria = [];
+      bullets.forEach(function(b) {
+        var best = centers[0], bestD = Math.abs(b.y - best.y);
+        centers.forEach(function(c) { var d = Math.abs(b.y - c.y); if (d < bestD) { best = c; bestD = d; } });
+        if (best.score === maxScore) criteria.push(b.text.replace(/\s+/g, ' ').trim());
+      });
+      criteria = criteria.filter(function(c) { return c.length > 8; });
+      if (criteria.length < 2) return null;
+      return { title: 'Bütüncül Puanlama Anahtarı', criteria: criteria, scale_type: maxScore >= 5 ? '1-5' : '1-4' };
+    }
+    function pageScale(items) {
+      var vert = verticalHolistic(items);
+      if (vert) return vert;
+      var header = findScoreHeader(items);
+      var yes = findYesNo(items);
+      if (header && header.nums.length >= 3) {
+        var numbered = numberedCriteria(items, header.xCut, header.y);
+        if (numbered.length >= 3) {
+          return { title: titleOn(items, header.max + ' Ölçek'), criteria: numbered, scale_type: '1-' + header.max, lastNo: numbered.length };
+        }
+        var names = leftNames(items, header);
+        if (names.length >= 2) {
+          return { title: titleOn(items, '1-' + header.max + ' Ölçek'), criteria: names, scale_type: '1-' + header.max };
+        }
+      }
+      if (yes) {
+        var numbered2 = numberedCriteria(items, yes.xCut, yes.y);
+        var criteria = numbered2.length >= 3 ? numbered2 : questionCriteria(items, yes);
+        if (criteria.length >= 2) return { title: titleOn(items, yes.mode === 'eh' ? 'Kontrol Listesi' : 'Değerlendirme Formu'), criteria: criteria, scale_type: yes.mode };
+      }
+      return holistic(items);
+    }
+    function continuation(items) {
+      var nums = items.filter(function(i) { return intOf(i) >= 1; });
+      if (nums.length < 2) return [];
+      var x = nums.slice().sort(function(a, b) { return a.x - b.x; })[Math.floor(nums.length / 2)].x;
+      var band = nums.filter(function(i) { return Math.abs(i.x - x) < 15; });
+      if (band.length < 2) return [];
+      return numberedCriteria(items, x + 260, 9999);
+    }
+    function parsePages(pages) {
+      var scales = [];
+      pages.forEach(function(items) {
+        var found = pageScale(items);
+        if (found) { scales.push(found); return; }
+        if (!scales.length) return;
+        var prev = scales[scales.length - 1];
+        var more = continuation(items);
+        if (more.length) prev.criteria = prev.criteria.concat(more);
+      });
+      return scales;
+    }
+    var pages = [];
+    for (var p = 1; p <= doc.numPages; p++) {
+        var page = await doc.getPage(p);
+        var content = await page.getTextContent();
+        var items = [];
+        content.items.forEach(function(it) {
+            if (!it.str || !String(it.str).trim()) return;
+            var t = String(it.str).trim();
+            items.push({ x: it.transform[4], y: it.transform[5], t: t, f: fold(t) });
+        });
+        pages.push(items);
+    }
+    return parsePages(pages).map(function(s) {
+        return { title: s.title, criteria: s.criteria.slice(0, 40), scale_type: s.scale_type };
+    });
+}
+
 function globalAddActivity() {
-    openModal('Excel Olcek Yukle',
+    openModal('Ölçek Yükle',
         '<select id="m-grade" class="auth-input" onchange="fillModalUnitsAct(this.value)"><option value="5">5. Sinif</option><option value="6" selected>6. Sinif</option><option value="7">7. Sinif</option><option value="8">8. Sinif</option></select>' +
         '<select id="m-unit" class="auth-input" onchange="fillModalSectionsAct()"><option value="">Unite</option></select>' +
-        '<select id="m-section" class="auth-input"><option value="">Bolum</option></select>' +
-        '<input type="file" id="m-file" class="auth-input" accept=".xlsx,.xls">',
+        '<select id="m-section" class="auth-input" onchange="fillModalActPick()"><option value="">Bolum</option></select>' +
+        '<select id="m-act" class="auth-input"><option value="">Etkinlik (PDF için)</option></select>' +
+        '<input type="file" id="m-file" class="auth-input" accept=".xlsx,.xls,.pdf">' +
+        '<p style="font-size:12px;color:#94a3b8;margin:0;">PDF yüklerken etkinliği seç. Ölçek o etkinliğin altında açılır. Excel eskisi gibi.</p>',
     function() {
         var g = document.getElementById('m-grade').value;
         var u = document.getElementById('m-unit').value;
@@ -3997,6 +5000,29 @@ function globalAddActivity() {
         var file = document.getElementById('m-file').files[0];
         if (!u || !s || !file) return alert('Tum alanlari doldurun');
         var reader = new FileReader();
+        if (/\.pdf$/i.test(file.name)) {
+            reader.onload = async function(e) {
+                try {
+                    var act = document.getElementById('m-act').value;
+                    if (!act) return alert('PDF ölçeğin hangi etkinliğin altında duracağını seç.');
+                    var parsedList = await parseScalesFromPdf(e.target.result);
+                    parsedList = (parsedList || []).filter(function(p) { return p.criteria && p.criteria.length; });
+                    if (!parsedList.length) return alert('Bu PDF içinde ölçek ölçütü bulunamadı.');
+                    var rows = parsedList.map(function(parsed) {
+                        return { grade: g, unit_name: u, section_name: s, activity_name: act + ' - ' + parsed.title, criteria: parsed.criteria, scale_type: parsed.scale_type };
+                    });
+                    var res = await supabaseClient.from('activities').insert(stampList(rows));
+                    if (res.error) return alert(res.error.message);
+                    await loadAllDataFromSupabase();
+                    closeModal();
+                    alert(rows.map(function(r) { return r.activity_name + ' (' + r.criteria.length + ' ölçüt)'; }).join('\n'));
+                } catch (err) {
+                    alert('Hata: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            return;
+        }
         reader.onload = async function(e) {
             try {
                 var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
@@ -4027,21 +5053,21 @@ function globalAddActivity() {
                                 return s.indexOf('Okul No') < 0 && s.indexOf('Adı Soyadı') < 0 && s.indexOf('TOPLAM') < 0 && s.indexOf('BAŞARI') < 0 && s.indexOf('Değerlendiren') < 0 && s.indexOf('Akran') < 0;
                             });
                             if (crits.length && supabaseClient) {
-                                await supabaseClient.from('activities').insert([{
+                                await supabaseClient.from('activities').insert(stampList([{
                                     grade: g, unit_name: u, section_name: s,
                                     activity_name: sheet + ' - ' + currentScale,
                                     criteria: crits, scale_type: currentType
-                                }]);
+                                }]));
                                 count++;
                             }
                             currentScale = null;
                         }
                     }
                     if (count === 0 && rows.length) {
-                        await supabaseClient.from('activities').insert([{
+                        await supabaseClient.from('activities').insert(stampList([{
                             grade: g, unit_name: u, section_name: s, activity_name: sheet,
                             criteria: ['1. Kriter','2. Kriter','3. Kriter','4. Kriter'], scale_type: '1-4'
-                        }]);
+                        }]));
                         count++;
                     }
                 }
@@ -4080,6 +5106,28 @@ function fillModalSectionsAct() {
         opt.textContent = s;
         sel.appendChild(opt);
     });
+    fillModalActPick();
+}
+
+function fillModalActPick() {
+    var g = document.getElementById('m-grade')?.value;
+    var u = document.getElementById('m-unit')?.value;
+    var sec = document.getElementById('m-section')?.value;
+    var sel = document.getElementById('m-act');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Etkinlik (PDF için)</option>';
+    var seen = {};
+    (fenData[g]?.activities || []).forEach(function(a) {
+        if (a.unit !== u || a.section !== sec) return;
+        var parts = (a.name || '').split(' - ');
+        var base = parts.length >= 2 ? parts[0] + ' - ' + parts[1] : a.name;
+        if (!base || seen[base]) return;
+        seen[base] = true;
+        var opt = document.createElement('option');
+        opt.value = base;
+        opt.textContent = base;
+        sel.appendChild(opt);
+    });
 }
 
 async function saveActivity() {
@@ -4089,10 +5137,10 @@ async function saveActivity() {
     var name = document.getElementById('act-name').value.trim();
     if (!unit || !section || !name) return alert('Tüm alanları doldurun');
     if (supabaseClient) {
-        var res = await supabaseClient.from('activities').insert([{
+        var res = await supabaseClient.from('activities').insert(stampList([{
             grade: grade, unit_name: unit, section_name: section, activity_name: name,
             criteria: ['1. Kriter','2. Kriter','3. Kriter','4. Kriter'], scale_type: '1-4'
-        }]);
+        }]));
         if (res.error) return alert(res.error.message);
     }
     await loadAllDataFromSupabase();
@@ -4113,8 +5161,8 @@ function globalAddReportTemplate() {
         var t = document.getElementById('r-text').value.trim();
         if (!u || !s || !t) return alert('Tum alanlari doldurun');
         if (supabaseClient) {
-            await supabaseClient.from('report_templates').delete().eq('grade', g).eq('unit_name', u).eq('section_name', s);
-            await supabaseClient.from('report_templates').insert([{ grade: g, unit_name: u, section_name: s, report_text: t }]);
+            await supabaseClient.from('report_templates').delete().eq('teacher_id', ownerId()).eq('grade', g).eq('unit_name', u).eq('section_name', s);
+            await supabaseClient.from('report_templates').insert(stampList([{ grade: g, unit_name: u, section_name: s, report_text: t }]));
         }
         closeModal();
         alert('Rapor sablonu kaydedildi');
@@ -4144,10 +5192,86 @@ function fillRepSections() {
     });
 }
 
+function actsInScope(grade, unit, section, base) {
+    return (fenData[grade]?.activities || []).filter(function(a) {
+        if ((a.unit || '').trim() !== (unit || '').trim()) return false;
+        if (section && (a.section || '').trim() !== section.trim()) return false;
+        if (!base) return true;
+        var name = (a.name || '').trim();
+        return name === base || name.indexOf(base + ' -') === 0;
+    });
+}
+
+async function wipeStudentMarks(grade, quizExact, quizPrefix, scaleNames) {
+    if (!supabaseClient) return;
+    var res = await supabaseClient.from('students').select('id,quiz,scale').eq('teacher_id', ownerId()).eq('grade', grade);
+    if (res.error) return;
+    var rows = res.data || [];
+    for (var i = 0; i < rows.length; i++) {
+        var quiz = Object.assign({}, rows[i].quiz || {});
+        var scale = Object.assign({}, rows[i].scale || {});
+        var changed = false;
+        Object.keys(quiz).forEach(function(k) {
+            if (quizExact.indexOf(k) >= 0 || (quizPrefix && k.indexOf(quizPrefix) === 0)) {
+                delete quiz[k];
+                changed = true;
+            }
+        });
+        scaleNames.forEach(function(n) {
+            if (scale[n] !== undefined) { delete scale[n]; changed = true; }
+        });
+        if (changed) {
+            await supabaseClient.from('students').update({ quiz: quiz, scale: scale }).eq('id', rows[i].id);
+        }
+    }
+}
+
+async function deleteLessonTree(grade, unit, section) {
+    var q = supabaseClient.from('lesson_contents').select('id').eq('teacher_id', ownerId()).eq('grade', grade).eq('unit_name', unit);
+    if (section) q = q.eq('section_name', section);
+    var found = await q;
+    if (found.error) throw new Error(found.error.message);
+    var ids = (found.data || []).map(function(r) { return r.id; });
+    if (!ids.length) return;
+    await supabaseClient.from('quiz_results').delete().in('content_id', ids);
+    await supabaseClient.from('student_progress').delete().in('content_id', ids);
+    var del = await supabaseClient.from('lesson_contents').delete().in('id', ids);
+    if (del.error) throw new Error(del.error.message);
+}
+
+async function purgeScope(grade, unit, section, names, dropWhat) {
+    var tid = ownerId();
+    if (names && names.length) {
+        var actDel = await supabaseClient.from('activities').delete().eq('teacher_id', tid).eq('grade', grade).eq('unit_name', unit).eq('section_name', section).in('activity_name', names);
+        if (actDel.error) throw new Error(actDel.error.message);
+        await wipeStudentMarks(grade, [], '', names);
+    }
+    if (dropWhat === 'section' || dropWhat === 'unit') {
+        await deleteLessonTree(grade, unit, dropWhat === 'section' ? section : '');
+        var rep = supabaseClient.from('report_templates').delete().eq('teacher_id', tid).eq('grade', grade).eq('unit_name', unit);
+        if (dropWhat === 'section') rep = rep.eq('section_name', section);
+        var repRes = await rep;
+        if (repRes.error) throw new Error(repRes.error.message);
+        if (dropWhat === 'unit') {
+            var actAll = await supabaseClient.from('activities').delete().eq('teacher_id', tid).eq('grade', grade).eq('unit_name', unit);
+            if (actAll.error) throw new Error(actAll.error.message);
+            var unitDel = await supabaseClient.from('units_sections').delete().eq('teacher_id', tid).eq('grade', grade).eq('unit_name', unit);
+            if (unitDel.error) throw new Error(unitDel.error.message);
+            await wipeStudentMarks(grade, [], unit + '_', names || []);
+        } else {
+            var secActs = await supabaseClient.from('activities').delete().eq('teacher_id', tid).eq('grade', grade).eq('unit_name', unit).eq('section_name', section);
+            if (secActs.error) throw new Error(secActs.error.message);
+            var secDel = await supabaseClient.from('units_sections').delete().eq('teacher_id', tid).eq('grade', grade).eq('unit_name', unit).eq('section_name', section);
+            if (secDel.error) throw new Error(secDel.error.message);
+            await wipeStudentMarks(grade, [unit + '_' + section], '', names || []);
+        }
+    }
+}
+
 function globalDeleteManagement() {
     openModal('Silme Yonetimi',
         '<select id="d-grade" class="auth-input" onchange="toggleDel()"><option value="5">5. Sinif</option><option value="6">6. Sinif</option><option value="7">7. Sinif</option><option value="8">8. Sinif</option></select>' +
-        '<select id="d-type" class="auth-input" onchange="toggleDel()"><option value="unit">Unite</option><option value="section">Bolum</option><option value="activity">Etkinlik</option><option value="report">Rapor</option></select>' +
+        '<select id="d-type" class="auth-input" onchange="toggleDel()"><option value="unit">Unite</option><option value="section">Bolum</option><option value="activity">Etkinlik</option><option value="scale">Olcek</option><option value="report">Rapor</option></select>' +
         '<div id="d-target-area" style="margin-top:10px;"></div>',
     async function() {
         var g = document.getElementById('d-grade').value;
@@ -4155,44 +5279,50 @@ function globalDeleteManagement() {
         if (t === 'unit') {
             var u = document.getElementById('d-unit').value;
             if (!u) return alert('Unite secin');
-            if (supabaseClient) await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', u);
-            await loadAllDataFromSupabase(); closeModal(); alert('Unite silindi');
+            var unitActs = actsInScope(g, u, '', '');
+            try {
+                if (supabaseClient) await purgeScope(g, u, '', unitActs.map(function(a) { return a.name; }), 'unit');
+            } catch (err) { return alert(err.message); }
+            await loadAllDataFromSupabase(); closeModal(); alert('Unite ve bagli her sey silindi');
         } else if (t === 'section') {
             var u2 = document.getElementById('d-unit').value;
             var s = document.getElementById('d-section').value;
             if (!u2 || !s) return alert('Unite ve bolum secin');
-            if (supabaseClient) await supabaseClient.from('units_sections').delete().eq('grade', g).eq('unit_name', u2).eq('section_name', s);
-            await loadAllDataFromSupabase(); closeModal(); alert('Bolum silindi');
+            var secActs = actsInScope(g, u2, s, '');
+            try {
+                if (supabaseClient) await purgeScope(g, u2, s, secActs.map(function(a) { return a.name; }), 'section');
+            } catch (err) { return alert(err.message); }
+            await loadAllDataFromSupabase(); closeModal(); alert('Bolum, olcekler ve notlar silindi');
         } else if (t === 'activity') {
             var u3 = document.getElementById('d-unit')?.value;
             var s3 = document.getElementById('d-section')?.value;
             var a = document.getElementById('d-act')?.value;
             if (!u3 || !s3 || !a) return alert('Unite, bolum ve etkinlik secin');
-            if (supabaseClient) {
-                var matchingActs = (fenData[g]?.activities || []).filter(function(act) {
-                    if (act.unit !== u3 || act.section !== s3) return false;
-                    var actName = (act.name || '').trim();
-                    var parts = actName.split(' - ');
-                    var baseName = parts.length >= 2 ? (parts[0] + ' - ' + parts[1]).trim() : actName;
-                    return actName === a || baseName === a || actName.indexOf(a + ' -') === 0;
-                });
-                var namesToDelete = Array.from(new Set(matchingActs.map(function(x) { return x.name; }).concat([a])));
-                await supabaseClient
-                    .from('activities')
-                    .delete()
-                    .eq('grade', g)
-                    .eq('unit_name', u3)
-                    .eq('section_name', s3)
-                    .in('activity_name', namesToDelete);
-            }
+            var names = actsInScope(g, u3, s3, a).map(function(x) { return x.name; });
+            if (names.indexOf(a) < 0) names.push(a);
+            try {
+                if (supabaseClient) await purgeScope(g, u3, s3, names, '');
+            } catch (err) { return alert(err.message); }
             await loadAllDataFromSupabase(); closeModal(); alert('Etkinlik ve bagli olcekler silindi');
+        } else if (t === 'scale') {
+            var u5 = document.getElementById('d-unit')?.value;
+            var s5 = document.getElementById('d-section')?.value;
+            var scaleName = document.getElementById('d-scale')?.value;
+            if (!u5 || !s5 || !scaleName) return alert('Unite, bolum ve olcek secin');
+            try {
+                if (supabaseClient) await purgeScope(g, u5, s5, [scaleName], '');
+            } catch (err) { return alert(err.message); }
+            await loadAllDataFromSupabase(); closeModal(); alert('Olcek silindi');
         } else if (t === 'report') {
             var u4 = document.getElementById('d-unit')?.value;
             var s4 = document.getElementById('d-section')?.value;
             var id = document.getElementById('d-rep')?.value;
             if (!u4 || !s4 || !id) return alert('Unite, bolum ve rapor secin');
-            if (supabaseClient) await supabaseClient.from('report_templates').delete().eq('id', id);
-            closeModal(); alert('Rapor silindi');
+            if (supabaseClient) {
+                var repDel = await supabaseClient.from('report_templates').delete().eq('id', id).eq('teacher_id', ownerId());
+                if (repDel.error) return alert(repDel.error.message);
+            }
+            await loadAllDataFromSupabase(); closeModal(); alert('Rapor silindi');
         }
     });
     toggleDel();
@@ -4211,12 +5341,13 @@ async function toggleDel() {
         var opts2 = '<option value="">-- Unite Secin --</option>';
         units.forEach(function(u) { opts2 += '<option value="' + u.name + '">' + u.name + '</option>'; });
         area.innerHTML = '<select id="d-unit" class="auth-input" onchange="fillDelSecs()">' + opts2 + '</select><select id="d-section" class="auth-input"><option value="">-- Bolum Secin --</option></select>';
-    } else if (t === 'activity') {
+    } else if (t === 'activity' || t === 'scale') {
         var uOptsA = '<option value="">-- Unite Secin --</option>';
         units.forEach(function(u) { uOptsA += '<option value="' + u.name + '">' + u.name + '</option>'; });
         area.innerHTML = '<select id="d-unit" class="auth-input" onchange="fillDelSecs()">' + uOptsA + '</select>' +
             '<select id="d-section" class="auth-input" onchange="fillDelActs()"><option value="">-- Once Unite Secin --</option></select>' +
-            '<select id="d-act" class="auth-input"><option value="">-- Once Bolum Secin --</option></select>';
+            '<select id="d-act" class="auth-input" onchange="fillDelScales()"><option value="">-- Once Bolum Secin --</option></select>' +
+            (t === 'scale' ? '<select id="d-scale" class="auth-input"><option value="">-- Once Etkinlik Secin --</option></select>' : '');
     } else if (t === 'report') {
         var uOptsR = '<option value="">-- Unite Secin --</option>';
         units.forEach(function(u) { uOptsR += '<option value="' + u.name + '">' + u.name + '</option>'; });
@@ -4242,12 +5373,13 @@ function fillDelSecs() {
     } else {
         sel.innerHTML += '<option value="Genel">Genel</option>';
     }
-    if (t === 'activity') fillDelActs();
+    if (t === 'activity' || t === 'scale') fillDelActs();
     if (t === 'report') fillDelReps();
 }
 
 function fillDelActs() {
     var g = document.getElementById('d-grade').value;
+    var t = document.getElementById('d-type')?.value;
     var u = document.getElementById('d-unit')?.value;
     var s = document.getElementById('d-section')?.value;
     var sel = document.getElementById('d-act');
@@ -4271,6 +5403,26 @@ function fillDelActs() {
             sel.appendChild(opt);
         }
     });
+    if (t === 'scale') fillDelScales();
+}
+
+function fillDelScales() {
+    var g = document.getElementById('d-grade').value;
+    var u = document.getElementById('d-unit')?.value;
+    var s = document.getElementById('d-section')?.value;
+    var base = document.getElementById('d-act')?.value;
+    var sel = document.getElementById('d-scale');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- Olcek Secin --</option>';
+    if (!u || !s || !base) return;
+    actsInScope(g, u, s, base).forEach(function(a) {
+        var short = a.name.replace(base, '').replace(/^[\s-]+/, '');
+        if (!short) short = a.name;
+        var opt = document.createElement('option');
+        opt.value = a.name;
+        opt.textContent = short;
+        sel.appendChild(opt);
+    });
 }
 
 async function fillDelReps() {
@@ -4281,32 +5433,100 @@ async function fillDelReps() {
     if (!sel) return;
     sel.innerHTML = '<option value="">-- Rapor Secin --</option>';
     if (!u || !s || !supabaseClient) return;
-    var res = await supabaseClient.from('report_templates').select('*').eq('grade', g).eq('unit_name', u).eq('section_name', s);
+    var res = await supabaseClient.from('report_templates').select('*').eq('teacher_id', ownerId()).eq('grade', g).eq('unit_name', u).eq('section_name', s);
     (res.data || []).forEach(function(r) {
         sel.innerHTML += '<option value="' + r.id + '">' + r.unit_name + ' - ' + r.section_name + '</option>';
     });
 }
 
+function parseBulkStudents(raw) {
+    var lines = String(raw || '').replace(/\u00a0/g, ' ').split(/\r?\n/);
+    var found = [];
+    function junk(name) {
+        var u = name.toLocaleUpperCase('tr-TR');
+        if (u.indexOf('NOT BİLG') >= 0 || u.indexOf('NOT BILG') >= 0) return true;
+        if (u.indexOf('SINAV') >= 0 || u.indexOf('SINAV') >= 0 || u.indexOf('PUAN') >= 0) return true;
+        if (u.indexOf('OKUL NO') >= 0 || u.indexOf('ADI SOYAD') >= 0) return true;
+        if (u.indexOf('KAYIT') >= 0 && u.indexOf('BULUNDU') >= 0) return true;
+        if (!/[A-ZÇĞİÖŞÜ]/.test(u)) return true;
+        if (u.replace(/[^A-ZÇĞİÖŞÜ]/g, '').length < 3) return true;
+        return false;
+    }
+    function takeName(text) {
+        var raw = String(text || '');
+        var upper = raw.toLocaleUpperCase('tr-TR');
+        if (upper.indexOf('NOT BİLG') >= 0 || upper.indexOf('NOT BILG') >= 0) return '';
+        if (upper.indexOf('OKUL NO') >= 0 || upper.indexOf('ADI SOYAD') >= 0) return '';
+        var cut = raw.split('\t')[0].split(/\s{2,}/)[0];
+        var kept = [];
+        cut.split(/\s+/).forEach(function(tok) {
+            if (!tok) return;
+            var tu = tok.toLocaleUpperCase('tr-TR');
+            if (/^\d+$/.test(tok) || tu === 'G') return;
+            kept.push(tok);
+        });
+        return kept.join(' ').trim();
+    }
+    lines.forEach(function(line) {
+        if (!line.trim()) return;
+        var parts = line.split('\t').map(function(p) { return p.trim(); });
+        var no = NaN;
+        var name = '';
+        if (parts.length >= 2 && /^\d+$/.test(parts[0])) {
+            no = parseInt(parts[0], 10);
+            name = parts[1];
+        } else {
+            var spaced = line.trim().split(/\s{2,}/);
+            if (spaced.length >= 2 && /^\d+$/.test(spaced[0])) {
+                no = parseInt(spaced[0], 10);
+                name = spaced[1];
+            } else {
+                var simple = line.trim().match(/^(\d+)\s+(.+)$/);
+                if (!simple) return;
+                no = parseInt(simple[1], 10);
+                name = takeName(simple[2]);
+            }
+        }
+        name = takeName(name).toLocaleUpperCase('tr-TR');
+        if (!no || no < 1 || no > 9999 || junk(name)) return;
+        found.push({ no: no, name: name });
+    });
+    var map = {};
+    found.forEach(function(s) {
+        if (!map[s.no] || s.name.length > map[s.no].name.length) map[s.no] = s;
+    });
+    return Object.keys(map).map(function(k) { return map[k]; });
+}
+
 function openBulkStudentModal(grade, branchName) {
-    openModal('Toplu Öğrenci Ekle',
-        '<textarea id="m-bulk" class="auth-input" style="height:130px;" placeholder="201 Ali Yılmaz\n202 Ayşe Kaya"></textarea>',
+    openModal('Toplu Öğrenci (e-Okul)',
+        '<p style="font-size:12px;color:#94a3b8;margin-bottom:8px;">e-Okul tablosunun tamamını yapıştır. Sadece okul no ve ad soyad alınır.</p>' +
+        '<textarea id="m-bulk" class="auth-input" style="height:160px;font-family:monospace;" placeholder="201 Ali Yılmaz"></textarea>',
     async function() {
         var raw = document.getElementById('m-bulk').value.trim();
         if (!raw) return;
-        var lines = raw.split(/\r?\n/).map(function(l) { return l.trim(); }).filter(Boolean);
-        var toInsert = [];
-        lines.forEach(function(line) {
-            var m = line.match(/^(\d+)[\s\t\-,;]+(.+)$/);
-            if (m) toInsert.push({ grade: grade, branch: branchName, school_no: parseInt(m[1]), name: m[2].trim() });
+        var parsed = parseBulkStudents(raw);
+        if (!parsed.length) return alert('Öğrenci bulunamadı. Tabloda okul no ve ad soyad olmalı.');
+        var existing = {};
+        (fenData[grade]?.branches?.[branchName] || []).forEach(function(s) {
+            var nm = String(s.name || '').toLocaleUpperCase('tr-TR');
+            if (nm.indexOf('NOT BİLG') >= 0 || nm.indexOf('NOT BILG') >= 0) return;
+            existing[parseInt(s.no, 10)] = true;
         });
-        if (!toInsert.length) return alert('Format: 201 Ali Yılmaz');
+        var toInsert = parsed.filter(function(s) { return !existing[s.no]; }).map(function(s) {
+            return { grade: grade, branch: branchName, school_no: s.no, name: s.name, plus: 0, minus: 0, quiz: {}, scale: {} };
+        });
         if (supabaseClient) {
-            var res = await supabaseClient.from('students').insert(toInsert);
-            if (res.error) return alert(res.error.message);
+            await supabaseClient.from('students').delete().eq('grade', grade).eq('branch', branchName).or('name.ilike.%Not Bilgisi%,name.ilike.%NOT BILGISI%,name.ilike.%NOT BİLGİSİ%');
+            if (toInsert.length) {
+                var res = await supabaseClient.from('students').insert(stampList(toInsert));
+                if (res.error) return alert(res.error.message);
+            }
         }
         await loadAllDataFromSupabase();
         closeModal();
         loadBranchTabContent('students', grade, branchName);
+        alert(toInsert.length + ' öğrenci eklendi. Not satırları ayıklandı.');
     });
 }
 
@@ -4337,7 +5557,7 @@ function openStudentProgressPage() {
         '<header class="teacher-header">' +
             '<div class="header-brand"><h1>Öğrenci İlerlemesi</h1></div>' +
             '<div>' +
-                '<button onclick="openManagementMenu()" class="logout-btn" style="background:#3b82f6;margin-right:6px;">Geri</button>' +
+                '<button onclick="openManagementMenu()" class="logout-btn" style="background:#f97316;margin-right:6px;">Geri</button>' +
                 '<button onclick="logout()" class="logout-btn">Çıkış</button>' +
             '</div>' +
         '</header>' +
@@ -4469,7 +5689,20 @@ window.addEventListener('DOMContentLoaded', async function() {
             if (e.key === 'Enter') { e.preventDefault(); teacherLogin(); }
         });
     }
-    await loadAllDataFromSupabase();
-    updateStudentBranches();
+    await loadPortalCatalog();
+    var sessionRes = supabaseClient ? await supabaseClient.auth.getSession() : { data: {} };
+    if (sessionRes.data && sessionRes.data.session) {
+        var bound = await bindTeacher(sessionRes.data.session.user);
+        if (bound) {
+            await loadAllDataFromSupabase();
+            restoreStateFromSession();
+            return;
+        }
+    }
+    readStudentScope();
+    if (studentScope && studentScope.teacherId) {
+        await loadAllDataFromSupabase();
+    }
+    fillStudentSchools();
     restoreStateFromSession();
 });
