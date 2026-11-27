@@ -30,41 +30,61 @@ function normTR(str) {
 
 
 // ====================== OKUL / ÖĞRETMEN / BRANŞ ======================
+var DEFAULT_YEAR = '2026-2027';
+
 var SUBJECTS = [
-    { id: 'Fen', title: 'FEN BİLİMLERİ DERSİ' },
     { id: 'Türkçe', title: 'TÜRKÇE DERSİ' },
     { id: 'Matematik', title: 'MATEMATİK DERSİ' },
-    { id: 'İngilizce', title: 'İNGİLİZCE DERSİ' },
+    { id: 'Fen Bilimleri', title: 'FEN BİLİMLERİ DERSİ' },
     { id: 'Sosyal Bilgiler', title: 'SOSYAL BİLGİLER DERSİ' },
-    { id: 'Din Kültürü', title: 'DİN KÜLTÜRÜ DERSİ' }
+    { id: 'T.C. İnkılâp Tarihi ve Atatürkçülük', title: 'T.C. İNKILÂP TARİHİ VE ATATÜRKÇÜLÜK DERSİ' },
+    { id: 'Yabancı Dil (İngilizce)', title: 'YABANCI DİL (İNGİLİZCE) DERSİ' },
+    { id: 'Din Kültürü ve Ahlak Bilgisi', title: 'DİN KÜLTÜRÜ VE AHLAK BİLGİSİ DERSİ' }
 ];
 
+var SUBJECT_ALIASES = {
+    'Fen': 'Fen Bilimleri',
+    'İngilizce': 'Yabancı Dil (İngilizce)',
+    'Din Kültürü': 'Din Kültürü ve Ahlak Bilgisi'
+};
+
 var BADGE_TITLES = {
-    'Fen': ['Fen Ustası', 'Bilim İnsanı', 'Araştırmacı', 'Meraklı'],
+    'Fen Bilimleri': ['Fen Ustası', 'Bilim İnsanı', 'Araştırmacı', 'Meraklı'],
     'Türkçe': ['Dil Ustası', 'Yazar', 'Kitap Kurdu', 'Meraklı'],
     'Matematik': ['Matematik Ustası', 'Problem Avcısı', 'Hesapçı', 'Meraklı'],
-    'İngilizce': ['İngilizce Ustası', 'Konuşmacı', 'Kelime Avcısı', 'Meraklı'],
+    'Yabancı Dil (İngilizce)': ['Dil Ustası', 'Konuşmacı', 'Kelime Avcısı', 'Meraklı'],
     'Sosyal Bilgiler': ['Sosyal Ustası', 'Tarihçi', 'Gözlemci', 'Meraklı'],
-    'Din Kültürü': ['Din Kültürü Ustası', 'Bilge', 'Araştırmacı', 'Meraklı']
+    'T.C. İnkılâp Tarihi ve Atatürkçülük': ['Tarih Ustası', 'Araştırmacı', 'Gözlemci', 'Meraklı'],
+    'Din Kültürü ve Ahlak Bilgisi': ['Bilge', 'Araştırmacı', 'Gözlemci', 'Meraklı']
 };
+
+function canonicalSubject(subject) {
+    return SUBJECT_ALIASES[subject] || subject || '';
+}
+
+function subjectsMatch(a, b) {
+    return canonicalSubject(a) === canonicalSubject(b);
+}
 
 var currentTeacher = null;
 var studentScope = null;
 var portalCatalog = { schools: [], teachers: [], branches: [] };
 
-function subjectTitle(subject) {
-    var found = SUBJECTS.find(function(s) { return s.id === subject; });
+function subjectTitle(subject, grade) {
+    var name = canonicalSubject(subject);
+    if (name === 'Sosyal Bilgiler' && String(grade || '') === '8') name = 'T.C. İnkılâp Tarihi ve Atatürkçülük';
+    var found = SUBJECTS.find(function(s) { return s.id === name; });
     return found ? found.title : 'DERS';
 }
 
 function activeSubject() {
-    if (studentScope && studentScope.subject) return studentScope.subject;
-    if (currentTeacher && currentTeacher.subject) return currentTeacher.subject;
-    return 'Fen';
+    if (studentScope && studentScope.subject) return canonicalSubject(studentScope.subject);
+    if (currentTeacher && currentTeacher.subject) return canonicalSubject(currentTeacher.subject);
+    return 'Fen Bilimleri';
 }
 
-function getSubjectLine() {
-    return subjectTitle(activeSubject());
+function getSubjectLine(grade) {
+    return subjectTitle(activeSubject(), grade);
 }
 
 function getBrandTitle() {
@@ -145,12 +165,14 @@ function fillStudentSubjects() {
     var schoolId = document.getElementById('student-school')?.value || '';
     var sel = document.getElementById('student-subject');
     if (!sel) return;
-    sel.innerHTML = '<option value="">-- Branş Seçin --</option>';
+    sel.innerHTML = '<option value="">-- Ders Seçin --</option>';
     var seen = {};
     portalCatalog.teachers.forEach(function(t) {
-        if (t.school_id !== schoolId || seen[t.subject]) return;
-        seen[t.subject] = true;
-        sel.innerHTML += '<option value="' + t.subject + '">' + t.subject + '</option>';
+        if (t.school_id !== schoolId) return;
+        var label = canonicalSubject(t.subject);
+        if (!label || seen[label]) return;
+        seen[label] = true;
+        sel.innerHTML += '<option value="' + label + '">' + label + '</option>';
     });
     fillStudentGrades();
 }
@@ -162,7 +184,7 @@ function fillStudentGrades() {
     if (!sel) return;
     sel.innerHTML = '<option value="">-- Sınıf Seçin --</option>';
     var teacherIds = portalCatalog.teachers.filter(function(t) {
-        return t.school_id === schoolId && t.subject === subject;
+        return t.school_id === schoolId && subjectsMatch(t.subject, subject);
     }).map(function(t) { return t.id; });
     var grades = {};
     portalCatalog.branches.forEach(function(b) {
@@ -182,7 +204,7 @@ function fillStudentBranchList() {
     if (!sel) return;
     sel.innerHTML = '<option value="">-- Şube Seçin --</option>';
     var teacherIds = portalCatalog.teachers.filter(function(t) {
-        return t.school_id === schoolId && t.subject === subject;
+        return t.school_id === schoolId && subjectsMatch(t.subject, subject);
     }).map(function(t) { return t.id; });
     portalCatalog.branches.forEach(function(b) {
         if (b.grade !== grade || teacherIds.indexOf(b.teacher_id) < 0) return;
@@ -225,7 +247,7 @@ function applyTeacherRecord(row) {
         email: row.email,
         school_id: row.school_id,
         school_name: school.name || '',
-        academic_year: school.academic_year || '2025-2026',
+        academic_year: school.academic_year || DEFAULT_YEAR,
         subject: row.subject,
         is_admin: !!row.is_admin
     };
@@ -284,19 +306,19 @@ async function bindTeacher(user) {
 }
 
 function openFinishTeacherSetup(user, row) {
-    var yearPrefill = localStorage.getItem('fen_academic_year') || '2025-2026';
+    var yearPrefill = localStorage.getItem('fen_academic_year') || DEFAULT_YEAR;
     var opts = SUBJECTS.map(function(s) {
-        var selected = (row.subject || 'Fen') === s.id ? ' selected' : '';
+        var selected = canonicalSubject(row.subject || 'Fen Bilimleri') === s.id ? ' selected' : '';
         return '<option value="' + s.id + '"' + selected + '>' + s.id + '</option>';
     }).join('');
     openModal('Okulunu Bağla',
-        '<p style="font-size:13px;color:#cbd5e1;margin-bottom:8px;">' + (row.full_name || '') + ' kaydı var. Okul ve branş seçilince panele girersin.</p>' +
+        '<p style="font-size:13px;color:#cbd5e1;margin-bottom:8px;">' + (row.full_name || '') + ' kaydı var. Okul ve ders seçilince panele girersin.</p>' +
         '<input id="setup-school" class="auth-input" placeholder="Okul adı">' +
         '<input id="setup-year" class="auth-input" placeholder="Eğitim yılı" value="' + yearPrefill.replace(/"/g, '') + '">' +
         '<select id="setup-subject" class="auth-input">' + opts + '</select>',
     async function() {
         var schoolName = document.getElementById('setup-school').value.trim();
-        var year = document.getElementById('setup-year').value.trim() || '2025-2026';
+        var year = document.getElementById('setup-year').value.trim() || DEFAULT_YEAR;
         var subject = document.getElementById('setup-subject').value;
         if (!schoolName) return alert('Okul adı gerekli.');
         var schoolRes = await supabaseClient.from('schools').insert([{ name: schoolName, academic_year: year }]).select().single();
@@ -322,12 +344,12 @@ function openFinishTeacherSetup(user, row) {
 
 function openFirstAdminSetup(user) {
     var schoolPrefill = localStorage.getItem('fen_school_name') || '';
-    var yearPrefill = localStorage.getItem('fen_academic_year') || '2025-2026';
+    var yearPrefill = localStorage.getItem('fen_academic_year') || DEFAULT_YEAR;
     var opts = SUBJECTS.map(function(s) {
-        return '<option value="' + s.id + '"' + (s.id === 'Fen' ? ' selected' : '') + '>' + s.id + '</option>';
+        return '<option value="' + s.id + '"' + (s.id === 'Fen Bilimleri' ? ' selected' : '') + '>' + s.id + '</option>';
     }).join('');
     openModal('İlk Kurulum',
-        '<p style="font-size:13px;color:#cbd5e1;margin-bottom:8px;">Bu hesap yönetici olacak. Mevcut Fen verisi sana bağlanır.</p>' +
+        '<p style="font-size:13px;color:#cbd5e1;margin-bottom:8px;">Bu hesap yönetici olacak. Mevcut ders verisi sana bağlanır.</p>' +
         '<input id="setup-name" class="auth-input" placeholder="Ad Soyad" value="Erdoğan Yılmaz">' +
         '<input id="setup-school" class="auth-input" placeholder="Okul adı" value="' + schoolPrefill.replace(/"/g, '') + '">' +
         '<input id="setup-year" class="auth-input" placeholder="Eğitim yılı" value="' + yearPrefill.replace(/"/g, '') + '">' +
@@ -335,7 +357,7 @@ function openFirstAdminSetup(user) {
     async function() {
         var name = document.getElementById('setup-name').value.trim();
         var schoolName = document.getElementById('setup-school').value.trim();
-        var year = document.getElementById('setup-year').value.trim() || '2025-2026';
+        var year = document.getElementById('setup-year').value.trim() || DEFAULT_YEAR;
         var subject = document.getElementById('setup-subject').value;
         if (!name || !schoolName) return alert('Ad ve okul gerekli.');
         var schoolRes = await supabaseClient.from('schools').insert([{ name: schoolName, academic_year: year }]).select().single();
@@ -361,7 +383,7 @@ function openFirstAdminSetup(user) {
 
 function paintTeacherHome() {
     var h = document.querySelector('#teacher-panel .header-brand h1');
-    if (h) h.textContent = (currentTeacher && currentTeacher.subject ? currentTeacher.subject : 'Öğretmen') + ' Paneli';
+    if (h) h.textContent = (currentTeacher && currentTeacher.subject ? canonicalSubject(currentTeacher.subject) : 'Öğretmen') + ' Paneli';
     var grid = document.querySelector('#teacher-panel .grade-cards-grid');
     var old = document.getElementById('admin-entry-card');
     if (old) old.remove();
@@ -380,7 +402,7 @@ async function sameSubjectTeachers() {
     if (!currentTeacher) return [];
     if (!portalCatalog.teachers.length) await loadPortalCatalog();
     return portalCatalog.teachers.filter(function(t) {
-        return t.school_id === currentTeacher.school_id && t.subject === currentTeacher.subject && t.id !== currentTeacher.id;
+        return t.school_id === currentTeacher.school_id && subjectsMatch(t.subject, currentTeacher.subject) && t.id !== currentTeacher.id;
     });
 }
 
@@ -390,13 +412,13 @@ async function branchTaken(grade, fullName) {
     var teachers = await supabaseClient.from('teachers').select('id, school_id, subject');
     return (rows.data || []).some(function(r) {
         var t = (teachers.data || []).find(function(x) { return x.id === r.teacher_id; });
-        return t && t.school_id === currentTeacher.school_id && t.subject === currentTeacher.subject;
+        return t && t.school_id === currentTeacher.school_id && subjectsMatch(t.subject, currentTeacher.subject);
     });
 }
 
 async function openTransferBranch(grade, branchName) {
     var others = await sameSubjectTeachers();
-    if (!others.length) return alert('Aynı okul ve branşta devredilecek başka öğretmen yok.');
+    if (!others.length) return alert('Aynı okul ve derste devredilecek başka öğretmen yok.');
     var opts = others.map(function(t) {
         return '<option value="' + t.id + '">' + t.full_name + ' (' + t.subject + ')</option>';
     }).join('');
@@ -452,16 +474,23 @@ function openSchoolTeacherAdmin() {
     }).join('');
     var schoolList = portalCatalog.schools.map(function(s) {
         var mine = currentTeacher && s.id === currentTeacher.school_id;
+        var year = (s.academic_year || DEFAULT_YEAR).replace(/"/g, '');
         return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;">' +
-            '<span>' + s.name + (s.academic_year ? ' · ' + s.academic_year : '') + '</span>' +
-            (mine ? '<span style="color:#fdba74;">Senin okulun</span>' : '<button onclick="deleteSchoolRecord(\'' + s.id + '\')" class="btn-pastel-red">Sil</button>') +
+            '<div style="flex:1;min-width:0;">' +
+                '<div>' + s.name + (mine ? ' <span style="color:#fdba74;">· Senin okulun</span>' : '') + '</div>' +
+                '<input id="school-year-' + s.id + '" class="auth-input" value="' + year + '" placeholder="2027-2028" style="margin-top:6px;">' +
+            '</div>' +
+            '<div style="display:flex;flex-direction:column;gap:6px;">' +
+                '<button onclick="updateSchoolYear(\'' + s.id + '\')" class="auth-btn" style="width:auto;padding:8px 12px;">Yılı Kaydet</button>' +
+                (mine ? '' : '<button onclick="deleteSchoolRecord(\'' + s.id + '\')" class="btn-pastel-red">Sil</button>') +
+            '</div>' +
         '</div>';
     }).join('') || '<p style="color:#94a3b8;">Henüz okul yok.</p>';
     var list = portalCatalog.teachers.map(function(t) {
         var school = portalCatalog.schools.find(function(s) { return s.id === t.school_id; });
         var mine = currentTeacher && t.id === currentTeacher.id;
         return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;">' +
-            '<span>' + t.full_name + ' · ' + (t.subject || 'Branş yok') + ' · ' + (school ? school.name : 'Okul yok') + '</span>' +
+            '<span>' + t.full_name + ' · ' + (canonicalSubject(t.subject) || 'Ders yok') + ' · ' + (school ? school.name : 'Okul yok') + '</span>' +
             (mine ? '<span style="color:#fdba74;">Sen</span>' : '<button onclick="deleteTeacherRecord(\'' + t.id + '\')" class="btn-pastel-red">Sil</button>') +
         '</div>';
     }).join('') || '<p style="color:#94a3b8;">Henüz öğretmen yok.</p>';
@@ -469,7 +498,7 @@ function openSchoolTeacherAdmin() {
         '<h3 style="margin:18px 0 10px;font-size:15px;">Öğretmenler</h3>' + list +
         '<h3 style="margin:18px 0 10px;font-size:15px;">Yeni okul</h3>' +
         '<input id="new-school-name" class="auth-input" placeholder="Okul adı">' +
-        '<input id="new-school-year" class="auth-input" placeholder="Eğitim yılı" value="2025-2026">' +
+        '<input id="new-school-year" class="auth-input" placeholder="Eğitim yılı" value="' + DEFAULT_YEAR + '">' +
         '<button onclick="saveNewSchool()" class="auth-btn" style="margin-bottom:16px;">Okulu Kaydet</button>' +
         '<h3 style="margin:8px 0 10px;font-size:15px;">Yeni öğretmen</h3>' +
         '<input id="nt-name" class="auth-input" placeholder="Ad Soyad">' +
@@ -483,7 +512,7 @@ function openSchoolTeacherAdmin() {
 
 async function saveNewSchool() {
     var name = document.getElementById('new-school-name').value.trim();
-    var year = document.getElementById('new-school-year').value.trim() || '2025-2026';
+    var year = document.getElementById('new-school-year').value.trim() || DEFAULT_YEAR;
     if (!name) return alert('Okul adı gir.');
     var res = await supabaseClient.from('schools').insert([{ name: name, academic_year: year }]);
     if (res.error) return alert(res.error.message);
@@ -532,16 +561,72 @@ async function deleteAuthAccount(email) {
     return await supabaseClient.rpc('delete_auth_user', { target_email: email });
 }
 
+async function updateSchoolYear(id) {
+    if (!currentTeacher || !currentTeacher.is_admin) return;
+    var input = document.getElementById('school-year-' + id);
+    var year = input ? input.value.trim() : '';
+    if (!year) return alert('Eğitim yılını yaz. Örnek: 2027-2028');
+    var res = await supabaseClient.from('schools').update({ academic_year: year }).eq('id', id);
+    if (res.error) return alert(res.error.message);
+    if (currentTeacher.school_id === id) {
+        currentTeacher.academic_year = year;
+        localStorage.setItem('fen_academic_year', year);
+    }
+    await loadPortalCatalog();
+    alert('Eğitim yılı kaydedildi. Öğretmen ve veriler duruyor.');
+    openSchoolTeacherAdmin();
+}
+
+async function deleteRowsIn(table, column, ids) {
+    if (!ids.length) return null;
+    var res = await supabaseClient.from(table).delete().in(column, ids);
+    return res.error ? res.error.message : null;
+}
+
+async function wipeTeacherData(teacherId) {
+    var students = await supabaseClient.from('students').select('id').eq('teacher_id', teacherId);
+    if (students.error) return students.error.message;
+    var contents = await supabaseClient.from('lesson_contents').select('id').eq('teacher_id', teacherId);
+    if (contents.error) return contents.error.message;
+    var studentIds = (students.data || []).map(function(r) { return r.id; });
+    var contentIds = (contents.data || []).map(function(r) { return r.id; });
+    var err = await deleteRowsIn('quiz_results', 'student_id', studentIds);
+    if (err) return err;
+    err = await deleteRowsIn('student_progress', 'student_id', studentIds);
+    if (err) return err;
+    err = await deleteRowsIn('quiz_results', 'content_id', contentIds);
+    if (err) return err;
+    err = await deleteRowsIn('student_progress', 'content_id', contentIds);
+    if (err) return err;
+    var tables = ['lesson_contents', 'activities', 'report_templates', 'units_sections', 'students', 'branches'];
+    for (var i = 0; i < tables.length; i++) {
+        var res = await supabaseClient.from(tables[i]).delete().eq('teacher_id', teacherId);
+        if (res.error) return res.error.message;
+    }
+    return null;
+}
+
+async function wipeSchoolData(schoolId) {
+    var tables = ['lesson_contents', 'activities', 'report_templates', 'units_sections', 'students', 'branches'];
+    for (var i = 0; i < tables.length; i++) {
+        var res = await supabaseClient.from(tables[i]).delete().eq('school_id', schoolId);
+        if (res.error && res.error.code !== '42703') return res.error.message;
+    }
+    return null;
+}
+
 async function deleteTeacherRecord(id) {
     if (!currentTeacher || !currentTeacher.is_admin) return;
     if (id === currentTeacher.id) return alert('Kendi hesabını silemezsin.');
     var row = portalCatalog.teachers.find(function(t) { return t.id === id; });
-    if (!confirm('Öğretmen ve giriş hesabı silinsin mi?')) return;
+    if (!confirm('Öğretmen, şubeleri, öğrencileri, dersleri, quiz ve etkinlik verileri kalıcı silinsin mi?')) return;
+    var wiped = await wipeTeacherData(id);
+    if (wiped) return alert(wiped);
     var res = await supabaseClient.from('teachers').delete().eq('id', id);
     if (res.error) return alert(res.error.message);
     if (row && row.email) {
         var authRes = await deleteAuthAccount(row.email);
-        if (authRes && authRes.error) return alert('Listeden silindi. Giriş hesabı silinemedi: ' + authRes.error.message);
+        if (authRes && authRes.error) return alert('Veriler silindi. Giriş hesabı silinemedi: ' + authRes.error.message);
     }
     await loadPortalCatalog();
     openSchoolTeacherAdmin();
@@ -551,12 +636,17 @@ async function deleteSchoolRecord(id) {
     if (!currentTeacher || !currentTeacher.is_admin) return;
     if (id === currentTeacher.school_id) return alert('Kendi okulunu silemezsin.');
     var people = portalCatalog.teachers.filter(function(t) { return t.school_id === id; });
-    if (!confirm(people.length ? 'Okul, öğretmenleri ve giriş hesapları silinsin mi?' : 'Okul silinsin mi?')) return;
+    if (!confirm('Okul, öğretmenleri ve o okuldaki tüm şube, öğrenci, ders, quiz ve etkinlik verileri kalıcı silinsin mi?')) return;
     for (var i = 0; i < people.length; i++) {
         if (people[i].id === currentTeacher.id) continue;
-        await supabaseClient.from('teachers').delete().eq('id', people[i].id);
+        var wiped = await wipeTeacherData(people[i].id);
+        if (wiped) return alert(wiped);
+        var delT = await supabaseClient.from('teachers').delete().eq('id', people[i].id);
+        if (delT.error) return alert(delT.error.message);
         if (people[i].email) await deleteAuthAccount(people[i].email);
     }
+    var left = await wipeSchoolData(id);
+    if (left) return alert(left);
     var res = await supabaseClient.from('schools').delete().eq('id', id);
     if (res.error) return alert(res.error.message);
     await loadPortalCatalog();
@@ -883,7 +973,7 @@ async function studentLogin() {
         schoolId: schoolId,
         subject: subject,
         schoolName: school ? school.name : '',
-        academicYear: school ? (school.academic_year || '2025-2026') : '2025-2026'
+        academicYear: school ? (school.academic_year || DEFAULT_YEAR) : DEFAULT_YEAR
     };
     saveStudentScope();
     await loadAllDataFromSupabase();
@@ -1072,7 +1162,7 @@ function openManagementMenu() {
 
 function openTeacherInfoPage() {
     var schoolName = localStorage.getItem('fen_school_name') || '';
-    var academicYear = localStorage.getItem('fen_academic_year') || '2025-2026';
+    var academicYear = localStorage.getItem('fen_academic_year') || DEFAULT_YEAR;
 
     openModal('Öğretmen Bilgileri',
         '<div style="margin-bottom:12px;">' +
@@ -1081,7 +1171,7 @@ function openTeacherInfoPage() {
         '</div>' +
         '<div style="margin-bottom:12px;">' +
             '<label style="display:block;margin-bottom:4px;font-size:13px;color:#94a3b8;">Eğitim-Öğretim Yılı</label>' +
-            '<input type="text" id="academic-year" class="auth-input" value="' + academicYear + '" placeholder="Örn: 2025-2026">' +
+            '<input type="text" id="academic-year" class="auth-input" value="' + academicYear + '" placeholder="Örn: 2027-2028">' +
         '</div>' +
         '<p style="font-size:12px;color:#64748b;">Bu bilgiler PDF ve Word belgelerinde resmi başlık olarak kullanılacak.</p>',
     async function() {
@@ -1090,10 +1180,10 @@ function openTeacherInfoPage() {
         if (name) localStorage.setItem('fen_school_name', name);
         if (year) localStorage.setItem('fen_academic_year', year);
         if (supabaseClient && currentTeacher && currentTeacher.school_id && name) {
-            var res = await supabaseClient.from('schools').update({ name: name, academic_year: year || '2025-2026' }).eq('id', currentTeacher.school_id);
+            var res = await supabaseClient.from('schools').update({ name: name, academic_year: year || DEFAULT_YEAR }).eq('id', currentTeacher.school_id);
             if (res.error) return alert(res.error.message);
             currentTeacher.school_name = name;
-            currentTeacher.academic_year = year || currentTeacher.academic_year;
+            currentTeacher.academic_year = year || DEFAULT_YEAR;
         }
         closeModal();
         alert('Bilgiler kaydedildi!');
@@ -1105,14 +1195,14 @@ function studentPrintHeader(title, student, grade, branch) {
     var short = sube.indexOf('/') >= 0 ? sube.split('/').pop() : sube;
     return '<div style="text-align:center;margin:0 0 14px;line-height:1.35;">' +
         '<div style="font-size:15px;font-weight:700;">' + getSchoolHeader() + '</div>' +
-        '<div style="font-size:14px;font-weight:700;margin-top:4px;">' + getSubjectLine() + '</div>' +
+        '<div style="font-size:14px;font-weight:700;margin-top:4px;">' + getSubjectLine(grade) + '</div>' +
         '<div style="font-size:16px;font-weight:800;margin-top:6px;">' + title + '</div>' +
         '<div style="font-size:12px;margin-top:4px;">' + (student.name || '') + ' · No ' + (student.no || '') + ' · ' + grade + '. Sınıf / ' + short + '</div>' +
     '</div>';
 }
 function getSchoolHeader() {
     var schoolName = (currentTeacher && currentTeacher.school_name) || (studentScope && studentScope.schoolName) || localStorage.getItem('fen_school_name') || 'OKUL ADI';
-    var academicYear = (currentTeacher && currentTeacher.academic_year) || (studentScope && studentScope.academicYear) || localStorage.getItem('fen_academic_year') || '2025-2026';
+    var academicYear = (currentTeacher && currentTeacher.academic_year) || (studentScope && studentScope.academicYear) || localStorage.getItem('fen_academic_year') || DEFAULT_YEAR;
     return academicYear + ' EĞİTİM-ÖĞRETİM YILI<br><span style="font-size:14px;">' + schoolName + '</span>';
 }
 
@@ -1245,7 +1335,7 @@ function addNewBranchModal(grade) {
         var name = document.getElementById('modal-branch-name').value.trim().toUpperCase();
         if (!name) return;
         var full = grade + '/' + name;
-        if (await branchTaken(grade, full)) return alert('Bu şube bu branşta başka öğretmende.');
+        if (await branchTaken(grade, full)) return alert('Bu şube bu derste başka öğretmende.');
         if (supabaseClient) {
             var res = await supabaseClient.from('branches').insert(stampList([{ grade: grade, branch_name: full }]));
             if (res.error) return alert(res.error.message);
@@ -2319,7 +2409,7 @@ function renderStudentPanelView(grade, branch, student, push) {
 
     panel.innerHTML =
         '<header class="teacher-header">' +
-            '<div class="header-brand"><h1>' + student.name + ' · ' + activeSubject() + '</h1></div>' +
+            '<div class="header-brand"><h1>' + student.name + ' · ' + canonicalSubject(activeSubject()) + '</h1></div>' +
             '<button onclick="logoutStudent()" class="logout-btn">Çıkış</button>' +
         '</header>' +
         '<section class="dashboard-content" style="max-width:900px; margin:0 auto;">' +
@@ -2556,7 +2646,7 @@ function downloadStudentKarne(grade, branch) {
 }
 
 function getFenBadge(avg) {
-    var names = BADGE_TITLES[activeSubject()] || BADGE_TITLES['Fen'];
+    var names = BADGE_TITLES[canonicalSubject(activeSubject())] || BADGE_TITLES['Fen Bilimleri'];
     if (avg === '-' || avg == null) return { icon: '⭐', title: 'Başlangıç', color: '#64748b' };
     var n = parseFloat(avg);
     if (isNaN(n)) return { icon: '⭐', title: 'Başlangıç', color: '#64748b' };
@@ -3877,7 +3967,7 @@ function renderQuizTable(grade, branchName) {
             '<button onclick="exportTableToPDF(\'quiz-print\',\'' + fileSafe(unit + ' ' + section + ' Quiz') + '\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
         '</div>' +
         '<div id="quiz-print" class="print-area">' +
-            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine() + '</p><h3>' + grade + '. Sinif (' + branchName + ') - Quiz</h3></div>' +
+            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine(grade) + '</p><h3>' + grade + '. Sinif (' + branchName + ') - Quiz</h3></div>' +
             '<div class="print-info">' +
                 '<p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p>' +
                 '<p><b>Unite:</b> ' + unit + '</p>' +
@@ -4044,7 +4134,7 @@ function renderActivityTable(grade, branchName) {
                 '<button onclick="exportTableToPDF(\'act-print\',\'' + fileSafe(scale.name) + '\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
             '</div>' +
             '<div id="act-print" class="print-area">' +
-                '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine() + '</p></div>' +
+                '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine(grade) + '</p></div>' +
                 '<div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Olcek:</b> ' + scale.name + '</p></div>' +
                 '<div style="background:#1e293b;padding:8px 12px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#94a3b8;">' +
                     (scale.scale_type === '1-5' ? 'Kodlama: 5=Cok iyi | 4=Iyi | 3=Yeterli | 2=Gelistirmeli | 1=Yetersiz' :
@@ -4086,7 +4176,7 @@ function renderActivityTable(grade, branchName) {
             '<button onclick="exportTableToPDF(\'act-print\',\'' + fileSafe(base) + '\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
         '</div>' +
         '<div id="act-print" class="print-area">' +
-            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine() + '</p><h3>Tum Olcekler</h3></div><div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Etkinlik:</b> ' + base + '</p></div>' +
+            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine(grade) + '</p><h3>Tum Olcekler</h3></div><div class="print-info"><p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p><p><b>Unite:</b> ' + unit + '</p><p><b>Bolum:</b> ' + section + '</p><p><b>Etkinlik:</b> ' + base + '</p></div>' +
             '<div style="overflow-x:auto;"><table class="data-table"><thead><tr>' + head2 + '</tr></thead><tbody>' + body2 + '</tbody></table></div>' +
         '</div>' +
         '<div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">' +
@@ -4326,7 +4416,7 @@ async function renderReport(grade, branchName) {
             '<button onclick="exportFullReportPDF(\'' + fileSafe(unit + ' ' + section + ' Rapor') + '\')" class="auth-btn" style="background:#dc2626; width:auto; padding:8px 14px;">PDF</button>' +
         '</div>' +
         '<div id="report-print" class="print-area">' +
-            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine() + '</p><h3>Analiz Raporu</h3></div>' +
+            '<div class="print-header"><h2>' + getSchoolHeader() + '</h2><p style="font-size:13px;margin:4px 0;font-weight:bold;">' + getSubjectLine(grade) + '</p><h3>Analiz Raporu</h3></div>' +
             '<div class="print-info">' +
                 '<p><b>Sube:</b> ' + grade + '. Sinif - ' + branchName + '</p>' +
                 '<p><b>Unite:</b> ' + unit + '</p>' +
