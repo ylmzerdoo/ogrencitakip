@@ -43,6 +43,7 @@
     
     <!-- SheetJS (Excel) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
     
     <!-- jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -52,6 +53,7 @@
     
     <!-- Mammoth.js (Word → text) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js"></script>
 </head>
 <body>
 
@@ -114,7 +116,12 @@
                 <div class="grade-card" onclick="openManagementMenu()" style="border-top-color:#f97316;">
                     <h3>⚙️ Yönetim İşlemleri</h3>
                     <p>Ünite, Bölüm, Ölçek, Rapor, Silme</p>
-                    <span class="card-action">Gir →</span>
+                    <span class="card-action">Gir</span>
+                </div>
+                <div class="grade-card" onclick="openEvrakScreen('home')" style="border-top-color:#c2410c;">
+                    <h3>📁 Evrak</h3>
+                    <p>Yıllık plan, zümre, şök, rehberlik</p>
+                    <span class="card-action">Gir</span>
                 </div>
             </div>
 
@@ -123,22 +130,22 @@
                 <div class="grade-card" onclick="openGradeManagement('5')" style="border-top-color:#ea580c;">
                     <h3>5. Sınıflar</h3>
                     <p>Şubeler, Quizler ve Etkinlikler</p>
-                    <span class="card-action">Yönetime Git →</span>
+                    <span class="card-action">Yönetime Git</span>
                 </div>
                 <div class="grade-card" onclick="openGradeManagement('6')" style="border-top-color:#ea580c;">
                     <h3>6. Sınıflar</h3>
                     <p>Şubeler, Quizler ve Etkinlikler</p>
-                    <span class="card-action">Yönetime Git →</span>
+                    <span class="card-action">Yönetime Git</span>
                 </div>
                 <div class="grade-card" onclick="openGradeManagement('7')" style="border-top-color:#ea580c;">
                     <h3>7. Sınıflar</h3>
                     <p>Şubeler, Quizler ve Etkinlikler</p>
-                    <span class="card-action">Yönetime Git →</span>
+                    <span class="card-action">Yönetime Git</span>
                 </div>
                 <div class="grade-card" onclick="openGradeManagement('8')" style="border-top-color:#ea580c;">
                     <h3>8. Sınıflar</h3>
                     <p>Şubeler, Quizler ve Etkinlikler</p>
-                    <span class="card-action">Yönetime Git →</span>
+                    <span class="card-action">Yönetime Git</span>
                 </div>
             </div>
         </section>
@@ -163,5 +170,6 @@
     </div>
 
     <script src="script.js"></script>
+    <script src="office.js"></script>
 </body>
 </html>
