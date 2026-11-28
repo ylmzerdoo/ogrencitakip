@@ -257,6 +257,44 @@ body {
     background: rgba(255,255,255,0.03);
 }
 
+.doc-table th,
+.doc-table td {
+    color: #1c1917;
+    text-align: left;
+    border-bottom: 1px solid #fed7aa;
+}
+
+.data-table.doc-table td:nth-child(2) {
+    white-space: normal !important;
+    text-align: left !important;
+}
+
+.doc-mini {
+    width: auto !important;
+    display: inline-block;
+    padding: 6px 10px;
+    margin: 2px 4px 2px 0;
+    font-size: 12px;
+}
+
+.sheet-tabs { margin-bottom: 8px; }
+.sheet-wrap { overflow: auto; max-height: 68vh; background: #fff; border-radius: 12px; margin-bottom: 10px; }
+.sheet-grid { border-collapse: collapse; font-size: 13px; color: #1c1917; background: #fff; min-width: max-content; }
+.sheet-grid td {
+    border: 1px solid #fdba74;
+    padding: 6px 8px;
+    min-width: 92px;
+    height: 34px;
+    vertical-align: middle;
+    background: #fff;
+    white-space: nowrap;
+}
+.sheet-grid td.head { background: #c2410c; color: #fff; font-weight: 700; text-align: center; position: sticky; top: 0; z-index: 1; }
+.sheet-grid td.formula { background: #fff7ed; color: #44403c; text-align: center; }
+.sheet-grid td[contenteditable="true"]:focus { outline: 2px solid #ea580c; background: #ffedd5; }
+.sheet-grid td.paste { background: #fff7ed; }
+.sheet-grid td.name, .sheet-grid td.head:nth-child(2) { min-width: 180px; text-align: left; }
+
 /* Badge */
 .badge {
     display: inline-block;
