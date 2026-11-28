@@ -1081,6 +1081,9 @@ async function teacherLogin() {
         var ok = await bindTeacher(res.data.user);
         if (!ok) return;
         await loadAllDataFromSupabase();
+        if (typeof officeCloudPull === 'function') {
+            try { await officeCloudPull(); } catch (e) {}
+        }
         var cleaned = await dedupeTransferredRows();
         renderTeacherPanelView(true);
         if (cleaned) alert(cleaned + ' tekrarlayan içerik silindi. Video ve deney birer tane kaldı.');
@@ -6067,6 +6070,9 @@ window.addEventListener('DOMContentLoaded', async function() {
         var bound = await bindTeacher(sessionRes.data.session.user);
         if (bound) {
             await loadAllDataFromSupabase();
+            if (typeof officeCloudPull === 'function') {
+                try { await officeCloudPull(); } catch (e) {}
+            }
             var cleaned = await dedupeTransferredRows();
             restoreStateFromSession();
             if (cleaned) alert(cleaned + ' tekrarlayan içerik silindi. Video ve deney birer tane kaldı.');
@@ -6084,12 +6090,149 @@ window.addEventListener('DOMContentLoaded', async function() {
 
 // ===== EVRAK (office.js) =====
 // Evrak kartları. Eski öğrenci, quiz, ölçek ve rapor akışına dokunmaz.
+function officeKey() {
+    return 'fen_office_' + (typeof ownerId === 'function' ? (ownerId() || 'local') : 'local');
+}
 function officeBag() {
-    try { return JSON.parse(localStorage.getItem('fen_office_' + (typeof ownerId === 'function' ? (ownerId() || 'local') : 'local')) || '{}'); }
+    try { return JSON.parse(localStorage.getItem(officeKey()) || '{}'); }
     catch (e) { return {}; }
 }
+function officeTeacherId() {
+    if (typeof ownerId === 'function') {
+        var id = ownerId();
+        if (id && id !== 'local') return id;
+    }
+    return (typeof currentTeacher !== 'undefined' && currentTeacher && currentTeacher.id) || '';
+}
 function officeWrite(bag) {
-    localStorage.setItem('fen_office_' + (typeof ownerId === 'function' ? (ownerId() || 'local') : 'local'), JSON.stringify(bag));
+    try { bag._cloudAt = Date.now(); } catch (e) {}
+    localStorage.setItem(officeKey(), JSON.stringify(bag));
+    officeCloudPushBag();
+}
+var _officePushTimer = null;
+function officeCloudPushBag() {
+    if (_officePushTimer) clearTimeout(_officePushTimer);
+    _officePushTimer = setTimeout(function() { officeCloudPushBagNow(); }, 400);
+}
+function officeCloudWarn(message) {
+    if (window._officeSchemaWarned) return;
+    window._officeSchemaWarned = true;
+    alert(message);
+}
+function officeCloudPushBagNow() {
+    var tid = officeTeacherId();
+    if (!tid || typeof supabaseClient === 'undefined' || !supabaseClient) return Promise.resolve();
+    var bag = officeBag();
+    var schoolId = (typeof currentTeacher !== 'undefined' && currentTeacher && currentTeacher.school_id) || null;
+    return supabaseClient.from('office_store').upsert({
+        teacher_id: tid,
+        school_id: schoolId,
+        bag: bag,
+        updated_at: new Date().toISOString()
+    }, { onConflict: 'teacher_id' }).then(function(res) {
+        if (res.error) officeCloudWarn('Evrak kaydı buluta yazılamadı. Supabase SQL editöründe schema_office.sql dosyasını bir kez çalıştır.\n' + res.error.message);
+    }).catch(function(err) {
+        officeCloudWarn('Evrak kaydı buluta yazılamadı. schema_office.sql çalıştırıldı mı?\n' + (err && err.message ? err.message : ''));
+    });
+}
+function officeCloudPull() {
+    var tid = officeTeacherId();
+    if (!tid || typeof supabaseClient === 'undefined' || !supabaseClient) return Promise.resolve();
+    if (window._officePulling) return window._officePulling;
+    window._officePulling = supabaseClient.from('office_store').select('bag,updated_at').eq('teacher_id', tid).then(function(res) {
+        if (res.error) {
+            if (/office_store|schema cache|does not exist|relation/i.test(res.error.message || '')) {
+                officeCloudWarn('Evrak tablosu yok. Supabase SQL editöründe schema_office.sql dosyasını bir kez çalıştır.');
+            }
+            return false;
+        }
+        var local = officeBag();
+        var localAt = local._cloudAt || 0;
+        var row = (res.data || [])[0];
+        var remote = row && row.bag;
+        var remoteAt = remote && remote._cloudAt ? remote._cloudAt : (row && row.updated_at ? new Date(row.updated_at).getTime() : 0);
+        var localHas = Object.keys(local).some(function(k) { return k !== '_cloudAt'; });
+        var remoteHas = !!(remote && Object.keys(remote).some(function(k) { return k !== '_cloudAt'; }));
+        if (remoteHas && remoteAt >= localAt) {
+            localStorage.setItem(officeKey(), JSON.stringify(remote));
+            return false;
+        }
+        if (localHas) return officeCloudPushBagNow().then(function() { return true; });
+        return true;
+    }).then(function(pushFiles) {
+        if (pushFiles) return officeCloudPushLocalFiles();
+    }).catch(function() {});
+    return window._officePulling;
+}
+function officePath(key) {
+    return officeTeacherId() + '/' + encodeURIComponent(String(key));
+}
+function officeAsBlob(value) {
+    if (value instanceof Blob) return value;
+    if (value instanceof ArrayBuffer) return new Blob([value]);
+    if (ArrayBuffer.isView(value)) return new Blob([value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)]);
+    return new Blob([value]);
+}
+function officeRemotePut(key, value) {
+    var tid = officeTeacherId();
+    if (!tid || typeof supabaseClient === 'undefined' || !supabaseClient || !supabaseClient.storage) return Promise.resolve();
+    return supabaseClient.storage.from('office-files').upload(officePath(key), officeAsBlob(value), {
+        upsert: true,
+        contentType: 'application/octet-stream'
+    }).then(function(res) {
+        if (res.error) {
+            officeCloudWarn('Evrak dosyası buluta yazılamadı. schema_office.sql çalıştırıldı mı?\n' + res.error.message);
+            return false;
+        }
+        return true;
+    }).catch(function(err) {
+        officeCloudWarn('Evrak dosyası buluta yazılamadı.\n' + (err && err.message ? err.message : ''));
+        return false;
+    });
+}
+function officeRemoteGet(key) {
+    var tid = officeTeacherId();
+    if (!tid || typeof supabaseClient === 'undefined' || !supabaseClient || !supabaseClient.storage) return Promise.resolve(null);
+    return supabaseClient.storage.from('office-files').download(officePath(key)).then(function(res) {
+        if (res.error || !res.data) return null;
+        return res.data.arrayBuffer();
+    }).catch(function() { return null; });
+}
+function officeRemoteDel(key) {
+    var tid = officeTeacherId();
+    if (!tid || typeof supabaseClient === 'undefined' || !supabaseClient || !supabaseClient.storage) return Promise.resolve();
+    return supabaseClient.storage.from('office-files').remove([officePath(key)]).catch(function() {});
+}
+function officeCloudPushLocalFiles() {
+    var tid = officeTeacherId();
+    var mark = 'fen_office_pushed_' + tid;
+    try { if (localStorage.getItem(mark) === '1') return Promise.resolve(); } catch (e) {}
+    return officeDb().then(function(db) {
+        return new Promise(function(resolve) {
+            var tx = db.transaction('files', 'readonly');
+            var req = tx.objectStore('files').getAllKeys();
+            req.onsuccess = function() { resolve(req.result || []); };
+            req.onerror = function() { resolve([]); };
+        });
+    }).then(function(keys) {
+        var chain = Promise.resolve();
+        var failed = false;
+        keys.forEach(function(key) {
+            chain = chain.then(function() {
+                return officeIdbGet(key).then(function(buf) {
+                    if (!buf) return;
+                    return officeRemotePut(key, buf).then(function(ok) {
+                        if (ok === false) failed = true;
+                    });
+                });
+            }).catch(function() { failed = true; });
+        });
+        return chain.then(function() {
+            if (!failed) {
+                try { localStorage.setItem(mark, '1'); } catch (e) {}
+            }
+        });
+    }).catch(function() {});
 }
 function officeEsc(value) {
     return String(value || '').replace(/[&<>"]/g, function(ch) {
@@ -6565,17 +6708,7 @@ function officeDb() {
         req.onerror = function() { reject(req.error); };
     });
 }
-function officeFilePut(key, value) {
-    return officeDb().then(function(db) {
-        return new Promise(function(resolve, reject) {
-            var tx = db.transaction('files', 'readwrite');
-            tx.objectStore('files').put(value, key);
-            tx.oncomplete = function() { resolve(); };
-            tx.onerror = function() { reject(tx.error); };
-        });
-    });
-}
-function officeFileGet(key) {
+function officeIdbGet(key) {
     return officeDb().then(function(db) {
         return new Promise(function(resolve, reject) {
             var tx = db.transaction('files', 'readonly');
@@ -6585,7 +6718,17 @@ function officeFileGet(key) {
         });
     });
 }
-function officeFileDel(key) {
+function officeIdbPut(key, value) {
+    return officeDb().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('files', 'readwrite');
+            tx.objectStore('files').put(value, key);
+            tx.oncomplete = function() { resolve(); };
+            tx.onerror = function() { reject(tx.error); };
+        });
+    });
+}
+function officeIdbDel(key) {
     return officeDb().then(function(db) {
         return new Promise(function(resolve, reject) {
             var tx = db.transaction('files', 'readwrite');
@@ -6594,6 +6737,21 @@ function officeFileDel(key) {
             tx.onerror = function() { reject(tx.error); };
         });
     });
+}
+function officeFilePut(key, value) {
+    return officeIdbPut(key, value).then(function() { return officeRemotePut(key, value); });
+}
+function officeFileGet(key) {
+    return officeIdbGet(key).then(function(local) {
+        if (local) return local;
+        return officeRemoteGet(key).then(function(remote) {
+            if (!remote) return null;
+            return officeIdbPut(key, remote).then(function() { return remote; });
+        });
+    });
+}
+function officeFileDel(key) {
+    return officeIdbDel(key).then(function() { return officeRemoteDel(key); });
 }
 function renderZumreUpload() {
     var skip = window._skipHistory;
